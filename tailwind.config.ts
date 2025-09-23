@@ -18,8 +18,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['PT Sans', 'sans-serif'],
-        headline: ['Playfair Display', 'serif'],
+        body: ['Open Sans', 'sans-serif'],
+        headline: ['Montserrat', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
