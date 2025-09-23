@@ -11,7 +11,6 @@ import * as React from 'react';
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Products' },
-  { href: '/slogan-generator', label: 'Slogan Generator' },
   { href: '#sustainability', label: 'Sustainability' },
   { href: '#contact', label: 'Contact' },
 ];
