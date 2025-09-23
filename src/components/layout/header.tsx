@@ -50,7 +50,7 @@ export function Header() {
               href={href}
               className={cn(
                 'text-sm font-medium transition-colors hover:text-primary',
-                pathname === href ? 'text-primary' : 'text-muted-foreground'
+                pathname === href ? 'text-primary' : 'text-foreground/80'
               )}
             >
               {label}
@@ -74,7 +74,7 @@ export function Header() {
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+            <SheetContent side="left" className="w-[300px] sm:w-[400px] bg-background/90 backdrop-blur-lg">
               <div className="flex flex-col h-full">
                 <div className="flex items-center gap-2 p-4 border-b">
                    <Moon className="h-7 w-7 text-primary" />

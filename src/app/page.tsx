@@ -89,7 +89,7 @@ export default function Home() {
             {pillars.map((pillar) => (
               <div key={pillar.title} className="text-center flex flex-col items-center">
                 <div className="bg-primary/20 rounded-full p-4 mb-4">
-                  <pillar.icon className="w-8 h-8 text-primary-foreground" />
+                  <pillar.icon className="w-8 h-8 text-primary" />
                 </div>
                 <h3 className="font-headline text-xl font-semibold mb-2">{pillar.title}</h3>
                 <p className="text-muted-foreground max-w-xs">{pillar.description}</p>
@@ -100,14 +100,14 @@ export default function Home() {
       </section>
 
       {/* Product Categories Section */}
-      <section className="py-16 md:py-24 bg-card">
+      <section className="py-16 md:py-24 bg-card/10">
         <div className="container mx-auto px-4">
           <h2 className="font-headline text-3xl md:text-4xl font-bold text-center mb-12">
             Discover Our Collections
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {categories.map((category) => (
-              <Card key={category.title} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card key={category.title} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-[rgba(20,160,120,0.2)] backdrop-blur-lg border border-[rgba(80,220,180,0.3)]">
                 <CardHeader className="p-0">
                   {category.image && (
                      <div className="aspect-w-3 aspect-h-2">
@@ -124,7 +124,7 @@ export default function Home() {
                 </CardHeader>
                 <CardContent className="p-6">
                   <CardTitle className="font-headline text-2xl">{category.title}</CardTitle>
-                  <CardDescription className="mt-2">{category.description}</CardDescription>
+                  <CardDescription className="mt-2 text-foreground/80">{category.description}</CardDescription>
                 </CardContent>
                 <CardFooter>
                   <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">

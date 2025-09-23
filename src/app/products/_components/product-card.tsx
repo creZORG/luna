@@ -17,7 +17,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const size = product.sizes[0].size;
 
   return (
-    <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+    <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-[rgba(20,160,120,0.2)] backdrop-blur-lg border border-[rgba(80,220,180,0.3)] text-foreground">
       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
         <CardHeader className="p-0">
           <div className="aspect-square w-full relative">
@@ -39,7 +39,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </CardHeader>
         <CardContent className="p-4 flex-grow">
           <CardTitle className="font-headline text-xl leading-tight">{product.name}</CardTitle>
-          <CardDescription className="mt-2 text-sm">{product.shortDescription}</CardDescription>
+          <CardDescription className="mt-2 text-sm text-foreground/80">{product.shortDescription}</CardDescription>
         </CardContent>
         <CardFooter className="p-4 pt-0 flex justify-between items-center">
           <div>

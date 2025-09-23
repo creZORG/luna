@@ -30,7 +30,7 @@ export function Footer() {
   ];
 
   return (
-    <footer id="contact" className="bg-card border-t">
+    <footer id="contact" className="bg-background/80 backdrop-blur-sm border-t">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-1">
