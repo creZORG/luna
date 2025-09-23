@@ -3,17 +3,23 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { Menu, Moon, Search, ShoppingCart, Sun } from 'lucide-react';
+import { Menu, Moon, ShoppingCart, Sun, Home, Mail, Package } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { ThemeToggle } from '../theme-toggle';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/products', label: 'Products' },
-  { href: '#sustainability', label: 'Sustainability' },
-  { href: '#contact', label: 'Contact' },
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/products', label: 'Products', icon: Package },
+  { href: '#contact', label: 'Contact', icon: Mail },
 ];
 
 export function Header() {
@@ -44,26 +50,27 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'text-sm font-medium transition-colors hover:text-primary',
-                pathname === href ? 'text-primary' : 'text-foreground/80'
-              )}
-            >
-              {label}
-            </Link>
-          ))}
+        <nav className="hidden md:flex items-center gap-2">
+           <TooltipProvider>
+            {navLinks.map(({ href, label, icon: Icon }) => (
+              <Tooltip key={href}>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon" className={cn(pathname === href ? 'text-primary' : 'text-foreground/80', "hover:text-primary")}>
+                    <Link href={href}>
+                      <Icon className="h-5 w-5" />
+                      <span className="sr-only">{label}</span>
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{label}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </TooltipProvider>
         </nav>
 
         <div className="flex items-center gap-4">
-           <Button variant="ghost" size="icon">
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Search</span>
-            </Button>
             <Button variant="ghost" size="icon">
               <ShoppingCart className="h-5 w-5" />
               <span className="sr-only">Shopping Cart</span>
@@ -85,16 +92,17 @@ export function Header() {
                     </span>
                 </div>
                 <nav className="flex flex-col gap-4 p-4">
-                  {navLinks.map(({ href, label }) => (
+                  {navLinks.map(({ href, label, icon: Icon }) => (
                     <Link
                       key={href}
                       href={href}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={cn(
-                        'text-lg font-medium transition-colors hover:text-primary',
+                        'text-lg font-medium transition-colors hover:text-primary flex items-center gap-4',
                         pathname === href ? 'text-primary' : 'text-foreground'
                       )}
                     >
+                      <Icon className="h-5 w-5" />
                       {label}
                     </Link>
                   ))}
