@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader } from 'lucide-react';
+import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -58,9 +58,13 @@ export default function AdminLayout({
               <BarChart2 className="h-5 w-5" />
               <span className="sr-only">Dashboard</span>
           </Link>
-          <Link href="/admin/products" className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
+          <Link href="/admin/products" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
               <ShoppingCart className="h-5 w-5" />
               <span className="sr-only">Products</span>
+          </Link>
+           <Link href="/admin/media" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
+              <ImageIcon className="h-5 w-5" />
+              <span className="sr-only">Media</span>
           </Link>
         </nav>
       </aside>
@@ -86,9 +90,13 @@ export default function AdminLayout({
                 <BarChart2 className="h-5 w-5" />
                 Dashboard
               </Link>
-              <Link href="/admin/products" className="flex items-center gap-4 px-2.5 text-foreground">
+              <Link href="/admin/products" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
                 <ShoppingCart className="h-5 w-5" />
                 Products
+              </Link>
+               <Link href="/admin/media" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+                <ImageIcon className="h-5 w-5" />
+                Media
               </Link>
               </nav>
             </SheetContent>
