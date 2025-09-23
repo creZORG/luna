@@ -1,7 +1,8 @@
-import { products } from '@/lib/data';
+import { products as mockProducts } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import ProductDetailClient from './_components/product-detail-client';
 import type { Metadata, ResolvingMetadata } from 'next';
+import { productService } from '@/services/product.service';
 
 type Props = {
   params: { slug: string };
@@ -11,7 +12,7 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const product = products.find(p => p.slug === params.slug);
+  const product = await productService.getProductBySlug(params.slug);
 
   if (!product) {
     return {
@@ -27,14 +28,16 @@ export async function generateMetadata(
 }
 
 export async function generateStaticParams() {
+    const products = await productService.getProducts();
+    if (!products) return [];
     return products.map(product => ({
       slug: product.slug,
     }));
 }
 
-export default function ProductDetailPage({ params }: Props) {
+export default async function ProductDetailPage({ params }: Props) {
   const { slug } = params;
-  const product = products.find(p => p.slug === slug);
+  const product = await productService.getProductBySlug(slug);
 
   if (!product) {
     notFound();

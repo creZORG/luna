@@ -31,11 +31,14 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { ALL_CATEGORIES, ALL_FEATURES, ALL_SCENTS } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash } from 'lucide-react';
+import { Loader, Trash } from 'lucide-react';
+import { productService } from '@/services/product.service';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name is too short'),
-  slug: z.string().min(2, 'Slug is too short'),
+  slug: z.string().min(2, 'Slug is too short').regex(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens.'),
   description: z.string().min(10, 'Description is too short'),
   shortDescription: z.string().min(10, 'Short description is too short'),
   category: z.enum(ALL_CATEGORIES as [string, ...string[]]),
@@ -52,8 +55,10 @@ const formSchema = z.object({
   })).min(1, "Add at least one size"),
 });
 
+export type ProductFormData = z.infer<typeof formSchema>;
+
 export function ProductForm() {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<ProductFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
@@ -70,16 +75,33 @@ export function ProductForm() {
       imageId: ''
     },
   });
+  const { toast } = useToast();
+  const router = useRouter();
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "sizes"
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    alert('Product submitted! Check the console for the form data.');
+  async function onSubmit(values: ProductFormData) {
+    try {
+      await productService.createProduct(values);
+      toast({
+        title: 'Product Saved!',
+        description: `The product "${values.name}" has been created successfully.`,
+      });
+      router.push('/admin/products');
+    } catch (error) {
+      console.error("Error creating product:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'There was a problem saving the product. Please try again.',
+      });
+    }
   }
+
+  const isSubmitting = form.formState.isSubmitting;
 
   return (
     <Form {...form}>
@@ -101,7 +123,13 @@ export function ProductForm() {
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Juicy Mango Shower Gel" {...field} />
+                        <Input placeholder="e.g. Juicy Mango Shower Gel" {...field} 
+                          onChange={(e) => {
+                            field.onChange(e);
+                            const newSlug = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                            form.setValue('slug', newSlug);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -190,6 +218,7 @@ export function ProductForm() {
                         size="icon"
                         onClick={() => remove(index)}
                         className="mt-8"
+                        disabled={fields.length <= 1}
                       >
                         <Trash className="h-4 w-4" />
                       </Button>
@@ -408,7 +437,10 @@ export function ProductForm() {
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit">Save Product</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+            Save Product
+          </Button>
         </div>
       </form>
     </Form>

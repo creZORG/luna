@@ -14,16 +14,19 @@ import {
     CardHeader,
     CardTitle,
   } from "@/components/ui/card"
-  import { products } from "@/lib/data"
   import { Button } from "@/components/ui/button"
   import { PlusCircle } from "lucide-react"
   import Link from "next/link"
   import Image from "next/image"
   import { PlaceHolderImages } from "@/lib/placeholder-images"
   import { Badge } from "@/components/ui/badge"
+  import { productService } from "@/services/product.service"
+import { Product } from "@/lib/data"
 
   
-  export default function ProductsAdminPage() {
+  export default async function ProductsAdminPage() {
+    const products: Product[] = await productService.getProducts();
+
     return (
       <Card>
         <CardHeader>

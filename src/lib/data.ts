@@ -133,7 +133,7 @@ export const products: Product[] = [
   }
 ];
 
-export const ALL_CATEGORIES = Array.from(new Set(products.map(p => p.category)));
-export const ALL_FEATURES = Array.from(new Set(products.flatMap(p => p.features)));
-export const ALL_SCENTS = Array.from(new Set(products.flatMap(p => p.scentProfile)));
+export const ALL_CATEGORIES: ProductCategory[] = ['shower-gel', 'fabric-softener', 'dish-wash'];
+export const ALL_FEATURES: ProductFeature[] = ['vegan', 'paraben-free', 'microplastic-free', 'natural-fragrance', 'recycled-packaging'];
+export const ALL_SCENTS: ScentProfile[] = ['citrus', 'floral', 'fruity', 'minty', 'warm-earthy'];
 export const ALL_SIZES = Array.from(new Set(products.flatMap(p => p.sizes.map(s => s.size))));
