@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { Menu, Moon, ShoppingCart, Sun, Home, Mail, Package } from 'lucide-react';
+import { Menu, Moon, Home, Mail, Package } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
@@ -48,25 +48,22 @@ export function Header() {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-2">
-              {navLinks.map(({ href, label }) => (
-                  <Button asChild variant="ghost" key={href} className={cn(
-                      'text-sm font-medium rounded-full',
-                      pathname === href ? 'text-primary' : 'text-foreground/80',
-                      'hover:text-primary'
-                  )}>
-                      <Link href={href}>{label}</Link>
-                  </Button>
-              ))}
-          </nav>
-
           <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon">
-                <ShoppingCart className="h-5 w-5" />
-                <span className="sr-only">Shopping Cart</span>
-              </Button>
+              <nav className="hidden md:flex items-center gap-2">
+                  {navLinks.map(({ href, label }) => (
+                      <Button asChild variant="ghost" key={href} className={cn(
+                          'text-sm font-medium rounded-full',
+                          pathname === href ? 'text-primary' : 'text-foreground/80',
+                          'hover:text-primary'
+                      )}>
+                          <Link href={href}>{label}</Link>
+                      </Button>
+                  ))}
+              </nav>
+              
               <ThemeToggle />
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
                   <Menu className="h-6 w-6" />
