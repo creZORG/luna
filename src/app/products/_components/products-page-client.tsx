@@ -17,8 +17,7 @@ function ProductsPageClientContent({ products }: { products: Product[] }) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([initialCategory]);
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [selectedScents, setSelectedScents] = useState<string[]>([]);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [sortOption, setSortOption] = useState<SortOption>('featured');
 
   const filteredProducts = useMemo(() => {
@@ -32,12 +31,8 @@ function ProductsPageClientContent({ products }: { products: Product[] }) {
       filtered = filtered.filter(p => selectedCategories.includes(p.category));
     }
 
-    if (selectedFeatures.length > 0) {
-      filtered = filtered.filter(p => selectedFeatures.every(feat => p.features.includes(feat as any)));
-    }
-
-    if (selectedScents.length > 0) {
-      filtered = filtered.filter(p => selectedScents.some(scent => p.scentProfile.includes(scent as any)));
+    if (selectedSizes.length > 0) {
+        filtered = filtered.filter(p => selectedSizes.some(size => p.sizes.some(s => s.size === size)));
     }
     
     switch (sortOption) {
@@ -59,7 +54,7 @@ function ProductsPageClientContent({ products }: { products: Product[] }) {
     }
 
     return filtered;
-  }, [products, searchQuery, selectedCategories, selectedFeatures, selectedScents, sortOption]);
+  }, [products, searchQuery, selectedCategories, selectedSizes, sortOption]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -75,10 +70,8 @@ function ProductsPageClientContent({ products }: { products: Product[] }) {
           <ProductFilters
             selectedCategories={selectedCategories}
             setSelectedCategories={setSelectedCategories}
-            selectedFeatures={selectedFeatures}
-            setSelectedFeatures={setSelectedFeatures}
-            selectedScents={selectedScents}
-            setSelectedScents={setSelectedScents}
+            selectedSizes={selectedSizes}
+            setSelectedSizes={setSelectedSizes}
           />
         </div>
 
