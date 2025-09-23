@@ -3,10 +3,11 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { Menu, Moon, Search, ShoppingCart } from 'lucide-react';
+import { Menu, Moon, Search, ShoppingCart, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
+import { ThemeToggle } from '../theme-toggle';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -67,6 +68,7 @@ export function Header() {
               <ShoppingCart className="h-5 w-5" />
               <span className="sr-only">Shopping Cart</span>
             </Button>
+            <ThemeToggle />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
