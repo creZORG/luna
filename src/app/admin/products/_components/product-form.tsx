@@ -90,7 +90,7 @@ export function ProductForm() {
               <CardHeader>
                 <CardTitle>Product Details</CardTitle>
                 <CardDescription>
-                  Lipsum dolor sit amet, consectetur adipiscing elit
+                  Fill in the details of the product.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -101,7 +101,7 @@ export function ProductForm() {
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Juicy Mango Shower Gel" {...field} />
+                        <Input placeholder="e.g. Juicy Mango Shower Gel" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -114,8 +114,9 @@ export function ProductForm() {
                     <FormItem>
                       <FormLabel>Slug</FormLabel>
                       <FormControl>
-                        <Input placeholder="juicy-mango-shower-gel" {...field} />
+                        <Input placeholder="e.g. juicy-mango-shower-gel" {...field} />
                       </FormControl>
+                       <FormDescription>This is the URL-friendly version of the name.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -127,7 +128,7 @@ export function ProductForm() {
                     <FormItem>
                       <FormLabel>Short Description</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="A one-liner about the product" {...field} />
+                        <Textarea placeholder="A one-liner that appears in product listings." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -140,7 +141,7 @@ export function ProductForm() {
                     <FormItem>
                       <FormLabel>Full Description</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="A detailed description of the product" {...field} />
+                        <Textarea placeholder="A detailed description for the product page." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -151,11 +152,12 @@ export function ProductForm() {
              <Card>
                 <CardHeader>
                     <CardTitle>Sizing & Pricing</CardTitle>
+                    <CardDescription>Add the different sizes and prices for this product.</CardDescription>
                 </CardHeader>
                 <CardContent>
                 <div>
                   {fields.map((field, index) => (
-                    <div key={field.id} className="grid grid-cols-3 gap-4 items-center mb-4">
+                    <div key={field.id} className="grid grid-cols-3 gap-4 items-start mb-4">
                       <FormField
                         control={form.control}
                         name={`sizes.${index}.size`}
@@ -163,7 +165,7 @@ export function ProductForm() {
                           <FormItem>
                             <FormLabel>Size</FormLabel>
                             <FormControl>
-                              <Input placeholder="500ml" {...field} />
+                              <Input placeholder="e.g. 500ml" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -176,7 +178,7 @@ export function ProductForm() {
                           <FormItem>
                             <FormLabel>Price</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="220" {...field} />
+                              <Input type="number" placeholder="e.g. 220" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -187,7 +189,7 @@ export function ProductForm() {
                         variant="destructive"
                         size="icon"
                         onClick={() => remove(index)}
-                        className="mt-4"
+                        className="mt-8"
                       >
                         <Trash className="h-4 w-4" />
                       </Button>
@@ -207,6 +209,7 @@ export function ProductForm() {
             <Card>
               <CardHeader>
                 <CardTitle>Additional Information</CardTitle>
+                <CardDescription>Provide more details about the product's benefits, ingredients, and usage.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -216,9 +219,9 @@ export function ProductForm() {
                     <FormItem>
                       <FormLabel>Key Benefits</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="List key benefits, separated by commas" {...field} />
+                        <Textarea placeholder="List key benefits..." {...field} />
                       </FormControl>
-                      <FormDescription>Separate each benefit with a comma.</FormDescription>
+                      <FormDescription>Separate each benefit with a new line.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -230,7 +233,7 @@ export function ProductForm() {
                     <FormItem>
                       <FormLabel>Ingredients</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="List ingredients, separated by commas" {...field} />
+                        <Textarea placeholder="List ingredients..." {...field} />
                       </FormControl>
                        <FormDescription>Separate each ingredient with a comma.</FormDescription>
                       <FormMessage />
@@ -270,14 +273,15 @@ export function ProductForm() {
           <div className="space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle>Category</CardTitle>
+                <CardTitle>Organization</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className='space-y-6'>
                 <FormField
                   control={form.control}
                   name="category"
                   render={({ field }) => (
                     <FormItem>
+                    <FormLabel>Category</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
@@ -299,32 +303,27 @@ export function ProductForm() {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Image</CardTitle>
-                </CardHeader>
-                <CardContent>
-                <FormField
+                 <FormField
                   control={form.control}
                   name="imageId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Image ID</FormLabel>
                       <FormControl>
-                        <Input placeholder="product-juicy-mango..." {...field} />
+                        <Input placeholder="e.g. product-juicy-mango" {...field} />
                       </FormControl>
-                      <FormDescription>This should match an ID in placeholder-images.json</FormDescription>
+                      <FormDescription>This ID must match an entry in `placeholder-images.json`.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                </CardContent>
+              </CardContent>
             </Card>
+           
             <Card>
               <CardHeader>
                 <CardTitle>Features</CardTitle>
+                <CardDescription>Select the features that apply to this product.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 {ALL_FEATURES.map((item) => (
@@ -366,6 +365,7 @@ export function ProductForm() {
              <Card>
               <CardHeader>
                 <CardTitle>Scent Profile</CardTitle>
+                 <CardDescription>Select the scents that best describe this product.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 {ALL_SCENTS.map((item) => (

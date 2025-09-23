@@ -13,8 +13,6 @@ type ProductCardProps = {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const productImage = PlaceHolderImages.find(img => img.id === product.imageId);
-  const price = product.sizes[0].price.toFixed(2);
-  const size = product.sizes[0].size;
 
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-[rgba(20,160,120,0.2)] backdrop-blur-lg border border-[rgba(80,220,180,0.3)] text-foreground">
@@ -41,12 +39,15 @@ export default function ProductCard({ product }: ProductCardProps) {
           <CardTitle className="font-headline text-xl leading-tight">{product.name}</CardTitle>
           <CardDescription className="mt-2 text-sm text-foreground/80">{product.shortDescription}</CardDescription>
         </CardContent>
-        <CardFooter className="p-4 pt-0 flex justify-between items-center">
-          <div>
-            <p className="font-semibold text-lg">KShs {price}</p>
-            <p className="text-xs text-muted-foreground">{size}</p>
+        <CardFooter className="p-4 pt-0 flex justify-between items-end">
+          <div className="flex-grow">
+            <p className="font-semibold text-lg">
+                KShs {product.sizes[0].price.toFixed(2)}
+                {product.sizes.length > 1 && ' - KShs ' + product.sizes[product.sizes.length - 1].price.toFixed(2)}
+            </p>
+            <p className="text-xs text-muted-foreground">{product.sizes.map(s => s.size).join(' / ')}</p>
           </div>
-          <Button variant="outline">View Details</Button>
+          <Button variant="outline">View</Button>
         </CardFooter>
       </Link>
     </Card>
