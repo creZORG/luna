@@ -47,7 +47,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </p>
             <p className="text-xs text-muted-foreground">{product.sizes.map(s => s.size).join(' / ')}</p>
           </div>
-          <Button variant="outline">View</Button>
+          <Button variant="outline" className="transition-all">View</Button>
         </CardFooter>
       </Link>
     </Card>

@@ -72,7 +72,7 @@ export default function Home() {
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto">
             Experience Purity, Crafted with Care. Vegan. Natural. Sustainable.
           </p>
-          <Button asChild size="lg" className="mt-8 bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button asChild size="lg" className="mt-8 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
             <Link href="/products">Explore Our Products</Link>
           </Button>
           <p className="mt-4 text-sm italic">Proudly Made in Kenya.</p>
@@ -107,7 +107,7 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {categories.map((category) => (
-              <Card key={category.title} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-[rgba(20,160,120,0.2)] backdrop-blur-lg border border-[rgba(80,220,180,0.3)]">
+              <Card key={category.title} className="overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-[rgba(20,160,120,0.2)] backdrop-blur-lg border border-[rgba(80,220,180,0.3)]">
                 <CardHeader className="p-0">
                   {category.image && (
                      <div className="aspect-w-3 aspect-h-2">
@@ -127,7 +127,7 @@ export default function Home() {
                   <CardDescription className="mt-2 text-foreground/80">{category.description}</CardDescription>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
                     <Link href={category.link}>Shop {category.title}</Link>
                   </Button>
                 </CardFooter>
