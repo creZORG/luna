@@ -1,6 +1,7 @@
-import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft } from 'lucide-react';
+'use client';
 
+import Link from 'next/link';
+import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,12 +13,36 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
+import { authService } from '@/services/auth.service';
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    router.push('/login');
+    return null;
+  }
+
+  const handleLogout = async () => {
+    await authService.logout();
+    router.push('/login');
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
@@ -27,7 +52,7 @@ export default function AdminLayout({
             className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
           >
             <Home className="h-4 w-4 transition-all group-hover:scale-110" />
-            <span className="sr-only">Admin</span>
+            <span className="sr-only">Home</span>
           </Link>
           <Link href="/admin/dashboard" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
               <BarChart2 className="h-5 w-5" />
@@ -55,7 +80,7 @@ export default function AdminLayout({
                 className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
               >
                 <Home className="h-5 w-5 transition-all group-hover:scale-110" />
-                <span className="sr-only">Admin</span>
+                <span className="sr-only">Home</span>
               </Link>
               <Link href="/admin/dashboard" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
                 <BarChart2 className="h-5 w-5" />
@@ -77,7 +102,7 @@ export default function AdminLayout({
                 className="overflow-hidden rounded-full"
               >
                 <Image
-                  src="https://picsum.photos/seed/1/36/36"
+                  src={`https://i.pravatar.cc/36?u=${user.uid}`}
                   width={36}
                   height={36}
                   alt="Avatar"
@@ -88,10 +113,13 @@ export default function AdminLayout({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
+              <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+              <DropdownMenuItem disabled>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>

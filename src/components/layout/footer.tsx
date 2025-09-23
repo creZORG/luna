@@ -90,6 +90,9 @@ export function Footer() {
 
         <div className="mt-12 border-t pt-8 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Luna Industries Limited. All Rights Reserved.</p>
+          <div className="mt-2">
+            <Link href="/login" className="text-xs hover:text-primary transition-colors">For Administrators</Link>
+          </div>
         </div>
       </div>
     </footer>
