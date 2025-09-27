@@ -112,18 +112,6 @@ export default function AdminLayout({
   const NavContent = ({ isCollapsed }: { isCollapsed: boolean }) => (
      <TooltipProvider>
         <nav className="flex flex-col gap-2 px-2 py-4">
-          <Link
-                href="/"
-                className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                    !isCollapsed && "justify-center"
-                )}
-            >
-                <Home className="h-5 w-5" />
-                {!isCollapsed && <span>Home</span>}
-                {isCollapsed && <span className="sr-only">Home</span>}
-            </Link>
-
             {navLinks.map((link, index) => {
                  if (link.separator) {
                     return <Separator key={index} className="my-2" />;
@@ -184,13 +172,22 @@ export default function AdminLayout({
                 "fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex transition-all",
                 isCollapsed ? "w-16" : "w-60"
             )}>
-            <div className='flex-grow'>
-                <NavContent isCollapsed={isCollapsed} />
-            </div>
-            <div className="mt-auto flex flex-col items-center gap-4 px-2 py-4 border-t">
+            <div className="flex flex-col items-center gap-4 px-2 py-4 border-b">
+                 <Link
+                    href="/"
+                    className={cn(
+                        "flex items-center gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary justify-center"
+                    )}
+                >
+                    <Home className="h-5 w-5" />
+                    <span className="sr-only">Home</span>
+                </Link>
                  <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(!isCollapsed)}>
                     {isCollapsed ? <PanelRightClose /> : <PanelLeftClose />}
                 </Button>
+            </div>
+            <div className='flex-grow overflow-y-auto'>
+                <NavContent isCollapsed={isCollapsed} />
             </div>
         </aside>
 
@@ -244,6 +241,8 @@ export default function AdminLayout({
     </div>
   );
 }
+
+    
 
     
 
