@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -10,13 +11,8 @@ export function middleware(request: NextRequest) {
     return new Response(null, { status: 400, statusText: "No hostname found in request headers" });
   }
 
-  // Use localhost for development
-  const currentHost = process.env.NODE_ENV === 'production'
-    ? hostname.replace(`.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`, '')
-    // This part handles the development environment subdomains
-    : hostname.replace(`.localhost:9002`, '');
+  const currentHost = hostname.split('.')[0];
 
-  // Define which subdomain maps to which internal path
   const portalMap: { [key: string]: string } = {
     staff: '/admin',
     admin: '/admin',
@@ -29,17 +25,28 @@ export function middleware(request: NextRequest) {
   const portalPath = portalMap[currentHost];
 
   if (portalPath) {
-    // Rewrite the URL to the portal's path
+    // If the user is at the root of a subdomain, redirect to the portal's main page.
+    if (pathname === '/') {
+      const redirectUrl = new URL(portalPath, request.url);
+      // For the main admin portal, we redirect specifically to the dashboard.
+      if (portalPath === '/admin') {
+        redirectUrl.pathname = '/admin/dashboard';
+      }
+      return NextResponse.redirect(redirectUrl);
+    }
+    
+    // For other paths within the subdomain, rewrite them to the correct internal path.
     url.pathname = `${portalPath}${pathname}`;
     return NextResponse.rewrite(url);
   }
 
-  // Allow requests for the main marketing site to go through
-  if (hostname === process.env.NEXT_PUBLIC_ROOT_DOMAIN || hostname === 'localhost:9002') {
+  // Allow requests for the main marketing site and handle localhost.
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:9002';
+  if (hostname === rootDomain || hostname === 'localhost') {
      return NextResponse.next();
   }
 
-  // Fallback for any other subdomains
+  // Fallback for any other cases.
   return NextResponse.next();
 }
 
