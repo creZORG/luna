@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog } from 'lucide-react';
+import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -20,7 +20,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import { authService } from '@/services/auth.service';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
   return (
@@ -40,6 +42,27 @@ function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
   )
 }
 
+const navLinks = [
+    { href: "/admin/dashboard", icon: BarChart2, label: "Dashboard", tooltip: "Dashboard" },
+    { href: "/admin/products", icon: ShoppingCart, label: "Product Pricing", tooltip: "Product Pricing" },
+    { href: "/admin/media", icon: ImageIcon, label: "Media", tooltip: "Media" },
+    { href: "/admin/store-items", icon: Store, label: "Store Items", tooltip: "Store Items" },
+    { type: 'collapsible', 
+      trigger: { icon: ClipboardCheck, label: "Attendance", tooltip: "Attendance" },
+      content: [
+        { href: "/admin/attendance/check-in", label: "Check-in" },
+        { href: "/admin/attendance/overview", label: "Daily Overview" },
+      ]
+    },
+    { separator: true },
+    { href: "/finance", icon: Briefcase, label: "Finance", tooltip: "Finance" },
+    { href: "/manufacturing", icon: Factory, label: "Manufacturing", tooltip: "Manufacturing" },
+    { href: "/sales", icon: Target, label: "Sales", tooltip: "Sales" },
+    { href: "/operations", icon: Activity, label: "Operations", tooltip: "Operations" },
+    { href: "/digital-marketing", icon: Briefcase, label: "Marketing", tooltip: "Marketing" },
+];
+
+
 export default function AdminLayout({
   children,
 }: {
@@ -49,7 +72,14 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(pathname.includes('/admin/attendance'));
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
+   useEffect(() => {
+    const isAttendancePath = pathname.includes('/admin/attendance');
+    if (isAttendancePath) {
+      setIsAttendanceOpen(true);
+    }
+  }, [pathname]);
 
   if (loading) {
     return (
@@ -78,72 +108,92 @@ export default function AdminLayout({
     router.push('/login');
   };
 
-  const navLinks = [
-    { href: "/admin/dashboard", icon: BarChart2, label: "Dashboard" },
-    { href: "/admin/products", icon: ShoppingCart, label: "Product Pricing" },
-    { href: "/admin/media", icon: ImageIcon, label: "Media" },
-    { href: "/admin/store-items", icon: Store, label: "Store Items" },
-    { type: 'collapsible', 
-      trigger: { icon: ClipboardCheck, label: "Attendance" },
-      content: [
-        { href: "/admin/attendance/check-in", label: "Check-in" },
-        { href: "/admin/attendance/overview", label: "Daily Overview" },
-      ]
-    },
-    { separator: true },
-    { href: "/finance", icon: Briefcase, label: "Finance" },
-    { href: "/manufacturing", icon: Factory, label: "Manufacturing" },
-    { href: "/sales", icon: Target, label: "Sales" },
-    { href: "/operations", icon: Activity, label: "Operations" },
-    { href: "/digital-marketing", icon: Briefcase, label: "Marketing" },
-  ];
+  const NavContent = ({ isCollapsed }: { isCollapsed: boolean }) => (
+     <TooltipProvider>
+        <nav className="flex flex-col gap-2 px-2 py-4">
+          <Link
+                href="/"
+                className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                    !isCollapsed && "justify-center"
+                )}
+            >
+                <Home className="h-5 w-5" />
+                {!isCollapsed && <span>Home</span>}
+                {isCollapsed && <span className="sr-only">Home</span>}
+            </Link>
+
+            {navLinks.map((link, index) => {
+                 if (link.separator) {
+                    return <Separator key={index} className="my-2" />;
+                 }
+                 if (link.type === 'collapsible') {
+                    return (
+                        <Collapsible key={index} open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} className="flex flex-col items-center gap-1">
+                          <CollapsibleTrigger asChild>
+                              <Tooltip>
+                                  <TooltipTrigger asChild>
+                                        <div className={cn("w-full", !isCollapsed && "px-3")}>
+                                            <Button variant={pathname.includes('/admin/attendance') ? 'secondary' : 'ghost'} size={isCollapsed ? "icon" : "default"} className={cn("w-full flex gap-3", isCollapsed ? "justify-center" : "justify-start")}>
+                                                <link.trigger.icon className="h-5 w-5" />
+                                                {!isCollapsed && <span>{link.trigger.label}</span>}
+                                                <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isAttendanceOpen && "rotate-180", isCollapsed && "hidden")}/>
+                                            </Button>
+                                        </div>
+                                  </TooltipTrigger>
+                                  {isCollapsed && <TooltipContent side="right">{link.trigger.tooltip}</TooltipContent>}
+                              </Tooltip>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent asChild className={cn(isCollapsed && "hidden")}>
+                              <div className="flex flex-col gap-2 mt-1 w-full px-8">
+                                  {link.content.map(subLink => (
+                                    <Link key={subLink.href} href={subLink.href} className={cn("rounded-md px-3 py-2 text-sm hover:bg-muted", pathname === subLink.href ? "bg-muted font-semibold text-primary" : "text-muted-foreground")}>
+                                        {subLink.label}
+                                    </Link>
+                                  ))}
+                              </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                    )
+                 }
+                return (
+                    <Tooltip key={link.href}>
+                        <TooltipTrigger asChild>
+                             <Link href={link.href!} 
+                                 className={cn(
+                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                                    pathname === link.href && "text-primary bg-muted",
+                                    isCollapsed && "justify-center"
+                                )}>
+                                <link.icon className="h-5 w-5" />
+                                {!isCollapsed && <span>{link.label}</span>}
+                            </Link>
+                        </TooltipTrigger>
+                         {isCollapsed && <TooltipContent side="right">{link.tooltip}</TooltipContent>}
+                    </Tooltip>
+                )
+            })}
+        </nav>
+    </TooltipProvider>
+  );
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-        <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-          <Link
-            href="/"
-            className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-          >
-            <Home className="h-4 w-4 transition-all group-hover:scale-110" />
-            <span className="sr-only">Home</span>
-          </Link>
-          {navLinks.map((link, index) => {
-            if (link.separator) {
-              return <DropdownMenuSeparator key={index} className="my-2" />;
-            }
-            if (link.type === 'collapsible') {
-               return (
-                <Collapsible key={index} open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} className="flex flex-col items-center gap-1">
-                  <CollapsibleTrigger asChild>
-                     <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9">
-                        <link.trigger.icon className="h-5 w-5" />
-                        <span className="sr-only">{link.trigger.label}</span>
-                     </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent asChild>
-                      <div className="flex flex-col items-center gap-2 mt-1">
-                          {link.content.map(subLink => (
-                            <Link key={subLink.href} href={subLink.href} className="text-muted-foreground text-xs hover:text-foreground">
-                                {subLink.label}
-                            </Link>
-                          ))}
-                      </div>
-                  </CollapsibleContent>
-                </Collapsible>
-               )
-            }
-            return (
-              <Link key={link.href} href={link.href!} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
-                  <link.icon className="h-5 w-5" />
-                  <span className="sr-only">{link.label}</span>
-              </Link>
-            )
-          })}
-        </nav>
-      </aside>
-      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+        <aside className={cn(
+                "fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex transition-all",
+                isCollapsed ? "w-16" : "w-60"
+            )}>
+            <div className='flex-grow'>
+                <NavContent isCollapsed={isCollapsed} />
+            </div>
+            <div className="mt-auto flex flex-col items-center gap-4 px-2 py-4 border-t">
+                 <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(!isCollapsed)}>
+                    {isCollapsed ? <PanelRightClose /> : <PanelLeftClose />}
+                </Button>
+            </div>
+        </aside>
+
+      <div className={cn("flex flex-col sm:gap-4 sm:py-4 transition-all", isCollapsed ? "sm:pl-16" : "sm:pl-60")}>
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
           <Sheet>
             <SheetTrigger asChild>
@@ -152,45 +202,8 @@ export default function AdminLayout({
                 <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="sm:max-w-xs">
-              <nav className="grid gap-6 text-lg font-medium">
-              <Link
-                href="/"
-                className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
-              >
-                <Home className="h-5 w-5 transition-all group-hover:scale-110" />
-                <span className="sr-only">Home</span>
-              </Link>
-              {navLinks.map((link, index) => {
-                 if (link.separator) {
-                    return <DropdownMenuSeparator key={index} />;
-                 }
-                 if (link.type === 'collapsible') {
-                    return (
-                        <Collapsible key={index} className="grid gap-2">
-                            <CollapsibleTrigger className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-                                <link.trigger.icon className="h-5 w-5" />
-                                {link.trigger.label}
-                                <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isAttendanceOpen && "rotate-180")}/>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent className="grid gap-4 pl-11">
-                                {link.content.map(subLink => (
-                                    <Link key={subLink.href} href={subLink.href} className={cn("text-muted-foreground hover:text-foreground", pathname === subLink.href && "text-foreground font-semibold")}>
-                                        {subLink.label}
-                                    </Link>
-                                ))}
-                            </CollapsibleContent>
-                        </Collapsible>
-                    )
-                 }
-                 return (
-                    <Link key={link.href} href={link.href!} className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-                    <link.icon className="h-5 w-5" />
-                    {link.label}
-                    </Link>
-                 )
-                })}
-              </nav>
+            <SheetContent side="left" className="sm:max-w-xs" >
+              <NavContent isCollapsed={false} />
             </SheetContent>
           </Sheet>
           <div className="relative ml-auto flex-1 md:grow-0"></div>
@@ -230,3 +243,5 @@ export default function AdminLayout({
     </div>
   );
 }
+
+    
