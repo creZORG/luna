@@ -20,6 +20,7 @@ export function middleware(request: NextRequest) {
     manufacturing: '/manufacturing',
     sales: '/sales',
     operations: '/operations',
+    'digital-marketing': '/digital-marketing',
   };
 
   const portalPath = portalMap[currentHost];
@@ -42,7 +43,7 @@ export function middleware(request: NextRequest) {
 
   // Allow requests for the main marketing site and handle localhost.
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:9002';
-  if (hostname === rootDomain || hostname === 'localhost') {
+  if (hostname.includes(rootDomain) || hostname.includes('localhost')) {
      return NextResponse.next();
   }
 
