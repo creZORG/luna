@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity } from 'lucide-react';
+import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -45,7 +45,7 @@ export default function AdminLayout({
 
   const navLinks = [
     { href: "/admin/dashboard", icon: BarChart2, label: "Dashboard" },
-    { href: "/admin/products", icon: ShoppingCart, label: "Products" },
+    { href: "/admin/products", icon: ShoppingCart, label: "Product Pricing" },
     { href: "/admin/media", icon: ImageIcon, label: "Media" },
     { separator: true },
     { href: "/finance", icon: Briefcase, label: "Finance" },

@@ -1,5 +1,5 @@
 import { ProductForm } from "../_components/product-form";
 
 export default function NewProductPage() {
-    return <ProductForm />
+    return <ProductForm role="operations" />
 }

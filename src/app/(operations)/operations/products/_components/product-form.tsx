@@ -51,13 +51,13 @@ const formSchema = z.object({
   imageId: z.string().min(2, 'Image ID is too short'),
   sizes: z.array(z.object({
     size: z.string().min(1, "Size cannot be empty"),
-    price: z.coerce.number().min(0, "Price must be a positive number"),
+    price: z.coerce.number().optional(), // Price is now optional
   })).min(1, "Add at least one size"),
 });
 
 export type ProductFormData = z.infer<typeof formSchema>;
 
-export function ProductForm() {
+export function ProductForm({ role = "operations" }: { role?: "admin" | "operations" }) {
   const form = useForm<ProductFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -67,7 +67,7 @@ export function ProductForm() {
       shortDescription: '',
       scentProfile: [],
       features: [],
-      sizes: [{ size: '', price: 0 }],
+      sizes: [{ size: '' }],
       keyBenefits: '',
       ingredients: '',
       directions: '',
@@ -85,12 +85,20 @@ export function ProductForm() {
 
   async function onSubmit(values: ProductFormData) {
     try {
-      await productService.createProduct(values);
+      const productData = {
+        ...values,
+        sizes: values.sizes.map(s => ({
+          size: s.size,
+          price: role === 'admin' ? s.price || 0 : 0 // Set price to 0 if not admin
+        }))
+      };
+
+      await productService.createProduct(productData);
       toast({
         title: 'Product Saved!',
         description: `The product "${values.name}" has been created successfully.`,
       });
-      router.push('/admin/products');
+      router.push('/operations/products');
     } catch (error) {
       console.error("Error creating product:", error);
       toast({
@@ -179,13 +187,13 @@ export function ProductForm() {
             </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle>Sizing & Pricing</CardTitle>
-                    <CardDescription>Add the different sizes and prices for this product.</CardDescription>
+                    <CardTitle>Sizing {role === 'admin' && '& Pricing'}</CardTitle>
+                    <CardDescription>Add the different sizes {role === 'admin' && 'and prices'} for this product.</CardDescription>
                 </CardHeader>
                 <CardContent>
                 <div>
                   {fields.map((field, index) => (
-                    <div key={field.id} className="grid grid-cols-3 gap-4 items-start mb-4">
+                    <div key={field.id} className={`grid ${role === 'admin' ? 'grid-cols-3' : 'grid-cols-2'} gap-4 items-start mb-4`}>
                       <FormField
                         control={form.control}
                         name={`sizes.${index}.size`}
@@ -199,7 +207,7 @@ export function ProductForm() {
                           </FormItem>
                         )}
                       />
-                      <FormField
+                      {role === 'admin' && <FormField
                         control={form.control}
                         name={`sizes.${index}.price`}
                         render={({ field }) => (
@@ -211,7 +219,7 @@ export function ProductForm() {
                             <FormMessage />
                           </FormItem>
                         )}
-                      />
+                      />}
                       <Button
                         type="button"
                         variant="destructive"
@@ -228,7 +236,7 @@ export function ProductForm() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => append({ size: "", price: 0 })}
+                    onClick={() => append({ size: "" })}
                   >
                     Add Size
                   </Button>
