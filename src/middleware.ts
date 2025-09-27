@@ -11,12 +11,8 @@ export function middleware(request: NextRequest) {
     return new Response(null, { status: 400, statusText: "No hostname found in request headers" });
   }
 
-  // Prevent rewriting for auth and public asset paths
-  if (pathname.startsWith('/login') || pathname.startsWith('/access-denied') || pathname.startsWith('/verify-email')) {
-    return NextResponse.next();
-  }
-
-  const currentHost = hostname.split('.')[0];
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'luna.co.ke';
+  const isMainDomain = hostname === rootDomain || hostname === `www.${rootDomain}`;
 
   const portalMap: { [key: string]: string } = {
     staff: '/admin',
@@ -28,33 +24,29 @@ export function middleware(request: NextRequest) {
     'digital-marketing': '/digital-marketing',
   };
 
+  const currentHost = hostname.split('.')[0];
   const portalPath = portalMap[currentHost];
 
+  // If on a portal subdomain, rewrite the path
   if (portalPath) {
-    // If the user is at the root of a subdomain, redirect to the portal's main page.
-    if (pathname === '/') {
-      let redirectUrl = new URL(portalPath, request.url);
-      // For the main admin portal, we redirect specifically to the dashboard.
-      if (portalPath === '/admin') {
-        redirectUrl = new URL('/admin/dashboard', request.url);
-      }
-      return NextResponse.redirect(redirectUrl);
-    }
-    
-    // Check if the path already starts with the portal path to avoid duplication
     if (!pathname.startsWith(portalPath)) {
+        // Allow access to auth pages on subdomains
+        if (pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied')) {
+            return NextResponse.next();
+        }
         url.pathname = `${portalPath}${pathname}`;
         return NextResponse.rewrite(url);
     }
+  } 
+  // If on the main domain, block access to portal paths
+  else if (isMainDomain) {
+      const isPortalPath = Object.values(portalMap).some(p => pathname.startsWith(p));
+      if (isPortalPath) {
+          url.pathname = '/';
+          return NextResponse.redirect(url);
+      }
   }
 
-  // Allow requests for the main marketing site and handle localhost.
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:9002';
-  if (hostname.includes(rootDomain) || hostname.includes('localhost')) {
-     return NextResponse.next();
-  }
-
-  // Fallback for any other cases.
   return NextResponse.next();
 }
 

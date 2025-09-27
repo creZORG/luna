@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, PanelRightClose } from 'lucide-react';
+import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
@@ -158,17 +157,19 @@ export default function AdminLayout({
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(true);
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && !user) {
+        router.push('/login');
+    }
+  }, [user, loading, router]);
+
+
+  if (loading || !user) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />
       </div>
     );
-  }
-
-  if (!user) {
-    router.push('/login');
-    return null;
   }
 
   const handleLogout = async () => {
@@ -181,7 +182,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen w-full flex-col">
        <aside className={cn(
-            "fixed inset-y-0 left-0 z-10 flex-col border-r bg-background/80 backdrop-blur-sm transition-all duration-300 ease-in-out shadow-lg",
+            "fixed inset-y-0 left-0 z-40 flex-col border-r bg-background/80 backdrop-blur-sm transition-all duration-300 ease-in-out shadow-lg",
             "top-4 bottom-4 rounded-r-xl",
             isCollapsed ? "w-20" : "w-60"
         )}>
@@ -193,7 +194,7 @@ export default function AdminLayout({
                     </Link>
                 </div>
                 <div className={cn("flex-1 overflow-auto py-2", isCollapsed && "flex flex-col items-center")}>
-                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute -right-4 top-1/2 -translate-y-1/2 bg-background hover:bg-muted border rounded-full h-8 w-8">
+                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute -right-4 top-1/2 -translate-y-1/2 bg-background hover:bg-muted border rounded-full h-8 w-8 z-50">
                         {isCollapsed ? <PanelRight /> : <PanelLeftClose />}
                     </Button>
                     <NavContent isCollapsed={isCollapsed} />
@@ -238,7 +239,7 @@ export default function AdminLayout({
         </header>
         <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8">
             <PendingProfileModal isOpen={isProfilePending} />
-            {children}
+            {isProfilePending ? null : children}
         </main>
       </div>
     </div>
