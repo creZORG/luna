@@ -39,8 +39,8 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371e3; // metres
   const φ1 = (lat1 * Math.PI) / 180;
   const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = (lat2 - lat1) * Math.PI) / 180;
-  const Δλ = (lon2 - lon1) * Math.PI) / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
 
   const a =
     Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
@@ -230,5 +230,3 @@ export function RollCallModal({ isOpen, onClockInSuccess, onDayOff }: RollCallMo
     </Dialog>
   );
 }
-
-    
