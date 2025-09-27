@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -40,29 +39,115 @@ function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
         </DialogHeader>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 const navLinks = [
-    { href: "/admin/dashboard", icon: BarChart2, label: "Dashboard", tooltip: "Dashboard" },
-    { href: "/admin/products", icon: ShoppingCart, label: "Product Pricing", tooltip: "Product Pricing" },
-    { href: "/admin/media", icon: ImageIcon, label: "Media", tooltip: "Media" },
-    { href: "/admin/store-items", icon: Store, label: "Store Items", tooltip: "Store Items" },
-    { type: 'collapsible', 
-      trigger: { icon: ClipboardCheck, label: "Attendance", tooltip: "Attendance" },
-      content: [
-        { href: "/admin/attendance/check-in", label: "Check-in" },
-        { href: "/admin/attendance/overview", label: "Daily Overview" },
-      ]
-    },
+    { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard' },
+    { href: '/admin/media', icon: ImageIcon, label: 'Media' },
     { separator: true },
-    { href: "/finance", icon: Briefcase, label: "Finance", tooltip: "Finance" },
-    { href: "/manufacturing", icon: Factory, label: "Manufacturing", tooltip: "Manufacturing" },
-    { href: "/sales", icon: Target, label: "Sales", tooltip: "Sales" },
-    { href: "/operations", icon: Activity, label: "Operations", tooltip: "Operations" },
-    { href: "/digital-marketing", icon: Briefcase, label: "Marketing", tooltip: "Marketing" },
+    {
+      label: 'Store Management',
+      icon: Store,
+      type: 'collapsible',
+      subLinks: [
+        { href: '/operations/products', icon: Briefcase, label: 'Products' },
+        { href: '/admin/products', icon: Briefcase, label: 'Pricing' },
+        { href: '/admin/store-items', icon: Factory, label: 'Store Items' },
+      ],
+    },
+    {
+      label: 'Staff Portals',
+      icon: ShieldAlert,
+      type: 'collapsible',
+      subLinks: [
+        { href: '/sales', icon: Target, label: 'Sales' },
+        { href: '/operations', icon: Activity, label: 'Operations' },
+        { href: '/manufacturing', icon: Factory, label: 'Manufacturing' },
+        { href: '/finance', icon: Briefcase, label: 'Finance' },
+        { href: '/digital-marketing', icon: Target, label: 'Digital Marketing' },
+      ],
+    },
+     {
+      label: 'Human Resources',
+      icon: UserCog,
+      type: 'collapsible',
+      subLinks: [
+        { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance' },
+        { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview' },
+        { href: '/admin/staff', icon: UserCog, label: 'Staff Management' },
+      ],
+    },
 ];
 
+function NavContent({ isCollapsed }: { isCollapsed: boolean }) {
+    const pathname = usePathname();
+
+    return (
+         <div className={cn("flex flex-col justify-center flex-grow", isCollapsed ? "items-center" : "")}>
+            <TooltipProvider>
+                 <nav className="grid gap-1 px-2">
+                    {navLinks.map((link, index) => {
+                         if (link.separator) {
+                            return <Separator key={index} className="my-2" />;
+                         }
+                         if (link.type === 'collapsible') {
+                            return (
+                                <Collapsible key={index} defaultOpen={link.subLinks.some(sub => pathname.startsWith(sub.href))}>
+                                     <CollapsibleTrigger asChild>
+                                        <Button variant="ghost" className={cn("w-full justify-start", isCollapsed && "justify-center w-10 h-10 p-0")}>
+                                            <link.icon className="h-5 w-5" />
+                                            {!isCollapsed && <span className="ml-4">{link.label}</span>}
+                                            {!isCollapsed && <ChevronDown className="ml-auto h-4 w-4" />}
+                                        </Button>
+                                    </CollapsibleTrigger>
+                                     <CollapsibleContent className="space-y-1">
+                                        {link.subLinks.map(subLink => (
+                                             <Tooltip key={subLink.href} delayDuration={0}>
+                                                <TooltipTrigger asChild>
+                                                     <Link
+                                                        href={subLink.href}
+                                                        className={cn(
+                                                            'flex items-center gap-4 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                                                            pathname.startsWith(subLink.href) && 'bg-muted text-primary',
+                                                            isCollapsed && 'w-10 h-10 justify-center p-0'
+                                                        )}
+                                                        >
+                                                        <subLink.icon className="h-5 w-5" />
+                                                         {!isCollapsed && subLink.label}
+                                                    </Link>
+                                                </TooltipTrigger>
+                                                 {isCollapsed && <TooltipContent side="right"><p>{subLink.label}</p></TooltipContent>}
+                                            </Tooltip>
+                                        ))}
+                                    </CollapsibleContent>
+                                </Collapsible>
+                            );
+                         }
+                        return (
+                             <Tooltip key={link.href} delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                     <Link
+                                        href={link.href!}
+                                        className={cn(
+                                            'flex items-center gap-4 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                                            pathname.startsWith(link.href!) && 'bg-muted text-primary',
+                                            isCollapsed && 'w-10 h-10 justify-center p-0'
+                                        )}
+                                        >
+                                        <link.icon className="h-5 w-5" />
+                                         {!isCollapsed && link.label}
+                                    </Link>
+                                </TooltipTrigger>
+                                 {isCollapsed && <TooltipContent side="right"><p>{link.label}</p></TooltipContent>}
+                            </Tooltip>
+                        );
+                    })}
+                </nav>
+            </TooltipProvider>
+        </div>
+    );
+}
 
 export default function AdminLayout({
   children,
@@ -71,16 +156,7 @@ export default function AdminLayout({
 }) {
   const { user, userProfile, loading, isProfilePending } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-  const [isAttendanceOpen, setIsAttendanceOpen] = useState(pathname.includes('/admin/attendance'));
   const [isCollapsed, setIsCollapsed] = useState(true);
-
-   useEffect(() => {
-    const isAttendancePath = pathname.includes('/admin/attendance');
-    if (isAttendancePath) {
-      setIsAttendanceOpen(true);
-    }
-  }, [pathname]);
 
   if (loading) {
     return (
@@ -95,124 +171,47 @@ export default function AdminLayout({
     return null;
   }
 
-  if (isProfilePending) {
-    return <PendingProfileModal isOpen={true} />
-  }
-  
-  if (!userProfile?.roles?.includes('admin')) {
-    router.push('/access-denied');
-    return null;
-  }
-
   const handleLogout = async () => {
     await authService.logout();
     router.push('/login');
   };
-
-  const NavContent = ({ isCollapsed }: { isCollapsed: boolean }) => (
-     <TooltipProvider>
-        <nav className="flex flex-col gap-2 px-2 py-4">
-            {navLinks.map((link, index) => {
-                 if (link.separator) {
-                    return <Separator key={index} className="my-2" />;
-                 }
-                 if (link.type === 'collapsible') {
-                    return (
-                        <Collapsible key={index} open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} className="flex flex-col items-center gap-1">
-                          <CollapsibleTrigger asChild>
-                              <Tooltip>
-                                  <TooltipTrigger asChild>
-                                        <div className={cn("w-full", !isCollapsed && "px-3")}>
-                                            <Button variant={pathname.includes('/admin/attendance') ? 'secondary' : 'ghost'} size={isCollapsed ? "icon" : "default"} className={cn("w-full flex gap-3", isCollapsed ? "justify-center" : "justify-start")}>
-                                                <link.trigger.icon className="h-5 w-5" />
-                                                {!isCollapsed && <span>{link.trigger.label}</span>}
-                                                <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isAttendanceOpen && "rotate-180", isCollapsed && "hidden")}/>
-                                            </Button>
-                                        </div>
-                                  </TooltipTrigger>
-                                  {isCollapsed && <TooltipContent side="right">{link.trigger.tooltip}</TooltipContent>}
-                              </Tooltip>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent asChild className={cn(isCollapsed && "hidden")}>
-                              <div className="flex flex-col gap-2 mt-1 w-full px-8">
-                                  {link.content.map(subLink => (
-                                    <Link key={subLink.href} href={subLink.href} className={cn("rounded-md px-3 py-2 text-sm hover:bg-muted", pathname === subLink.href ? "bg-muted font-semibold text-primary" : "text-muted-foreground")}>
-                                        {subLink.label}
-                                    </Link>
-                                  ))}
-                              </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                    )
-                 }
-                return (
-                    <Tooltip key={link.href}>
-                        <TooltipTrigger asChild>
-                             <Link href={link.href!} 
-                                 className={cn(
-                                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                                    pathname === link.href && "text-primary bg-muted",
-                                    isCollapsed && "justify-center"
-                                )}>
-                                <link.icon className="h-5 w-5" />
-                                {!isCollapsed && <span>{link.label}</span>}
-                            </Link>
-                        </TooltipTrigger>
-                         {isCollapsed && <TooltipContent side="right">{link.tooltip}</TooltipContent>}
-                    </Tooltip>
-                )
-            })}
-        </nav>
-    </TooltipProvider>
-  );
+  
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
   return (
-    <div className="min-h-screen w-full bg-muted/40">
-      <aside 
-        className={cn(
-            "fixed inset-y-4 left-4 z-10 hidden flex-col justify-center sm:flex transition-all duration-300 backdrop-blur-sm bg-background/80 rounded-xl shadow-lg border",
-            isCollapsed ? "w-20" : "w-64"
-        )}
-      >
-        <div className="absolute top-0 left-0 right-0 flex flex-col items-center gap-4 px-2 py-4 border-b">
-              <Link
-                href="/"
-                className={cn(
-                    "flex items-center gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary justify-center h-8 w-8"
-                )}
-            >
-                <Home className="h-5 w-5" />
-                <span className="sr-only">Home</span>
-            </Link>
-              <Button variant="ghost" size="icon" className='h-8 w-8' onClick={() => setIsCollapsed(!isCollapsed)}>
-                {isCollapsed ? <PanelRightClose /> : <PanelLeftClose />}
-            </Button>
-        </div>
-        <div className='overflow-y-auto'>
-            <NavContent isCollapsed={isCollapsed} />
-        </div>
+    <div className="flex min-h-screen w-full flex-col">
+       <aside className={cn(
+            "fixed inset-y-0 left-0 z-10 flex-col border-r bg-background/80 backdrop-blur-sm transition-all duration-300 ease-in-out shadow-lg",
+            "top-4 bottom-4 rounded-r-xl",
+            isCollapsed ? "w-20" : "w-60"
+        )}>
+           <div className="flex h-full max-h-screen flex-col gap-2">
+                <div className="flex h-14 items-center justify-center border-b px-4 lg:h-[60px] lg:px-6">
+                    <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
+                        <Home className="h-6 w-6" />
+                        <span className={cn(isCollapsed && "hidden")}>Home</span>
+                    </Link>
+                </div>
+                <div className={cn("flex-1 overflow-auto py-2", isCollapsed && "flex flex-col items-center")}>
+                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute -right-4 top-1/2 -translate-y-1/2 bg-background hover:bg-muted border rounded-full h-8 w-8">
+                        {isCollapsed ? <PanelRight /> : <PanelLeftClose />}
+                    </Button>
+                    <NavContent isCollapsed={isCollapsed} />
+                </div>
+            </div>
       </aside>
 
-      <div className={cn("flex flex-col sm:gap-4 sm:py-4 transition-all duration-300", isCollapsed ? "sm:pl-28" : "sm:pl-72 sm:pr-4")}>
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button size="icon" variant="outline" className="sm:hidden">
-                <PanelLeft className="h-5 w-5" />
-                <span className="sr-only">Toggle Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="sm:max-w-xs" >
-              <NavContent isCollapsed={false} />
-            </SheetContent>
-          </Sheet>
-          <div className="relative ml-auto flex-1 md:grow-0"></div>
+      <div className={cn("flex flex-col transition-all duration-300 ease-in-out", isCollapsed ? "sm:pl-20" : "sm:pl-60")}>
+        <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
+          <div className="flex-1">
+             {/* Can add breadcrumbs or page title here */}
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="icon"
-                className="overflow-hidden rounded-full"
+                className="rounded-full"
               >
                 <Image
                   src={`https://i.pravatar.cc/36?u=${user.uid}`}
@@ -221,6 +220,7 @@ export default function AdminLayout({
                   alt="Avatar"
                   className="overflow-hidden rounded-full"
                 />
+                <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -236,8 +236,9 @@ export default function AdminLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-          {children}
+        <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8">
+            <PendingProfileModal isOpen={isProfilePending} />
+            {children}
         </main>
       </div>
     </div>
