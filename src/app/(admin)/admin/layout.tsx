@@ -167,14 +167,11 @@ export default function AdminLayout({
   );
 
   return (
-    <div className={cn(
-      "min-h-screen w-full bg-muted/40 transition-all", 
-      isCollapsed ? "sm:pl-20" : "sm:pl-64"
-    )}>
+    <div className="min-h-screen w-full bg-muted/40">
       <aside 
         className={cn(
-            "fixed top-4 left-4 bottom-4 z-10 hidden flex-col sm:flex transition-all duration-300 backdrop-blur-sm bg-background/80 rounded-xl shadow-lg border",
-            isCollapsed ? "w-16" : "w-60"
+            "fixed inset-y-4 left-4 z-10 hidden flex-col sm:flex transition-all duration-300 backdrop-blur-sm bg-background/80 rounded-xl shadow-lg border",
+            isCollapsed ? "w-20" : "w-64"
         )}
       >
         <div className="flex flex-col items-center gap-4 px-2 py-4 border-b">
@@ -196,7 +193,7 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pr-4">
+      <div className={cn("flex flex-col sm:gap-4 sm:py-4 transition-all duration-300", isCollapsed ? "sm:pl-28" : "sm:pl-72 sm:pr-4")}>
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
           <Sheet>
             <SheetTrigger asChild>
@@ -246,5 +243,3 @@ export default function AdminLayout({
     </div>
   );
 }
-
-    
