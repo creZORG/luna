@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { Menu, Moon, Home, Mail, Package } from 'lucide-react';
+import { Menu, Moon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
@@ -37,7 +37,7 @@ export function Header() {
     >
       <div className="container mx-auto px-4">
         <div className={cn(
-            'flex h-16 items-center justify-between px-6 rounded-full transition-all duration-300',
+            'flex h-16 items-center justify-between transition-all duration-300 long-pill',
             isScrolled ? 'bg-background/80 backdrop-blur-sm shadow-md' : 'bg-background/50'
           )}>
 
