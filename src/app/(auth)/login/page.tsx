@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -18,6 +17,7 @@ import { authService } from '@/services/auth.service';
 import { Loader } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { userService } from '@/services/user.service';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -124,6 +124,12 @@ export default function LoginPage() {
               {isLoading ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : 'Login'}
             </Button>
           </form>
+           <div className="mt-4 text-center text-sm">
+            Don't have an account?{" "}
+            <Link href="/signup" className="underline">
+              Sign up
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
