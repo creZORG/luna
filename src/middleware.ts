@@ -11,6 +11,11 @@ export function middleware(request: NextRequest) {
     return new Response(null, { status: 400, statusText: "No hostname found in request headers" });
   }
 
+  // Prevent rewriting for the login page
+  if (pathname.startsWith('/login')) {
+    return NextResponse.next();
+  }
+
   const currentHost = hostname.split('.')[0];
 
   const portalMap: { [key: string]: string } = {
