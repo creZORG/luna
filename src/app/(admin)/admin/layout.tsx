@@ -169,20 +169,21 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
         <aside className={cn(
-                "fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-background sm:flex transition-all",
+                "fixed top-4 left-4 z-10 hidden flex-col sm:flex transition-all duration-300 backdrop-blur-sm bg-background/80 rounded-xl shadow-lg border",
+                "h-[calc(100vh-2rem)]",
                 isCollapsed ? "w-16" : "w-60"
             )}>
             <div className="flex flex-col items-center gap-4 px-2 py-4 border-b">
                  <Link
                     href="/"
                     className={cn(
-                        "flex items-center gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary justify-center"
+                        "flex items-center gap-3 rounded-lg text-muted-foreground transition-all hover:text-primary justify-center h-8 w-8"
                     )}
                 >
                     <Home className="h-5 w-5" />
                     <span className="sr-only">Home</span>
                 </Link>
-                 <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(!isCollapsed)}>
+                 <Button variant="ghost" size="icon" className='h-8 w-8' onClick={() => setIsCollapsed(!isCollapsed)}>
                     {isCollapsed ? <PanelRightClose /> : <PanelLeftClose />}
                 </Button>
             </div>
@@ -191,7 +192,7 @@ export default function AdminLayout({
             </div>
         </aside>
 
-      <div className={cn("flex flex-col sm:gap-4 sm:py-4 transition-all", isCollapsed ? "sm:pl-16" : "sm:pl-60")}>
+      <div className={cn("flex flex-col sm:gap-4 sm:py-4 transition-all", isCollapsed ? "sm:pl-24" : "sm:pl-[17rem]")}>
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
           <Sheet>
             <SheetTrigger asChild>
@@ -241,9 +242,3 @@ export default function AdminLayout({
     </div>
   );
 }
-
-    
-
-    
-
-    
