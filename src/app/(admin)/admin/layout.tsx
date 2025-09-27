@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon } from 'lucide-react';
+import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -43,6 +43,17 @@ export default function AdminLayout({
     router.push('/login');
   };
 
+  const navLinks = [
+    { href: "/admin/dashboard", icon: BarChart2, label: "Dashboard" },
+    { href: "/admin/products", icon: ShoppingCart, label: "Products" },
+    { href: "/admin/media", icon: ImageIcon, label: "Media" },
+    { separator: true },
+    { href: "/finance", icon: Briefcase, label: "Finance" },
+    { href: "/manufacturing", icon: Factory, label: "Manufacturing" },
+    { href: "/sales", icon: Target, label: "Sales" },
+    { href: "/operations", icon: Activity, label: "Operations" },
+  ];
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
@@ -54,18 +65,13 @@ export default function AdminLayout({
             <Home className="h-4 w-4 transition-all group-hover:scale-110" />
             <span className="sr-only">Home</span>
           </Link>
-          <Link href="/admin/dashboard" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
-              <BarChart2 className="h-5 w-5" />
-              <span className="sr-only">Dashboard</span>
-          </Link>
-          <Link href="/admin/products" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="sr-only">Products</span>
-          </Link>
-           <Link href="/admin/media" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
-              <ImageIcon className="h-5 w-5" />
-              <span className="sr-only">Media</span>
-          </Link>
+          {navLinks.map((link, index) => 
+            link.separator ? <DropdownMenuSeparator key={index} className="my-2" /> : (
+            <Link key={link.href} href={link.href!} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
+                <link.icon className="h-5 w-5" />
+                <span className="sr-only">{link.label}</span>
+            </Link>
+          ))}
         </nav>
       </aside>
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
@@ -86,18 +92,13 @@ export default function AdminLayout({
                 <Home className="h-5 w-5 transition-all group-hover:scale-110" />
                 <span className="sr-only">Home</span>
               </Link>
-              <Link href="/admin/dashboard" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-                <BarChart2 className="h-5 w-5" />
-                Dashboard
-              </Link>
-              <Link href="/admin/products" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-                <ShoppingCart className="h-5 w-5" />
-                Products
-              </Link>
-               <Link href="/admin/media" className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-                <ImageIcon className="h-5 w-5" />
-                Media
-              </Link>
+              {navLinks.map((link, index) => 
+                link.separator ? <DropdownMenuSeparator key={index} /> : (
+                <Link key={link.href} href={link.href!} className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+                  <link.icon className="h-5 w-5" />
+                  {link.label}
+                </Link>
+              ))}
               </nav>
             </SheetContent>
           </Sheet>
