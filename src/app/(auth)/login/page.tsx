@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { authService } from '@/services/auth.service';
 import { Loader } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { userService } from '@/services/user.service';
+import { userService, UserProfile } from '@/services/user.service';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -35,10 +35,8 @@ export default function LoginPage() {
     if (roles.includes('finance')) return '/finance';
     if (roles.includes('manufacturing')) return '/manufacturing';
     if (roles.includes('digital-marketing')) return '/digital-marketing';
-    // If no roles, they will be shown a pending modal by the layout, 
-    // but we can default the redirect to a safe place.
-    return '/admin/dashboard'; 
-  }
+    return '/admin/dashboard';
+  };
 
   if (loading) {
     return (
@@ -49,32 +47,40 @@ export default function LoginPage() {
   }
 
   if (user && userProfile) {
-     // If profile is pending, the layout will handle the modal.
-     // We can still redirect to a default path.
+    if (!userProfile.emailVerified) {
+      router.push('/verify-email');
+      return null;
+    }
      if(isProfilePending) {
         router.push('/admin/dashboard'); 
         return null;
      }
-
     router.push(getRedirectPath(userProfile.roles));
     return null;
   }
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const user = await authService.login(email, password);
-      // The useAuth hook will handle profile fetching and redirection
-      // after the auth state changes. We can just show a success message.
-      toast({
-        title: 'Login Successful',
-        description: "Welcome back! Redirecting...",
-      });
-       // The onAuthStateChanged listener in AuthProvider will trigger the redirect.
-       // No need to manually push here.
-
+      const userCredential = await authService.login(email, password);
+      const profile = await userService.getUserProfile(userCredential.uid);
+      
+      // onAuthStateChanged in useAuth will handle the final redirect.
+      // We just need to check for email verification status here to initiate flow.
+      if (profile && !profile.emailVerified) {
+         await authService.sendVerificationCode(userCredential.uid, userCredential.email!);
+         toast({
+            title: 'Verification Required',
+            description: 'Please check your email for a verification code.',
+         });
+         router.push('/verify-email');
+      } else {
+        toast({
+          title: 'Login Successful',
+          description: "Welcome back! Redirecting...",
+        });
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',

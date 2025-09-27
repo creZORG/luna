@@ -5,6 +5,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { userService, UserProfile } from '@/services/user.service';
+import { usePathname, useRouter } from 'next/navigation';
 
 const auth = getAuth(app);
 
@@ -22,19 +23,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isProfilePending, setIsProfilePending] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true);
       if (user) {
         setUser(user);
         let profile = await userService.getUserProfile(user.uid);
         if (!profile) {
-          // If no profile exists, create a default one for the admin to configure.
           profile = await userService.createDefaultUserProfile(user);
         }
         setUserProfile(profile);
 
-        // Check if the user has any roles assigned
+        if (!profile.emailVerified && pathname !== '/verify-email') {
+            router.push('/verify-email');
+        }
+
         if (!profile.roles || profile.roles.length === 0) {
           setIsProfilePending(true);
         } else {
@@ -50,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [pathname, router]);
 
   return (
     <AuthContext.Provider value={{ user, userProfile, loading, isProfilePending }}>

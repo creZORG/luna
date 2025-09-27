@@ -8,6 +8,7 @@ export interface UserProfile {
     email: string;
     displayName: string;
     roles: ('admin' | 'sales' | 'operations' | 'finance' | 'manufacturing' | 'digital-marketing')[];
+    emailVerified: boolean;
 }
 
 class UserService {
@@ -34,6 +35,7 @@ class UserService {
             email: user.email || '',
             displayName: user.displayName || user.email?.split('@')[0] || 'New User',
             roles: [], // Start with no roles
+            emailVerified: false, // Email is not verified on creation
         };
 
         try {
