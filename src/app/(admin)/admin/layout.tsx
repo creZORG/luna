@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, PanelRightClose } from 'lucide-react';
+import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,9 +19,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import { authService } from '@/services/auth.service';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
+import { UserProfile } from '@/services/user.service';
 
 
 function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
@@ -34,7 +35,7 @@ function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
           </div>
           <DialogTitle className="text-center text-2xl">Account Setup Pending</DialogTitle>
           <DialogDescription className="text-center">
-            Your profile has been created, but an administrator has not assigned any roles to you yet. Please contact your administrator to gain access.
+            Your profile has been created, but an administrator has not assigned any roles to you yet. Please contact your administrator to gain access to the dashboard.
           </DialogDescription>
         </DialogHeader>
       </DialogContent>
@@ -42,46 +43,61 @@ function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
   );
 }
 
-const navLinks = [
-    { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard' },
-    { href: '/admin/media', icon: ImageIcon, label: 'Media' },
-    { separator: true },
-    {
-      label: 'Store Management',
-      icon: Store,
-      type: 'collapsible',
-      subLinks: [
-        { href: '/operations/products', icon: Briefcase, label: 'Products' },
-        { href: '/admin/products', icon: Briefcase, label: 'Pricing' },
-        { href: '/admin/store-items', icon: Factory, label: 'Store Items' },
-      ],
-    },
-    {
-      label: 'Staff Portals',
-      icon: ShieldAlert,
-      type: 'collapsible',
-      subLinks: [
-        { href: '/sales', icon: Target, label: 'Sales' },
-        { href: '/operations', icon: Activity, label: 'Operations' },
-        { href: '/manufacturing', icon: Factory, label: 'Manufacturing' },
-        { href: '/finance', icon: Briefcase, label: 'Finance' },
-        { href: '/digital-marketing', icon: Target, label: 'Digital Marketing' },
-      ],
-    },
-     {
-      label: 'Human Resources',
-      icon: UserCog,
-      type: 'collapsible',
-      subLinks: [
-        { href: '/admin/attendance/overview', icon: ClipboardCheck, label: 'My Attendance' },
-        { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview' },
-        { href: '/admin/staff', icon: UserCog, label: 'Staff Management' },
-      ],
-    },
-];
+const getNavLinks = (userProfile: UserProfile | null) => {
+    const isAdminOnly = userProfile?.roles.length === 1 && userProfile.roles.includes('admin');
 
-function NavContent({ isCollapsed }: { isCollapsed: boolean }) {
+    const allLinks = [
+        { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', id: 'dashboard' },
+        { href: '/admin/media', icon: ImageIcon, label: 'Media', id: 'media' },
+        { separator: true, id: 'sep1' },
+        {
+          label: 'Store Management',
+          icon: Store,
+          type: 'collapsible',
+          id: 'store-management',
+          subLinks: [
+            { href: '/operations/products', icon: Briefcase, label: 'Products' },
+            { href: '/admin/products', icon: Briefcase, label: 'Pricing' },
+            { href: '/admin/store-items', icon: Factory, label: 'Store Items' },
+          ],
+        },
+        {
+          label: 'Staff Portals',
+          icon: ShieldAlert,
+          type: 'collapsible',
+          id: 'staff-portals',
+          subLinks: [
+            { href: '/sales', icon: Target, label: 'Sales' },
+            { href: '/operations', icon: Activity, label: 'Operations' },
+            { href: '/manufacturing', icon: Factory, label: 'Manufacturing' },
+            { href: '/finance', icon: Briefcase, label: 'Finance' },
+            { href: '/digital-marketing', icon: Target, label: 'Digital Marketing' },
+          ],
+        },
+         {
+          label: 'Human Resources',
+          icon: UserCog,
+          type: 'collapsible',
+          id: 'hr',
+          subLinks: [
+            { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance' },
+            { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview' },
+            { href: '/admin/staff', icon: UserCog, label: 'Staff Management' },
+          ],
+        },
+    ];
+
+    if (isAdminOnly) {
+        return allLinks.filter(link => link.id !== 'staff-portals');
+    }
+
+    return allLinks;
+}
+
+
+function NavContent({ isCollapsed, userProfile }: { isCollapsed: boolean, userProfile: UserProfile | null }) {
     const pathname = usePathname();
+    const navLinks = useMemo(() => getNavLinks(userProfile), [userProfile]);
 
     return (
          <div className={cn("flex flex-col justify-center flex-grow", isCollapsed ? "items-center" : "")}>
@@ -93,7 +109,7 @@ function NavContent({ isCollapsed }: { isCollapsed: boolean }) {
                          }
                          if (link.type === 'collapsible') {
                             return (
-                                <Collapsible key={index} defaultOpen={link.subLinks.some(sub => pathname.startsWith(sub.href))}>
+                                <Collapsible key={link.id} defaultOpen={link.subLinks.some(sub => pathname.startsWith(sub.href))}>
                                      <CollapsibleTrigger asChild>
                                         <Button variant="ghost" className={cn("w-full justify-start", isCollapsed && "justify-center w-10 h-10 p-0")}>
                                             <link.icon className="h-5 w-5" />
@@ -110,11 +126,11 @@ function NavContent({ isCollapsed }: { isCollapsed: boolean }) {
                                                         className={cn(
                                                             'flex items-center gap-4 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
                                                             pathname.startsWith(subLink.href) && 'bg-muted text-primary',
-                                                            isCollapsed && 'w-10 h-10 justify-center p-0'
+                                                            isCollapsed && 'w-10 h-10 justify-center p-0 ml-2'
                                                         )}
                                                         >
                                                         <subLink.icon className="h-5 w-5" />
-                                                         {!isCollapsed && subLink.label}
+                                                         {!isCollapsed && <span className="ml-2">{subLink.label}</span>}
                                                     </Link>
                                                 </TooltipTrigger>
                                                  {isCollapsed && <TooltipContent side="right"><p>{subLink.label}</p></TooltipContent>}
@@ -184,8 +200,8 @@ export default function AdminLayout({
     <div className="flex min-h-screen w-full flex-col">
        <aside className={cn(
             "fixed inset-y-0 left-0 z-40 flex-col border-r bg-background/80 backdrop-blur-sm transition-all duration-300 ease-in-out shadow-lg",
-            "top-4 bottom-4 rounded-r-xl",
-            isCollapsed ? "w-20" : "w-60"
+            "top-4 bottom-4 ml-4 rounded-xl",
+            isCollapsed ? "w-20" : "w-64"
         )}>
            <div className="flex h-full max-h-screen flex-col gap-2">
                 <div className="flex h-14 items-center justify-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -198,12 +214,12 @@ export default function AdminLayout({
                      <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute -right-4 top-1/2 -translate-y-1/2 bg-background hover:bg-muted border rounded-full h-8 w-8 z-50">
                         {isCollapsed ? <PanelRight /> : <PanelLeftClose />}
                     </Button>
-                    <NavContent isCollapsed={isCollapsed} />
+                    <NavContent isCollapsed={isCollapsed} userProfile={userProfile} />
                 </div>
             </div>
       </aside>
 
-      <div className={cn("flex flex-col transition-all duration-300 ease-in-out", isCollapsed ? "sm:pl-20" : "sm:pl-60")}>
+      <div className={cn("flex flex-col transition-all duration-300 ease-in-out", isCollapsed ? "sm:pl-28" : "sm:pl-72")}>
         <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
           <div className="flex-1">
              {/* Can add breadcrumbs or page title here */}
