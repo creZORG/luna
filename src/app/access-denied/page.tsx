@@ -14,11 +14,11 @@ export default function AccessDeniedPage() {
           </div>
           <CardTitle className="text-2xl">Access Denied</CardTitle>
           <CardDescription>
-            You do not have the necessary permissions to access this page.
+            You do not have the necessary permissions to access this page. This may be because you are trying to access a staff portal from the main website.
           </CardDescription>
         </CardHeader>
         <CardContent>
-            <p className='mb-6'>Please contact your administrator if you believe this is an error.</p>
+            <p className='mb-6'>Please use the correct portal subdomain (e.g., staff.luna.co.ke) or contact an administrator.</p>
             <div className='flex gap-4'>
                  <Button asChild className="w-full" variant="outline">
                     <Link href="/">Go to Homepage</Link>

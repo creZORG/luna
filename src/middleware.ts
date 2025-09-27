@@ -46,12 +46,20 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(url);
     }
     
-    // Rewrite other paths to the correct portal
+    // For any other path on a subdomain, rewrite to the correct portal path
+    // unless it's an auth page, which are shared.
+    if (pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied')) {
+        return NextResponse.next();
+    }
+
+    // Rewrite paths like /staff to /admin/staff for the staff subdomain
+    if (pathname === '/staff') {
+      url.pathname = '/admin/staff';
+      return NextResponse.rewrite(url);
+    }
+    
+    // Ensure all other requests are correctly routed within their portal context
     if (!pathname.startsWith(portalPath)) {
-        // Allow access to auth pages on subdomains
-        if (pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied')) {
-            return NextResponse.next();
-        }
         url.pathname = `${portalPath}${pathname}`;
         return NextResponse.rewrite(url);
     }
@@ -60,8 +68,8 @@ export function middleware(request: NextRequest) {
   else if (isMainDomain) {
       const isPortalPath = Object.values(portalMap).some(p => pathname.startsWith(p));
       if (isPortalPath) {
-          url.pathname = '/';
-          return NextResponse.redirect(url);
+          url.pathname = '/access-denied'; // Redirect to access denied page
+          return NextResponse.rewrite(url);
       }
   }
 
