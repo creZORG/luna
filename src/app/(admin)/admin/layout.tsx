@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -72,7 +73,7 @@ const navLinks = [
       icon: UserCog,
       type: 'collapsible',
       subLinks: [
-        { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance' },
+        { href: '/admin/attendance/overview', icon: ClipboardCheck, label: 'My Attendance' },
         { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview' },
         { href: '/admin/staff', icon: UserCog, label: 'Staff Management' },
       ],
@@ -245,3 +246,5 @@ export default function AdminLayout({
     </div>
   );
 }
+
+    

@@ -63,7 +63,7 @@ export default function Dashboard() {
         setShowRollCall(false);
     };
 
-    const handleClockIn = () => {
+    const handleClockInSuccess = () => {
         setShowRollCall(false);
     };
 
@@ -71,7 +71,7 @@ export default function Dashboard() {
     if (loading || !data) {
         return (
             <>
-                <RollCallModal isOpen={showRollCall} onClockIn={handleClockIn} onDayOff={handleDayOff} />
+                <RollCallModal isOpen={showRollCall} onClockInSuccess={handleClockInSuccess} onDayOff={handleDayOff} />
                 <div className="flex flex-col gap-4">
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <Card><CardHeader><Skeleton className="h-5 w-3/4" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /></CardContent></Card>
@@ -95,7 +95,7 @@ export default function Dashboard() {
 
     return (
         <>
-            <RollCallModal isOpen={showRollCall} onClockIn={handleClockIn} onDayOff={handleDayOff} />
+            <RollCallModal isOpen={showRollCall} onClockInSuccess={handleClockInSuccess} onDayOff={handleDayOff} />
             <div className="flex flex-col gap-4">
                 <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
                     <Card>
@@ -158,3 +158,5 @@ export default function Dashboard() {
       </>
     )
 }
+
+    

@@ -22,7 +22,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isProfilePending, setIsProfilePending] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -42,22 +41,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             router.push('/verify-email');
         }
 
-        if (!profile.roles || profile.roles.length === 0) {
-          setIsProfilePending(true);
-        } else {
-          setIsProfilePending(false);
-        }
-
       } else {
         setUser(null);
         setUserProfile(null);
-        setIsProfilePending(false);
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, [pathname, router]);
+  
+  const isProfilePending = !userProfile?.roles || userProfile.roles.length === 0;
 
   return (
     <AuthContext.Provider value={{ user, userProfile, loading, isProfilePending }}>
@@ -67,3 +61,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+
+    
