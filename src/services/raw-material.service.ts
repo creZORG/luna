@@ -1,8 +1,10 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy } from 'firestore';
 import type { RawMaterial, RawMaterialIntake, RAW_MATERIALS_SEED } from '@/lib/raw-materials.data';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { userService } from './user.service';
+import { sendEmail } from '@/ai/flows/send-email-flow';
 
 const storage = getStorage();
 
@@ -40,12 +42,15 @@ class RawMaterialService {
         const intakeRef = doc(collection(db, 'rawMaterialIntakes'));
         const materialRef = doc(db, 'rawMaterials', formData.rawMaterialId);
 
+        let materialName = 'Unknown Material';
+
         try {
             await runTransaction(db, async (transaction) => {
                 const materialDoc = await transaction.get(materialRef);
                 if (!materialDoc.exists()) {
                     throw "Raw material document does not exist!";
                 }
+                materialName = materialDoc.data().name;
 
                 const newQuantity = materialDoc.data().quantity + formData.actualQuantity;
                 
@@ -66,9 +71,35 @@ class RawMaterialService {
                 }
                 transaction.set(intakeRef, intakeData);
             });
+
+            // 3. Check for discrepancy and send email if needed
+            const discrepancy = formData.quantityOnNote - formData.actualQuantity;
+            if (discrepancy !== 0) {
+                const admins = await userService.getAdmins();
+                const subject = `Alert: Delivery Discrepancy from ${formData.supplier}`;
+                const body = `
+                    <p>Hello Admins,</p>
+                    <p>A discrepancy was noted during the raw material intake process from supplier <strong>${formData.supplier}</strong>.</p>
+                    <ul>
+                        <li>Material: ${materialName}</li>
+                        <li>Quantity on Delivery Note: ${formData.quantityOnNote}</li>
+                        <li>Actual Quantity Received: ${formData.actualQuantity}</li>
+                        <li><strong>Discrepancy: ${discrepancy.toFixed(2)}</strong></li>
+                    </ul>
+                    <p>This may require a follow-up with the supplier. The delivery note number is ${formData.deliveryNoteId}.</p>
+                `;
+                for (const admin of admins) {
+                    await sendEmail({
+                        to: { address: admin.email, name: admin.displayName },
+                        subject: subject,
+                        htmlbody: body,
+                    });
+                }
+            }
+
             return intakeRef.id;
         } catch (e) {
-            console.error("Transaction failed: ", e);
+            console.error("Transaction or email notification failed: ", e);
             throw new Error("Failed to log intake and update inventory.");
         }
     }
@@ -99,7 +130,3 @@ class RawMaterialService {
 }
 
 export const rawMaterialService = new RawMaterialService();
-
-// Example of how to seed the data. You could run this from a special admin page or a script.
-// import { RAW_MATERIALS_SEED } from '@/lib/raw-materials.data';
-// rawMaterialService.seedRawMaterials(RAW_MATERIALS_SEED);
