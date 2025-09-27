@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, addDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, writeBatch, serverTimestamp, doc } from 'firebase/firestore';
 
 export interface SalesLog {
     productId: string;
@@ -22,9 +22,9 @@ class SalesService {
             const batch = writeBatch(db);
 
             salesLogs.forEach(log => {
-                const docRef = addDoc(collection(db, "sales"), {}); // Create a ref with a new ID
-                const id = docRef.id;
-                batch.set(doc(db, "sales", id), {
+                // Create a ref with a new ID by calling doc() on the collection
+                const docRef = doc(collection(db, "sales"));
+                batch.set(docRef, {
                     ...log,
                     date: serverTimestamp(),
                     salespersonId,
@@ -37,19 +37,6 @@ class SalesService {
             throw new Error("Could not create sales logs");
         }
     }
-}
-
-// Helper function to get a new document reference with an ID, needed for batch writes
-// as addDoc cannot be used directly in a batch.
-function doc(db: any, collectionName: string, id: string) {
-    return {
-        _key: {
-            path: {
-                segments: [collectionName, id]
-            }
-        },
-        _firestore: db
-    };
 }
 
 
