@@ -24,11 +24,29 @@ export function middleware(request: NextRequest) {
     'digital-marketing': '/digital-marketing',
   };
 
+  const dashboardMap: { [key: string]: string } = {
+    staff: '/admin/dashboard',
+    admin: '/admin/dashboard',
+    finance: '/finance',
+    manufacturing: '/manufacturing',
+    sales: '/sales',
+    operations: '/operations',
+    'digital-marketing': '/digital-marketing',
+  }
+
   const currentHost = hostname.split('.')[0];
   const portalPath = portalMap[currentHost];
+  const dashboardPath = dashboardMap[currentHost];
 
-  // If on a portal subdomain, rewrite the path
-  if (portalPath) {
+  // If on a portal subdomain
+  if (portalPath && dashboardPath) {
+    // If at the root of the subdomain, redirect to its dashboard
+    if (pathname === '/') {
+        url.pathname = dashboardPath;
+        return NextResponse.redirect(url);
+    }
+    
+    // Rewrite other paths to the correct portal
     if (!pathname.startsWith(portalPath)) {
         // Allow access to auth pages on subdomains
         if (pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied')) {
