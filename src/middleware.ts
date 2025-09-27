@@ -45,23 +45,29 @@ export function middleware(request: NextRequest) {
         url.pathname = dashboardPath;
         return NextResponse.redirect(url);
     }
-    
-    // For any other path on a subdomain, rewrite to the correct portal path
-    // unless it's an auth page, which are shared.
-    if (pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied')) {
-        return NextResponse.next();
-    }
 
-    // Rewrite paths like /staff to /admin/staff for the staff subdomain
-    if (pathname === '/staff') {
-      url.pathname = '/admin/staff';
-      return NextResponse.rewrite(url);
-    }
+    // Rewrite paths to their correct portal route, avoiding double-prefixing.
+    // e.g. on staff.luna.co.ke, `/staff/users` should go to `/admin/staff/users`.
+    // But `/admin/staff` should also go to `/admin/staff`.
+    const isAuthPath = pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied');
     
-    // Ensure all other requests are correctly routed within their portal context
-    if (!pathname.startsWith(portalPath)) {
-        url.pathname = `${portalPath}${pathname}`;
-        return NextResponse.rewrite(url);
+    if (!isAuthPath) {
+        // Construct the new path, ensuring we don't duplicate the portal segment.
+        let newPath = pathname;
+
+        // If currentHost matches a part of the path, replace it with the target portal path
+        // e.g., on staff.luna.co.ke, /staff/management -> /admin/management
+        const portalPathSegment = `/${currentHost}`;
+        if(pathname.startsWith(portalPathSegment)) {
+            newPath = pathname.replace(portalPathSegment, portalPath);
+        } else if (!pathname.startsWith(portalPath)) {
+            newPath = `${portalPath}${pathname}`;
+        }
+        
+        if (url.pathname !== newPath) {
+            url.pathname = newPath;
+            return NextResponse.rewrite(url);
+        }
     }
   } 
   // If on the main domain, block access to portal paths
