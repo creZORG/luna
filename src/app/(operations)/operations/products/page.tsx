@@ -1,3 +1,4 @@
+
 import {
     Table,
     TableBody,
@@ -32,9 +33,9 @@ import { Product } from "@/lib/data"
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-                <CardTitle>Products</CardTitle>
+                <CardTitle>Finished Goods</CardTitle>
                 <CardDescription>
-                Manage your products. Add new products and view existing ones.
+                Manage your finished products. Add new products and view existing ones.
                 </CardDescription>
             </div>
             <Button asChild size="sm" className="gap-1">

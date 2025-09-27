@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, PanelLeft, LogOut, Loader, Activity, Package } from 'lucide-react';
+import { Home, PanelLeft, LogOut, Loader, Activity, Package, Truck, Warehouse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/auth.service';
+import { Separator } from '@/components/ui/separator';
 
 export default function OperationsLayout({
   children,
@@ -51,8 +52,11 @@ export default function OperationsLayout({
 
   const navLinks = [
     { href: "/operations", icon: Activity, label: "Dashboard" },
-    { href: "/operations/products", icon: Package, label: "Products" },
-    { separator: true },
+    { href: "/operations/products", icon: Package, label: "Finished Goods" },
+    { separator: true, id: 'sep1' },
+    { href: "/operations/raw-materials/intake", icon: Truck, label: "Material Intake" },
+    { href: "/operations/raw-materials/inventory", icon: Warehouse, label: "Material Inventory" },
+    { separator: true, id: 'sep2' },
     { href: "/admin/dashboard", icon: Home, label: "Main Admin" },
   ];
 
@@ -68,7 +72,7 @@ export default function OperationsLayout({
             <span className="sr-only">Operations</span>
           </Link>
           {navLinks.map((link, index) => 
-            link.separator ? <DropdownMenuSeparator key={index} className="my-2" /> : (
+            link.separator ? <Separator key={link.id} className="my-2" /> : (
             <Link key={link.href} href={link.href!} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
                 <link.icon className="h-5 w-5" />
                 <span className="sr-only">{link.label}</span>
@@ -95,7 +99,7 @@ export default function OperationsLayout({
                 <span className="sr-only">Operations</span>
               </Link>
               {navLinks.map((link, index) => 
-                link.separator ? <DropdownMenuSeparator key={index} /> : (
+                link.separator ? <Separator key={link.id} /> : (
                 <Link key={link.href} href={link.href!} className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
                   <link.icon className="h-5 w-5" />
                   {link.label}
