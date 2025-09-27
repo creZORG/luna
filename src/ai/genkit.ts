@@ -1,6 +1,4 @@
 
-'use server';
-
 /**
  * @fileOverview A global AI object that is configured with the Google AI plugin.
  *
@@ -23,7 +21,7 @@ import {googleAI} from '@genkit-ai/googleai';
 //
 // Note: When you specify an API key, you may also need to specify the project
 // ID. If you get an error that the project ID is missing, you can find it in
-// the Firebase console.
+
 export const ai = genkit({
   plugins: [
     googleAI({
