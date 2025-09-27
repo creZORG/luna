@@ -13,14 +13,24 @@ export function middleware(request: NextRequest) {
   // Use localhost for development
   const currentHost = process.env.NODE_ENV === 'production'
     ? hostname.replace(`.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`, '')
+    // This part handles the development environment subdomains
     : hostname.replace(`.localhost:9002`, '');
 
+  // Define which subdomain maps to which internal path
+  const portalMap: { [key: string]: string } = {
+    staff: '/admin',
+    admin: '/admin',
+    finance: '/finance',
+    manufacturing: '/manufacturing',
+    sales: '/sales',
+    operations: '/operations',
+  };
 
-  const portals = ['admin', 'finance', 'manufacturing', 'sales', 'operations'];
+  const portalPath = portalMap[currentHost];
 
-  if (portals.includes(currentHost)) {
+  if (portalPath) {
     // Rewrite the URL to the portal's path
-    url.pathname = `/${currentHost}${pathname}`;
+    url.pathname = `${portalPath}${pathname}`;
     return NextResponse.rewrite(url);
   }
 
@@ -29,8 +39,7 @@ export function middleware(request: NextRequest) {
      return NextResponse.next();
   }
 
-  // If it's some other subdomain, you might want to redirect or show an error
-  // For now, we'll just let it go to the main site.
+  // Fallback for any other subdomains
   return NextResponse.next();
 }
 
