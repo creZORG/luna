@@ -36,9 +36,11 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
     
-    // For other paths within the subdomain, rewrite them to the correct internal path.
-    url.pathname = `${portalPath}${pathname}`;
-    return NextResponse.rewrite(url);
+    // Check if the path already starts with the portal path to avoid duplication
+    if (!pathname.startsWith(portalPath)) {
+        url.pathname = `${portalPath}${pathname}`;
+        return NextResponse.rewrite(url);
+    }
   }
 
   // Allow requests for the main marketing site and handle localhost.
