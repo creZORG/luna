@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -43,17 +44,19 @@ function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
 }
 
 const getNavLinks = (userProfile: UserProfile | null) => {
-    const isAdminOnly = userProfile?.roles.length === 1 && userProfile.roles.includes('admin');
+    const hasAdminRole = userProfile?.roles.includes('admin');
+    const isPureAdmin = hasAdminRole && userProfile?.roles.length === 1;
 
     const allLinks = [
-        { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', id: 'dashboard' },
-        { href: '/admin/media', icon: ImageIcon, label: 'Media', id: 'media' },
-        { separator: true, id: 'sep1' },
+        { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', id: 'dashboard', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
+        { href: '/admin/media', icon: ImageIcon, label: 'Media', id: 'media', roles: ['admin'] },
+        { separator: true, id: 'sep1', roles: ['admin'] },
         {
           label: 'Store Management',
           icon: Store,
           type: 'collapsible',
           id: 'store-management',
+          roles: ['admin'],
           subLinks: [
             { href: '/operations/products', icon: Briefcase, label: 'Products' },
             { href: '/admin/products', icon: Briefcase, label: 'Pricing' },
@@ -65,6 +68,8 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           icon: ShieldAlert,
           type: 'collapsible',
           id: 'staff-portals',
+          roles: ['admin'], // This section is visible to admin
+          hidden: isPureAdmin, // But hidden if they are *only* an admin
           subLinks: [
             { href: '/sales', icon: Target, label: 'Sales' },
             { href: '/operations', icon: Activity, label: 'Operations' },
@@ -78,19 +83,32 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           icon: UserCog,
           type: 'collapsible',
           id: 'hr',
+          roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'],
           subLinks: [
-            { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance' },
-            { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview' },
-            { href: '/admin/staff', icon: UserCog, label: 'Staff Management' },
+            { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
+            { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview', roles: ['admin'] },
+            { href: '/admin/users', icon: UserCog, label: 'Staff Management', roles: ['admin'] },
           ],
         },
     ];
 
-    if (isAdminOnly) {
-        return allLinks.filter(link => link.id !== 'staff-portals');
-    }
-
-    return allLinks;
+    return allLinks.filter(link => {
+        if(link.hidden) return false;
+        if (!userProfile) return false;
+        // The link should be shown if the user has any of the roles specified for the link
+        return link.roles.some(role => userProfile.roles.includes(role as any));
+    }).map(link => {
+        if(link.type === 'collapsible') {
+            return {
+                ...link,
+                subLinks: link.subLinks.filter(sublink => {
+                    if(!sublink.roles) return true; // if sublink has no specific roles, show it
+                    return sublink.roles.some(role => userProfile.roles.includes(role as any));
+                })
+            }
+        }
+        return link;
+    }).filter(link => !link.type || (link.subLinks && link.subLinks.length > 0)); // remove empty collapsible sections
 }
 
 
