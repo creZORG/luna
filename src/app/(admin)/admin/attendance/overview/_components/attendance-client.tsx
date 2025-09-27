@@ -6,10 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { UserProfile } from "@/services/user.service";
 import { AttendanceRecord } from "@/services/attendance.service";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Clock, Send, Loader } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { sendAbsenteeReport } from "@/ai/flows/send-absentee-report-flow";
 
 interface AttendanceClientProps {
     initialRecords: AttendanceRecord[];
@@ -27,6 +30,8 @@ interface UserAttendanceStatus {
 const LATE_THRESHOLD_HOUR = 9; // 9 AM
 
 export default function AttendanceClient({ initialRecords, allUsers }: AttendanceClientProps) {
+    const [isSendingReport, setIsSendingReport] = useState(false);
+    const { toast } = useToast();
 
     const userStatuses = useMemo((): UserAttendanceStatus[] => {
         return allUsers.map(user => {
@@ -71,6 +76,26 @@ export default function AttendanceClient({ initialRecords, allUsers }: Attendanc
                 return <Badge variant="secondary"><AlertTriangle className="mr-2 h-3.5 w-3.5"/>Absent</Badge>;
         }
     };
+    
+    const handleSendReport = async () => {
+        setIsSendingReport(true);
+        try {
+            await sendAbsenteeReport();
+            toast({
+                title: 'Report Sent!',
+                description: 'The daily absentee report has been emailed to all administrators.'
+            });
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'Error Sending Report',
+                description: 'There was a problem generating or sending the absentee report.'
+            });
+            console.error('Failed to send absentee report:', error);
+        } finally {
+            setIsSendingReport(false);
+        }
+    };
 
     return (
         <div className="grid gap-6 md:grid-cols-1">
@@ -108,8 +133,16 @@ export default function AttendanceClient({ initialRecords, allUsers }: Attendanc
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Today's Attendance Log</CardTitle>
-                    <CardDescription>A list of all staff and their check-in status for today.</CardDescription>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>Today's Attendance Log</CardTitle>
+                            <CardDescription>A list of all staff and their check-in status for today.</CardDescription>
+                        </div>
+                         <Button onClick={handleSendReport} disabled={isSendingReport}>
+                            {isSendingReport ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                            Send Absentee Report
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>

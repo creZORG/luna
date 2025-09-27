@@ -48,7 +48,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "i.postimg.cc",
+        hostname: "res.cloudinary.com",
       }
     ],
   },

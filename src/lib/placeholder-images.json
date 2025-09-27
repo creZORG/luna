@@ -3,25 +3,25 @@
     {
       "id": "hero-background",
       "description": "A beautiful, lush background of green leaves.",
-      "imageUrl": "https://i.postimg.cc/y86djwJ9/image.png",
+      "imageUrl": "https://res.cloudinary.com/dvciksxcn/image/upload/v1719927690/luna-essentials/hero-background.png",
       "imageHint": "lush leaves"
     },
     {
       "id": "category-shower-gel",
       "description": "A dynamic product shot that showcases a collection of Luna shower gels.",
-      "imageUrl": "https://i.postimg.cc/CL1z03NN/Gemini-Generated-Image-oq19vvoq19vvoq19.png",
+      "imageUrl": "https://res.cloudinary.com/dvciksxcn/image/upload/v1719927688/luna-essentials/category-shower-gel.png",
       "imageHint": "shower gel"
     },
     {
       "id": "category-fabric-softener",
       "description": "A still-life composition that communicates comfort and softness.",
-      "imageUrl": "https://i.postimg.cc/52QyY8DQ/Gemini-Generated-Image-oq19vwoq19vwoq19.png",
+      "imageUrl": "https://res.cloudinary.com/dvciksxcn/image/upload/v1719927689/luna-essentials/category-fabric-softener.png",
       "imageHint": "soft fabric"
     },
     {
       "id": "category-dish-wash",
       "description": "A bright and energetic shot that focuses on cleanliness and efficacy.",
-      "imageUrl": "https://i.postimg.cc/9FnzQLgj/Gemini-Generated-Image-tv942ntv942ntv94.png",
+      "imageUrl": "https://res.cloudinary.com/dvciksxcn/image/upload/v1719927689/luna-essentials/category-dish-wash.png",
       "imageHint": "clean dishes"
     },
     {
