@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store } from 'lucide-react';
+import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -22,7 +23,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
   if (loading) {
@@ -35,6 +36,11 @@ export default function AdminLayout({
 
   if (!user) {
     router.push('/login');
+    return null;
+  }
+  
+  if (!userProfile?.roles?.includes('admin')) {
+    router.push('/access-denied');
     return null;
   }
 
@@ -122,7 +128,7 @@ export default function AdminLayout({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{userProfile?.displayName || user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled>Settings</DropdownMenuItem>
               <DropdownMenuItem disabled>Support</DropdownMenuItem>
@@ -141,3 +147,4 @@ export default function AdminLayout({
     </div>
   );
 }
+

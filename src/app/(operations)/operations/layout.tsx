@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Package } from 'lucide-react';
+import { Home, PanelLeft, LogOut, Loader, Activity, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,7 +23,7 @@ export default function OperationsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
   if (loading) {
@@ -36,6 +36,11 @@ export default function OperationsLayout({
 
   if (!user) {
     router.push('/login');
+    return null;
+  }
+  
+  if (!userProfile?.roles?.includes('operations') && !userProfile?.roles?.includes('admin')) {
+    router.push('/access-denied');
     return null;
   }
 
@@ -56,7 +61,7 @@ export default function OperationsLayout({
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
         <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
           <Link
-            href="/"
+            href="/operations"
             className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
           >
             <Activity className="h-4 w-4 transition-all group-hover:scale-110" />
@@ -117,7 +122,7 @@ export default function OperationsLayout({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{userProfile?.displayName || user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled>Settings</DropdownMenuItem>
               <DropdownMenuItem disabled>Support</DropdownMenuItem>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -16,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { authService } from '@/services/auth.service';
 import { Loader } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { userService } from '@/services/user.service';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -23,7 +25,17 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading, userProfile } = useAuth();
+
+  const getRedirectPath = (roles: string[] = []) => {
+    if (roles.includes('admin')) return '/admin/dashboard';
+    if (roles.includes('sales')) return '/sales';
+    if (roles.includes('operations')) return '/operations';
+    if (roles.includes('finance')) return '/finance';
+    if (roles.includes('manufacturing')) return '/manufacturing';
+    if (roles.includes('digital-marketing')) return '/digital-marketing';
+    return '/admin/dashboard'; // Default fallback
+  }
 
   if (loading) {
     return (
@@ -33,21 +45,34 @@ export default function LoginPage() {
     );
   }
 
-  if (user) {
-    router.push('/admin/dashboard');
+  if (user && userProfile) {
+    router.push(getRedirectPath(userProfile.roles));
     return null;
   }
+   if (user && !userProfile && !loading) {
+    // User is authenticated but profile is not loaded, maybe they don't have one.
+    // Or maybe it's still loading. The loading state in useAuth should handle this.
+    // For now, let's just show a loading state. A better approach might be to show an error or guide user.
+     router.push('/access-denied');
+     return null;
+  }
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await authService.login(email, password);
+      const user = await authService.login(email, password);
+      const profile = await userService.getUserProfile(user.uid);
+      
       toast({
         title: 'Login Successful',
-        description: "Welcome back! Redirecting to your dashboard...",
+        description: "Welcome back! Redirecting...",
       });
-      router.push('/admin/dashboard');
+
+      const redirectPath = getRedirectPath(profile?.roles);
+      router.push(redirectPath);
+
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -63,9 +88,9 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)] bg-background">
       <Card className="mx-auto max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Administrator Login</CardTitle>
+          <CardTitle className="text-2xl">Portal Login</CardTitle>
           <CardDescription>
-            Enter your credentials to access the admin panel.
+            Enter your credentials to access your designated portal.
           </CardDescription>
         </CardHeader>
         <CardContent>
