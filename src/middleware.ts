@@ -45,36 +45,27 @@ export function middleware(request: NextRequest) {
         url.pathname = dashboardPath;
         return NextResponse.redirect(url);
     }
-
-    // Rewrite paths to their correct portal route, avoiding double-prefixing.
-    // e.g. on staff.luna.co.ke, `/staff/users` should go to `/admin/staff/users`.
-    // But `/admin/staff` should also go to `/admin/staff`.
+    
     const isAuthPath = pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied');
     
     if (!isAuthPath) {
-        // Construct the new path, ensuring we don't duplicate the portal segment.
-        let newPath = pathname;
+      // If the path already starts with the correct portal path, do nothing.
+      // This is crucial for paths like `/admin/staff` on `staff.luna.co.ke`
+      if (pathname.startsWith(portalPath)) {
+        return NextResponse.next();
+      }
 
-        // If currentHost matches a part of the path, replace it with the target portal path
-        // e.g., on staff.luna.co.ke, /staff/management -> /admin/management
-        const portalPathSegment = `/${currentHost}`;
-        if(pathname.startsWith(portalPathSegment)) {
-            newPath = pathname.replace(portalPathSegment, portalPath);
-        } else if (!pathname.startsWith(portalPath)) {
-            newPath = `${portalPath}${pathname}`;
-        }
-        
-        if (url.pathname !== newPath) {
-            url.pathname = newPath;
-            return NextResponse.rewrite(url);
-        }
+      // Otherwise, rewrite the path to include the portal prefix.
+      url.pathname = `${portalPath}${pathname}`;
+      return NextResponse.rewrite(url);
     }
+
   } 
   // If on the main domain, block access to portal paths
   else if (isMainDomain) {
       const isPortalPath = Object.values(portalMap).some(p => pathname.startsWith(p));
       if (isPortalPath) {
-          url.pathname = '/access-denied'; // Redirect to access denied page
+          url.pathname = '/access-denied';
           return NextResponse.rewrite(url);
       }
   }
