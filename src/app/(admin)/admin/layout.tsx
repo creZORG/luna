@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert } from 'lucide-react';
+import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -54,6 +54,7 @@ export default function AdminLayout({
     { href: "/admin/products", icon: ShoppingCart, label: "Product Pricing" },
     { href: "/admin/media", icon: ImageIcon, label: "Media" },
     { href: "/admin/store-items", icon: Store, label: "Store Items" },
+    { href: "/admin/attendance/check-in", icon: ClipboardCheck, label: "Attendance" },
     { separator: true },
     { href: "/finance", icon: Briefcase, label: "Finance" },
     { href: "/manufacturing", icon: Factory, label: "Manufacturing" },
@@ -147,4 +148,3 @@ export default function AdminLayout({
     </div>
   );
 }
-
