@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy } from 'firestore';
+import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy } from 'firebase/firestore';
 import type { RawMaterial, RawMaterialIntake, RAW_MATERIALS_SEED } from '@/lib/raw-materials.data';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { userService } from './user.service';
