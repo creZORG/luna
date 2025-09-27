@@ -25,14 +25,7 @@ import { format } from 'date-fns';
 import { attendanceService } from '@/services/attendance.service';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-
-// --- Configuration ---
-const OFFICE_LOCATION = {
-  latitude: -1.1718, // Ruiru, Kenya Latitude
-  longitude: 36.953, // Ruiru, Kenya Longitude
-};
-const MAX_DISTANCE_METERS = 100; // 100 meters radius
-// --------------------
+import { COMPANY_LOCATION, MAX_CHECK_IN_DISTANCE_METERS } from '@/lib/config';
 
 // Haversine formula
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -72,9 +65,9 @@ export function RollCallModal({ isOpen, onClockInSuccess, onDayOff }: RollCallMo
       (position) => {
         const { latitude, longitude } = position.coords;
         setLocation({ latitude, longitude });
-        const dist = getDistance(latitude, longitude, OFFICE_LOCATION.latitude, OFFICE_LOCATION.longitude);
+        const dist = getDistance(latitude, longitude, COMPANY_LOCATION.latitude, COMPANY_LOCATION.longitude);
         setDistance(dist);
-        if (dist <= MAX_DISTANCE_METERS) {
+        if (dist <= MAX_CHECK_IN_DISTANCE_METERS) {
           setModalState('in_range');
         } else {
           setModalState('out_of_range');
@@ -164,7 +157,7 @@ export function RollCallModal({ isOpen, onClockInSuccess, onDayOff }: RollCallMo
               <Ban className="h-4 w-4" />
               <AlertTitle>Out of Range</AlertTitle>
               <AlertDescription>
-                You must be within {MAX_DISTANCE_METERS}m of the office. You are ~{distance?.toFixed(0)}m away.
+                You must be within {MAX_CHECK_IN_DISTANCE_METERS}m of the office. You are ~{distance?.toFixed(0)}m away.
               </AlertDescription>
             </Alert>
             <Button onClick={handleTryAgain} className="w-full" variant="outline">Try Again</Button>

@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { attendanceService, TodayAttendanceStatus } from '@/services/attendance.service';
 import { Loader, MapPin, AlertCircle, CheckCircle, Ban } from 'lucide-react';
 import { format } from 'date-fns';
+import { COMPANY_LOCATION, MAX_CHECK_IN_DISTANCE_METERS } from '@/lib/config';
 
 // Haversine formula to calculate distance between two lat/lon points
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -26,16 +27,6 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
 
     return R * c; // in metres
 }
-
-// --- Configuration ---
-// In a real app, move this to environment variables or a config file
-const OFFICE_LOCATION = {
-    latitude: -1.1718, // Ruiru, Kenya Latitude
-    longitude: 36.9530 // Ruiru, Kenya Longitude
-};
-const MAX_DISTANCE_METERS = 100; // 100 meters radius
-// --------------------
-
 
 export default function CheckInPage() {
     const { toast } = useToast();
@@ -62,9 +53,9 @@ export default function CheckInPage() {
                             (position) => {
                                 const { latitude, longitude } = position.coords;
                                 setLocation({ latitude, longitude });
-                                const dist = getDistance(latitude, longitude, OFFICE_LOCATION.latitude, OFFICE_LOCATION.longitude);
+                                const dist = getDistance(latitude, longitude, COMPANY_LOCATION.latitude, COMPANY_LOCATION.longitude);
                                 setDistance(dist);
-                                setIsWithinRange(dist <= MAX_DISTANCE_METERS);
+                                setIsWithinRange(dist <= MAX_CHECK_IN_DISTANCE_METERS);
                                 setError(null);
                             },
                             (err) => {
@@ -175,7 +166,7 @@ export default function CheckInPage() {
                         <Ban className="h-4 w-4" />
                         <AlertTitle>Out of Range</AlertTitle>
                         <AlertDescription>
-                            You must be within {MAX_DISTANCE_METERS} meters of the office to check in. You are currently approximately {distance?.toFixed(0)} meters away.
+                            You must be within {MAX_CHECK_IN_DISTANCE_METERS} meters of the office to check in. You are currently approximately {distance?.toFixed(0)} meters away.
                         </AlertDescription>
                     </Alert>
                 )}
