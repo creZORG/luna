@@ -170,11 +170,11 @@ export default function AdminLayout({
     <div className="min-h-screen w-full bg-muted/40">
       <aside 
         className={cn(
-            "fixed inset-y-4 left-4 z-10 hidden flex-col sm:flex transition-all duration-300 backdrop-blur-sm bg-background/80 rounded-xl shadow-lg border",
+            "fixed inset-y-4 left-4 z-10 hidden flex-col justify-center sm:flex transition-all duration-300 backdrop-blur-sm bg-background/80 rounded-xl shadow-lg border",
             isCollapsed ? "w-20" : "w-64"
         )}
       >
-        <div className="flex flex-col items-center gap-4 px-2 py-4 border-b">
+        <div className="absolute top-0 left-0 right-0 flex flex-col items-center gap-4 px-2 py-4 border-b">
               <Link
                 href="/"
                 className={cn(
@@ -188,7 +188,7 @@ export default function AdminLayout({
                 {isCollapsed ? <PanelRightClose /> : <PanelLeftClose />}
             </Button>
         </div>
-        <div className='flex-grow overflow-y-auto'>
+        <div className='overflow-y-auto'>
             <NavContent isCollapsed={isCollapsed} />
         </div>
       </aside>
