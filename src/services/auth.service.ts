@@ -1,12 +1,12 @@
+
 import { getAuth, signInWithEmailAndPassword, signOut, User, createUserWithEmailAndPassword } from 'firebase/auth';
 import { app, db } from '@/lib/firebase';
-import { doc, setDoc, getDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, deleteDoc, collection } from 'firebase/firestore';
+import { sendEmail } from '@/ai/flows/send-email-flow';
 
 const auth = getAuth(app);
 
-// NOTE: This service uses a simulated backend flow for OTP.
-// A real implementation requires a Cloud Function to securely handle password hashing and email sending.
-
+// NOTE: This service now integrates with a backend flow to send emails.
 class AuthService {
   async login(email: string, password: string): Promise<User> {
     try {
@@ -35,13 +35,9 @@ class AuthService {
     return auth.currentUser;
   }
 
-  // Step 1 of Sign up: Create a temporary request and (simulate) sending a code
+  // Step 1 of Sign up: Create a temporary request and send a code via email
   async startSignUp(displayName: string, email: string, password: string): Promise<{ verificationId: string }> {
     try {
-      // In a REAL app, this should be a call to a secure backend endpoint (e.g., a Cloud Function).
-      // The backend would handle code generation, password hashing, and sending the email via Zepto.
-      // For this simulation, we'll do it on the client, which is NOT secure for production.
-      
       const verificationId = doc(collection(db, 'id')).id; // Generate a random ID
       const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit code
       const expiresAt = new Date();
@@ -58,17 +54,19 @@ class AuthService {
         expiresAt: serverTimestamp(),
         createdAt: serverTimestamp(),
       });
-
-      console.log(`
-        *****************************************************************
-        * SIMULATED EMAIL:
-        * To: ${email}
-        * Your verification code is: ${verificationCode}
-        * This code expires in 15 minutes.
-        * Verification ID: ${verificationId}
-        *****************************************************************
-      `);
       
+      // Send the email using the Genkit flow
+      await sendEmail({
+          to: { address: email, name: displayName },
+          subject: 'Your Luna Essentials Verification Code',
+          htmlbody: `<div>
+              <h2>Welcome to Luna Essentials!</h2>
+              <p>Your verification code is: <b>${verificationCode}</b></p>
+              <p>This code will expire in 15 minutes.</p>
+              <p>If you did not request this, please ignore this email.</p>
+          </div>`
+      });
+
       // The `verificationId` is the document ID for the temporary request.
       return { verificationId };
 
