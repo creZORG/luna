@@ -11,8 +11,8 @@ export function middleware(request: NextRequest) {
     return new Response(null, { status: 400, statusText: "No hostname found in request headers" });
   }
 
-  // Prevent rewriting for the login page
-  if (pathname.startsWith('/login')) {
+  // Prevent rewriting for auth and public asset paths
+  if (pathname.startsWith('/login') || pathname.startsWith('/access-denied')) {
     return NextResponse.next();
   }
 
@@ -33,10 +33,10 @@ export function middleware(request: NextRequest) {
   if (portalPath) {
     // If the user is at the root of a subdomain, redirect to the portal's main page.
     if (pathname === '/') {
-      const redirectUrl = new URL(portalPath, request.url);
+      let redirectUrl = new URL(portalPath, request.url);
       // For the main admin portal, we redirect specifically to the dashboard.
       if (portalPath === '/admin') {
-        redirectUrl.pathname = '/admin/dashboard';
+        redirectUrl = new URL('/admin/dashboard', request.url);
       }
       return NextResponse.redirect(redirectUrl);
     }
