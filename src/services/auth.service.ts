@@ -3,6 +3,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, User, createUserWithEmail
 import { app, db } from '@/lib/firebase';
 import { doc, setDoc, getDoc, serverTimestamp, deleteDoc, collection, updateDoc, Timestamp } from 'firebase/firestore';
 import { sendEmail } from '@/ai/flows/send-email-flow';
+import { SendEmailRequest } from '@/ai/flows/send-email-types';
 
 const auth = getAuth(app);
 
@@ -50,11 +51,12 @@ class AuthService {
       expires: Timestamp.fromDate(expires),
     });
 
-    await sendEmail({
+    const emailRequest: SendEmailRequest = {
       to: { address: email, name: 'Luna User' },
       subject: 'Your Verification Code',
       htmlbody: `<div>Your Luna Essentials portal verification code is: <b>${code}</b>. This code will expire in 15 minutes.</div>`,
-    });
+    };
+    await sendEmail(emailRequest);
   }
 
   async checkVerificationCode(uid: string, code: string): Promise<boolean> {

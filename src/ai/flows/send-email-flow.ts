@@ -4,22 +4,12 @@
  * @fileOverview An email sending flow using ZeptoMail.
  *
  * - sendEmail - A function that handles sending an email.
- * - SendEmailRequest - The input type for the sendEmail function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import {SendMailClient} from 'zeptomail';
-
-export const SendEmailRequestSchema = z.object({
-  to: z.object({
-    address: z.string().email(),
-    name: z.string(),
-  }),
-  subject: z.string(),
-  htmlbody: z.string(),
-});
-export type SendEmailRequest = z.infer<typeof SendEmailRequestSchema>;
+import { SendEmailRequest, SendEmailRequestSchema } from './send-email-types';
 
 export async function sendEmail(req: SendEmailRequest) {
   return await sendEmailFlow(req);
