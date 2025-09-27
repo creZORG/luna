@@ -69,7 +69,6 @@ export default function LoginPage() {
       // onAuthStateChanged in useAuth will handle the final redirect.
       // We just need to check for email verification status here to initiate flow.
       if (profile && !profile.emailVerified) {
-         await authService.sendVerificationCode(userCredential.uid, userCredential.email!);
          toast({
             title: 'Verification Required',
             description: 'Please check your email for a verification code.',

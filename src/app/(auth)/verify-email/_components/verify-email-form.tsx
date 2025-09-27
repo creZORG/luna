@@ -14,7 +14,7 @@ export default function VerifyEmailForm() {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -53,11 +53,11 @@ export default function VerifyEmailForm() {
   };
 
   const handleResendCode = async () => {
-    if (!user || !user.email) return;
+    if (!user || !user.email || !userProfile) return;
 
     setIsResending(true);
     try {
-        await authService.sendVerificationCode(user.uid, user.email);
+        await authService.sendVerificationCode(user.uid, user.email, userProfile.displayName);
         toast({
             title: 'Code Sent!',
             description: 'A new verification code has been sent to your email.'

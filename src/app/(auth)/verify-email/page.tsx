@@ -5,18 +5,44 @@ import { MailCheck } from 'lucide-react';
 import VerifyEmailForm from './_components/verify-email-form';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { authService } from '@/services/auth.service';
+import { useToast } from '@/hooks/use-toast';
 
 export default function VerifyEmailPage() {
     const { user, userProfile, loading } = useAuth();
     const router = useRouter();
+    const { toast } = useToast();
+    const codeSentRef = useRef(false);
 
     useEffect(() => {
         // If user is loaded and their email is already verified, redirect them away
         if (!loading && userProfile && userProfile.emailVerified) {
             router.push('/admin/dashboard');
+            return;
         }
-    }, [userProfile, loading, router]);
+
+        // Send the code automatically when an unverified user lands on the page.
+        // The ref ensures this only runs once per component mount, not on every re-render.
+        if (!loading && user && userProfile && !userProfile.emailVerified && !codeSentRef.current) {
+            codeSentRef.current = true; // Mark as sent to prevent re-sends on re-renders.
+            authService.sendVerificationCode(user.uid, user.email!, userProfile.displayName)
+                .then(() => {
+                    toast({
+                        title: 'Verification Code Sent',
+                        description: 'A new code has been sent to your email address.',
+                    });
+                })
+                .catch((err) => {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Failed to Send Code',
+                        description: 'There was a problem sending your verification code. Please try resending it manually.',
+                    });
+                    console.error(err);
+                });
+        }
+    }, [user, userProfile, loading, router, toast]);
 
 
     return (

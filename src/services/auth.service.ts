@@ -39,7 +39,7 @@ class AuthService {
     return auth.onAuthStateChanged(callback);
   }
 
-  async sendVerificationCode(uid: string, email: string): Promise<void> {
+  async sendVerificationCode(uid: string, email: string, displayName: string): Promise<void> {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date();
     expires.setMinutes(expires.getMinutes() + 15); // Expires in 15 minutes
@@ -51,11 +51,33 @@ class AuthService {
       expires: Timestamp.fromDate(expires),
     });
 
+    const emailHtmlBody = `
+      <div style="font-family: 'Open Sans', sans-serif; color: #2C3E50; line-height: 1.6;">
+        <div style="max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #dadfe0; border-radius: 0.5rem; background-color: #F5F5DC;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="font-family: 'Montserrat', sans-serif; color: #006B6B; font-size: 24px;">LUNA</h1>
+          </div>
+          <h2 style="font-family: 'Montserrat', sans-serif; color: #006B6B; font-size: 20px;">Verify Your Email Address</h2>
+          <p>Hello ${displayName},</p>
+          <p>Thank you for joining the Luna Essentials team portal. To secure your account, please use the following verification code:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <p style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #2C3E50; background-color: #FFFACD; padding: 15px 20px; border-radius: 0.5rem; display: inline-block;">
+              ${code}
+            </p>
+          </div>
+          <p>This code will expire in 15 minutes. If you did not request this code, you can safely ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #dadfe0; margin: 20px 0;"/>
+          <p style="font-size: 12px; color: #99a2a3; text-align: center;">&copy; ${new Date().getFullYear()} Luna Industries Limited. All Rights Reserved.</p>
+        </div>
+      </div>
+    `;
+
     const emailRequest: SendEmailRequest = {
-      to: { address: email, name: 'Luna User' },
-      subject: 'Your Verification Code',
-      htmlbody: `<div>Your Luna Essentials portal verification code is: <b>${code}</b>. This code will expire in 15 minutes.</div>`,
+      to: { address: email, name: displayName },
+      subject: 'Your Luna Essentials Verification Code',
+      htmlbody: emailHtmlBody,
     };
+
     await sendEmail(emailRequest);
   }
 
