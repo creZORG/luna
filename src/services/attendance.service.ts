@@ -64,6 +64,31 @@ class AttendanceService {
             throw new Error("Could not verify attendance status.");
         }
     }
+
+    async getTodaysAttendance(): Promise<AttendanceRecord[]> {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const q = query(
+            collection(db, "attendance"),
+            where("checkInTime", ">=", Timestamp.fromDate(today)),
+            where("checkInTime", "<", Timestamp.fromDate(tomorrow))
+        );
+
+        try {
+            const querySnapshot = await getDocs(q);
+            const records: AttendanceRecord[] = [];
+            querySnapshot.forEach(doc => {
+                records.push({ id: doc.id, ...doc.data() } as AttendanceRecord);
+            });
+            return records.sort((a,b) => a.checkInTime.seconds - b.checkInTime.seconds);
+        } catch (error) {
+            console.error("Error fetching today's attendance records:", error);
+            throw new Error("Could not fetch today's attendance records.");
+        }
+    }
 }
 
 export const attendanceService = new AttendanceService();

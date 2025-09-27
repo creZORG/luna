@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 
 export interface UserProfile {
     uid: string;
@@ -24,6 +24,20 @@ class UserService {
         } catch (error) {
             console.error("Error fetching user profile:", error);
             return null;
+        }
+    }
+
+    async getUsers(): Promise<UserProfile[]> {
+        try {
+            const usersSnapshot = await getDocs(collection(db, 'users'));
+            const users: UserProfile[] = [];
+            usersSnapshot.forEach(doc => {
+                users.push({ uid: doc.id, ...doc.data() } as UserProfile);
+            });
+            return users;
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            throw new Error("Could not fetch user list.");
         }
     }
 }

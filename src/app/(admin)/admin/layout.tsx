@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck } from 'lucide-react';
+import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,8 +15,11 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { authService } from '@/services/auth.service';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 export default function AdminLayout({
   children,
@@ -25,6 +28,9 @@ export default function AdminLayout({
 }) {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const [isAttendanceOpen, setIsAttendanceOpen] = useState(pathname.includes('/admin/attendance'));
+
 
   if (loading) {
     return (
@@ -54,7 +60,13 @@ export default function AdminLayout({
     { href: "/admin/products", icon: ShoppingCart, label: "Product Pricing" },
     { href: "/admin/media", icon: ImageIcon, label: "Media" },
     { href: "/admin/store-items", icon: Store, label: "Store Items" },
-    { href: "/admin/attendance/check-in", icon: ClipboardCheck, label: "Attendance" },
+    { type: 'collapsible', 
+      trigger: { icon: ClipboardCheck, label: "Attendance" },
+      content: [
+        { href: "/admin/attendance/check-in", label: "Check-in" },
+        { href: "/admin/attendance/overview", label: "Daily Overview" },
+      ]
+    },
     { separator: true },
     { href: "/finance", icon: Briefcase, label: "Finance" },
     { href: "/manufacturing", icon: Factory, label: "Manufacturing" },
@@ -74,13 +86,38 @@ export default function AdminLayout({
             <Home className="h-4 w-4 transition-all group-hover:scale-110" />
             <span className="sr-only">Home</span>
           </Link>
-          {navLinks.map((link, index) => 
-            link.separator ? <DropdownMenuSeparator key={index} className="my-2" /> : (
-            <Link key={link.href} href={link.href!} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
-                <link.icon className="h-5 w-5" />
-                <span className="sr-only">{link.label}</span>
-            </Link>
-          ))}
+          {navLinks.map((link, index) => {
+            if (link.separator) {
+              return <DropdownMenuSeparator key={index} className="my-2" />;
+            }
+            if (link.type === 'collapsible') {
+               return (
+                <Collapsible key={index} open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen} className="flex flex-col items-center gap-1">
+                  <CollapsibleTrigger asChild>
+                     <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9">
+                        <link.trigger.icon className="h-5 w-5" />
+                        <span className="sr-only">{link.trigger.label}</span>
+                     </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent asChild>
+                      <div className="flex flex-col items-center gap-2 mt-1">
+                          {link.content.map(subLink => (
+                            <Link key={subLink.href} href={subLink.href} className="text-muted-foreground text-xs hover:text-foreground">
+                                {subLink.label}
+                            </Link>
+                          ))}
+                      </div>
+                  </CollapsibleContent>
+                </Collapsible>
+               )
+            }
+            return (
+              <Link key={link.href} href={link.href!} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8">
+                  <link.icon className="h-5 w-5" />
+                  <span className="sr-only">{link.label}</span>
+              </Link>
+            )
+          })}
         </nav>
       </aside>
       <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
@@ -101,13 +138,35 @@ export default function AdminLayout({
                 <Home className="h-5 w-5 transition-all group-hover:scale-110" />
                 <span className="sr-only">Home</span>
               </Link>
-              {navLinks.map((link, index) => 
-                link.separator ? <DropdownMenuSeparator key={index} /> : (
-                <Link key={link.href} href={link.href!} className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
-                  <link.icon className="h-5 w-5" />
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link, index) => {
+                 if (link.separator) {
+                    return <DropdownMenuSeparator key={index} />;
+                 }
+                 if (link.type === 'collapsible') {
+                    return (
+                        <Collapsible key={index} className="grid gap-2">
+                            <CollapsibleTrigger className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+                                <link.trigger.icon className="h-5 w-5" />
+                                {link.trigger.label}
+                                <ChevronDown className={cn("ml-auto h-4 w-4 transition-transform", isAttendanceOpen && "rotate-180")}/>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="grid gap-4 pl-11">
+                                {link.content.map(subLink => (
+                                    <Link key={subLink.href} href={subLink.href} className={cn("text-muted-foreground hover:text-foreground", pathname === subLink.href && "text-foreground font-semibold")}>
+                                        {subLink.label}
+                                    </Link>
+                                ))}
+                            </CollapsibleContent>
+                        </Collapsible>
+                    )
+                 }
+                 return (
+                    <Link key={link.href} href={link.href!} className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground">
+                    <link.icon className="h-5 w-5" />
+                    {link.label}
+                    </Link>
+                 )
+                })}
               </nav>
             </SheetContent>
           </Sheet>
