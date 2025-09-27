@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -25,7 +26,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading, userProfile } = useAuth();
+  const { user, loading, userProfile, isProfilePending } = useAuth();
 
   const getRedirectPath = (roles: string[] = []) => {
     if (roles.includes('admin')) return '/admin/dashboard';
@@ -34,7 +35,9 @@ export default function LoginPage() {
     if (roles.includes('finance')) return '/finance';
     if (roles.includes('manufacturing')) return '/manufacturing';
     if (roles.includes('digital-marketing')) return '/digital-marketing';
-    return '/admin/dashboard'; // Default fallback
+    // If no roles, they will be shown a pending modal by the layout, 
+    // but we can default the redirect to a safe place.
+    return '/admin/dashboard'; 
   }
 
   if (loading) {
@@ -46,15 +49,15 @@ export default function LoginPage() {
   }
 
   if (user && userProfile) {
+     // If profile is pending, the layout will handle the modal.
+     // We can still redirect to a default path.
+     if(isProfilePending) {
+        router.push('/admin/dashboard'); 
+        return null;
+     }
+
     router.push(getRedirectPath(userProfile.roles));
     return null;
-  }
-   if (user && !userProfile && !loading) {
-    // User is authenticated but profile is not loaded, maybe they don't have one.
-    // Or maybe it's still loading. The loading state in useAuth should handle this.
-    // For now, let's just show a loading state. A better approach might be to show an error or guide user.
-     router.push('/access-denied');
-     return null;
   }
 
 
@@ -63,15 +66,14 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const user = await authService.login(email, password);
-      const profile = await userService.getUserProfile(user.uid);
-      
+      // The useAuth hook will handle profile fetching and redirection
+      // after the auth state changes. We can just show a success message.
       toast({
         title: 'Login Successful',
         description: "Welcome back! Redirecting...",
       });
-
-      const redirectPath = getRedirectPath(profile?.roles);
-      router.push(redirectPath);
+       // The onAuthStateChanged listener in AuthProvider will trigger the redirect.
+       // No need to manually push here.
 
     } catch (error: any) {
       toast({

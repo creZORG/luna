@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown } from 'lucide-react';
+import { Home, ShoppingCart, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter, usePathname } from 'next/navigation';
@@ -21,12 +22,30 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
+function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
+  return (
+    <Dialog open={isOpen}>
+      <DialogContent showCloseButton={false} onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <div className="flex justify-center mb-4">
+            <UserCog className="w-12 h-12 text-primary" />
+          </div>
+          <DialogTitle className="text-center text-2xl">Account Setup Pending</DialogTitle>
+          <DialogDescription className="text-center">
+            Your profile has been created, but an administrator has not assigned any roles to you yet. Please contact your administrator to gain access.
+          </DialogDescription>
+        </DialogHeader>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, isProfilePending } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(pathname.includes('/admin/attendance'));
@@ -43,6 +62,10 @@ export default function AdminLayout({
   if (!user) {
     router.push('/login');
     return null;
+  }
+
+  if (isProfilePending) {
+    return <PendingProfileModal isOpen={true} />
   }
   
   if (!userProfile?.roles?.includes('admin')) {

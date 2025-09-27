@@ -1,6 +1,7 @@
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs } from 'firebase/firestore';
+import type { User } from 'firebase/auth';
 
 export interface UserProfile {
     uid: string;
@@ -24,6 +25,23 @@ class UserService {
         } catch (error) {
             console.error("Error fetching user profile:", error);
             return null;
+        }
+    }
+
+     async createDefaultUserProfile(user: User): Promise<UserProfile> {
+        const userProfile: UserProfile = {
+            uid: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || user.email?.split('@')[0] || 'New User',
+            roles: [], // Start with no roles
+        };
+
+        try {
+            await setDoc(doc(db, 'users', user.uid), userProfile);
+            return userProfile;
+        } catch (error) {
+            console.error("Error creating default user profile:", error);
+            throw new Error("Could not create user profile in database.");
         }
     }
 
