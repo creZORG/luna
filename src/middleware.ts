@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Prevent rewriting for auth and public asset paths
-  if (pathname.startsWith('/login') || pathname.startsWith('/access-denied')) {
+  if (pathname.startsWith('/login') || pathname.startsWith('/access-denied') || pathname.startsWith('/verify-email')) {
     return NextResponse.next();
   }
 
