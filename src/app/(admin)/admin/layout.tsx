@@ -22,6 +22,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 
 
 function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
@@ -243,5 +244,7 @@ export default function AdminLayout({
     </div>
   );
 }
+
+    
 
     
