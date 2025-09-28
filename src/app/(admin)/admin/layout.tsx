@@ -223,7 +223,7 @@ export default function AdminLayout({
         )}>
            <div className="flex h-full max-h-screen flex-col gap-2">
                 <div className="flex h-14 items-center justify-center border-b px-4 lg:h-[60px] lg:px-6">
-                    <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
+                    <Link href="/" className="flex items-center gap-2 font-semibold">
                         <Home className="h-6 w-6" />
                         <span className={cn(isCollapsed && "hidden")}>Home</span>
                     </Link>
@@ -282,7 +282,18 @@ export default function AdminLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8">
+        {userProfile && (
+            <div className="bg-muted/60 border-b border-muted">
+                <div className="px-4 sm:px-6 py-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                        Welcome, <span className="font-semibold text-foreground">{userProfile.displayName}</span>
+                        <span className="mx-2">|</span>
+                        <span className="capitalize">{userProfile.roles.join(', ').replace(/-/g, ' ')}</span>
+                    </p>
+                </div>
+            </div>
+        )}
+        <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8 mt-4">
             <PendingProfileModal isOpen={isProfilePending} />
             {isProfilePending ? null : children}
         </main>

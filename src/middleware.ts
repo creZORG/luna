@@ -22,7 +22,6 @@ export function middleware(request: NextRequest) {
     sales: '/sales',
     operations: '/operations',
     'digital-marketing': '/digital-marketing',
-    'isApi': 'tradinta'
   };
 
   const dashboardMap: { [key: string]: string } = {
@@ -41,28 +40,31 @@ export function middleware(request: NextRequest) {
 
   // If on a portal subdomain
   if (portalPath && dashboardPath) {
-    // If at the root of the subdomain, redirect to its dashboard
+    // If user is at the root of the subdomain, redirect them to their main dashboard.
     if (pathname === '/') {
         url.pathname = dashboardPath;
         return NextResponse.redirect(url);
     }
     
+    // Allow auth pages to be accessed directly without rewrite.
     const isAuthPath = pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied');
+    if (isAuthPath) {
+      return NextResponse.next();
+    }
     
-    if (!isAuthPath) {
-      // If the path already starts with the correct portal path, do nothing.
-      // This is crucial for paths like `/admin/staff` on `staff.luna.co.ke`
-      if (pathname.startsWith(portalPath)) {
-        return NextResponse.next();
-      }
-
-      // Otherwise, rewrite the path to include the portal prefix.
-      url.pathname = `${portalPath}${pathname}`;
-      return NextResponse.rewrite(url);
+    // If the path already starts with the correct portal path, do nothing.
+    // This allows /admin/users to work on staff.luna.co.ke which maps to /admin portal.
+    if (pathname.startsWith(portalPath)) {
+      return NextResponse.next();
     }
 
+    // Rewrite other paths to include the portal prefix.
+    // e.g., on operations.luna.co.ke, `/products` becomes `/operations/products`.
+    url.pathname = `${portalPath}${pathname}`;
+    return NextResponse.rewrite(url);
+
   } 
-  // If on the main domain, block access to portal paths
+  // If on the main domain, block access to all portal paths.
   else if (isMainDomain) {
       const isPortalPath = Object.values(portalMap).some(p => pathname.startsWith(p));
       if (isPortalPath) {

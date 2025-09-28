@@ -29,17 +29,17 @@ export default function LoginPage() {
   const { user, loading, userProfile, isProfilePending } = useAuth();
 
   const getRedirectPath = (roles: string[] = []) => {
-    // Define the priority of roles for redirection.
+    // This logic is now primarily handled by the middleware.
+    // This is a fallback.
     const rolePriority: (UserProfile['roles'][number])[] = [
         'sales',
         'operations',
         'finance',
         'manufacturing',
         'digital-marketing',
-        'admin', // Admin is lower priority unless it's the only role
+        'admin',
     ];
     
-    // Find the highest-priority role the user has.
     for (const role of rolePriority) {
         if (roles.includes(role)) {
             switch(role) {
@@ -53,7 +53,6 @@ export default function LoginPage() {
         }
     }
 
-    // Default fallback if no matching roles are found (e.g., new user)
     return '/admin/dashboard';
   };
 
@@ -70,11 +69,9 @@ export default function LoginPage() {
       router.push('/verify-email');
       return null;
     }
-     if(isProfilePending) {
-        router.push('/admin/dashboard'); 
-        return null;
-     }
-    router.push(getRedirectPath(userProfile.roles));
+     // The middleware will handle the redirect to the correct dashboard
+     // based on the subdomain. We can just push to a generic path.
+    router.push('/');
     return null;
   }
 
@@ -98,6 +95,8 @@ export default function LoginPage() {
           title: 'Login Successful',
           description: "Welcome back! Redirecting...",
         });
+        // After login, redirect to root, middleware will handle the rest.
+        router.push('/');
       }
     } catch (error: any) {
       toast({
