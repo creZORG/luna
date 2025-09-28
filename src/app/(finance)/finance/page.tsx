@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function FinanceDashboard() {
     return (
@@ -6,10 +6,11 @@ export default function FinanceDashboard() {
             <h1 className="text-3xl font-bold mb-6">Finance Portal</h1>
             <Card>
                 <CardHeader>
-                    <CardTitle>Welcome to the Finance Dashboard</CardTitle>
+                    <CardTitle>Welcome to the Finance Portal</CardTitle>
+                    <CardDescription>This is your dashboard for expense logging, payroll, and financial reporting.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>This is a placeholder for the finance portal. Features like expense logging, payroll, and reporting will be available here.</p>
+                    <p>Feature content for the finance portal will be available here.</p>
                 </CardContent>
             </Card>
         </div>

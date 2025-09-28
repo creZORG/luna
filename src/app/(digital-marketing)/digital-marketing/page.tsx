@@ -12,10 +12,11 @@ export default async function DigitalMarketingDashboard() {
             <h1 className="text-3xl font-bold">Digital Marketing Portal</h1>
             <Card>
                 <CardHeader>
-                    <CardTitle>Welcome to the Digital Marketing Dashboard</CardTitle>
+                    <CardTitle>Welcome to the Digital Marketing Portal</CardTitle>
+                    <CardDescription>This is your dashboard for social media analytics, campaign planning, and ad spend tracking.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>This is a placeholder for the digital marketing portal. Features like social media analytics, campaign planners, and ad spend tracking will be available here.</p>
+                    <p>Feature content for the digital marketing portal will be available here.</p>
                 </CardContent>
             </Card>
 
