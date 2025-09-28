@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
 import { activityService } from './activity.service';
 
@@ -17,18 +17,19 @@ class StoreItemService {
             const product = doc.data();
              product.sizes.forEach((size: { size: string, price: number}) => {
                 const compositeId = `${doc.id}-${size.size}`;
-                const existingItem = items.find(i => i.id === compositeId);
-                items.push({
-                    id: compositeId,
-                    name: `${product.name} (${size.size})`,
-                    category: 'Finished Goods',
-                    inventory: existingItem?.inventory ?? 0
-                });
+                // Do not add if it already exists from a dedicated storeItem entry
+                if (!items.some(i => i.id === compositeId)) {
+                    items.push({
+                        id: compositeId,
+                        name: `${product.name} (${size.size})`,
+                        category: 'Finished Goods',
+                        inventory: 0 // Default inventory
+                    });
+                }
             });
         });
 
-        // This part is a bit tricky. We should get inventory from a separate collection.
-        // For now, let's assume storeItems has inventory for equipment and we need to fetch for products.
+        // Get inventory levels
         const inventorySnapshot = await getDocs(collection(db, "inventory"));
         const inventoryMap = new Map<string, number>();
         inventorySnapshot.forEach(doc => {

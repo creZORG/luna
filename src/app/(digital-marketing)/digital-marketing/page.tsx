@@ -15,6 +15,10 @@ export default async function DigitalMarketingDashboard() {
     const marketerId = currentUser?.uid || 'temp-digital-markerter-id';
     const referralLinks = await referralService.getReferralLinksByMarketer(marketerId);
 
+    // Filter for non-"Finished Goods" items for the request form
+    const equipmentItems = storeItems.filter(item => item.category !== 'Finished Goods');
+
+
     return (
         <div className="grid gap-6">
             <h1 className="text-3xl font-bold">Digital Marketing Portal</h1>
@@ -23,7 +27,7 @@ export default async function DigitalMarketingDashboard() {
 
             <ReferralLinksClient initialLinks={referralLinks} />
 
-            <EquipmentRequestClient items={storeItems} />
+            <EquipmentRequestClient items={equipmentItems} />
         </div>
     );
 }

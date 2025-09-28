@@ -65,27 +65,35 @@ export default function EquipmentRequestClient({ items }: EquipmentRequestClient
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {items.map(item => (
-                            <div key={item.id} className="flex items-center space-x-3 p-4 border rounded-lg">
-                                <Checkbox 
-                                    id={item.id} 
-                                    onCheckedChange={() => handleCheckboxChange(item.id)}
-                                    checked={selectedItems.includes(item.id)}
-                                />
-                                <label
-                                    htmlFor={item.id}
-                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                >
-                                    {item.name}
-                                </label>
+                    {items.length > 0 ? (
+                        <>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {items.map(item => (
+                                    <div key={item.id} className="flex items-center space-x-3 p-4 border rounded-lg">
+                                        <Checkbox 
+                                            id={item.id} 
+                                            onCheckedChange={() => handleCheckboxChange(item.id)}
+                                            checked={selectedItems.includes(item.id)}
+                                        />
+                                        <label
+                                            htmlFor={item.id}
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            {item.name}
+                                        </label>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                    <Button onClick={handleSubmit} disabled={isSubmitting || selectedItems.length === 0}>
-                        {isSubmitting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Submit Request
-                    </Button>
+                            <Button onClick={handleSubmit} disabled={isSubmitting || selectedItems.length === 0}>
+                                {isSubmitting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Submit Request
+                            </Button>
+                        </>
+                    ) : (
+                         <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                            <p className="text-muted-foreground">No equipment available for request at the moment.</p>
+                        </div>
+                    )}
                 </div>
             </CardContent>
         </Card>
