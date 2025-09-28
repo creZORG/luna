@@ -186,17 +186,36 @@ export default function AdminLayout({
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (loading) return; // Wait until auth state is confirmed
+
+    if (!user) {
         router.push('/login');
+        return;
     }
-  }, [user, loading, router]);
+
+    // This is the crucial check. If the profile is loaded and the user is not an admin, deny access.
+    if (userProfile && !userProfile.roles.includes('admin')) {
+      router.push('/access-denied');
+      return;
+    }
+
+  }, [user, userProfile, loading, router]);
 
 
-  if (loading || !user) {
+  if (loading || !user || !userProfile) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />
       </div>
+    );
+  }
+  
+  // An extra layer of protection in case the useEffect hook is slow to fire.
+  if (!userProfile.roles.includes('admin')) {
+    return (
+        <div className="flex min-h-screen w-full items-center justify-center">
+            <Loader className="h-8 w-8 animate-spin" />
+        </div>
     );
   }
 
