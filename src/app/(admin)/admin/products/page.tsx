@@ -6,21 +6,17 @@ import {
     CardHeader,
     CardTitle,
   } from "@/components/ui/card"
+  import { ProductForm } from "@/app/(operations)/operations/products/_components/product-form";
   
   export default async function ProductsAdminPage() {
     return (
-      <Card>
-        <CardHeader>
-            <CardTitle>Manage Product Pricing</CardTitle>
-            <CardDescription>
-            Set and update the prices for different product sizes. This section is for administrators.
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>Product pricing management interface will be here.</p>
-          {/* We will build a table here to edit prices for each product variant */}
-        </CardContent>
-      </Card>
+      <div>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">Manage Product Pricing</h1>
+          <p className="text-muted-foreground">Set and update the prices for different product sizes. This section is for administrators.</p>
+        </div>
+        <ProductForm role="admin" />
+      </div>
     )
   }
   
