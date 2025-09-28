@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { CheckCircle, Leaf, Recycle, Aperture, Briefcase, Boxes } from 'lucide-react';
+import { CheckCircle, Leaf, Recycle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -51,24 +51,6 @@ export default function Home() {
     },
   ];
 
-  const partnerFeatures = [
-    {
-      icon: Aperture,
-      title: 'Seamless API Integration',
-      description: 'Easily connect your systems to ours. When you update products on your end, they automatically update on our sales platform, Tradinta.co.ke.'
-    },
-    {
-      icon: Briefcase,
-      title: 'Expand Your Reach',
-      description: 'Leverage our growing sales network to bring your products to a wider audience without the overhead of building your own distribution channels.'
-    },
-    {
-      icon: Boxes,
-      title: 'Focus on What You Do Best',
-      description: 'Let us handle the logistics of online sales and distribution. You focus on creating amazing products, and we\'ll help you sell them.'
-    }
-  ]
-
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -86,13 +68,13 @@ export default function Home() {
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 px-4">
           <h1 className="font-headline text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-            Your Partner in Quality Manufacturing
+            Quality Manufacturing for Your Brand
           </h1>
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto">
-            From wholesale opportunities to seamless API integration for fellow manufacturers, Luna is building the future of retail distribution.
+            Explore wholesale opportunities with Luna Essentials and stock your shelves with products your customers will love.
           </p>
           <Button asChild size="lg" className="mt-8 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-            <Link href="#partners">Become a Partner</Link>
+            <Link href="/#wholesale">Explore Wholesale</Link>
           </Button>
         </div>
       </section>
@@ -104,7 +86,7 @@ export default function Home() {
                 Wholesale & Retail Opportunities
             </h2>
             <p className="max-w-3xl mx-auto text-muted-foreground mb-12">
-                Stock your shelves with high-quality, sustainable products that your customers will love. We offer massive quantity discounts and reliable supply for our entire range.
+                Stock your shelves with high-quality, sustainable products that your customers will love. We offer massive quantity discounts and reliable supply for our entire range. All our products are available for sale on our partner platform, <a href="https://tradinta.co.ke" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">Tradinta.co.ke</a>.
             </p>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {categories.map((category) => (
@@ -141,38 +123,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* For Manufacturers Section */}
-      <section id="partners" className="py-16 md:py-24 bg-muted/40">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <h2 className="font-headline text-3xl md:text-4xl font-bold">
-              Attention, Manufacturers!
-            </h2>
-            <p className="mt-4 text-lg max-w-3xl mx-auto text-muted-foreground">
-              Ready to scale your business? Partner with Luna to list your products on <a href="https://tradinta.co.ke" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">Tradinta.co.ke</a>, our dedicated sales platform.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mt-12">
-            {partnerFeatures.map((pillar) => (
-              <div key={pillar.title} className="text-center flex flex-col items-center">
-                <div className="bg-primary/20 rounded-full p-4 mb-4">
-                  <pillar.icon className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-headline text-xl font-semibold mb-2">{pillar.title}</h3>
-                <p className="text-muted-foreground max-w-xs">{pillar.description}</p>
-              </div>
-            ))}
-          </div>
-           <div className="text-center mt-12">
-             <Button asChild size="lg">
-                <Link href="#contact">Get Your API Key</Link>
-            </Button>
-           </div>
-        </div>
-      </section>
-
        {/* Why Choose Luna? Section */}
-      <section className="py-16 md:py-24 bg-background">
+      <section className="py-16 md:py-24 bg-muted/40">
         <div className="container mx-auto px-4">
           <h2 className="font-headline text-3xl md:text-4xl font-bold text-center mb-12">
             Our Commitment to Quality
