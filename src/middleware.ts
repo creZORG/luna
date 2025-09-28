@@ -22,6 +22,7 @@ export function middleware(request: NextRequest) {
     sales: '/sales',
     operations: '/operations',
     'digital-marketing': '/digital-marketing',
+    'isApi': 'tradinta'
   };
 
   const dashboardMap: { [key: string]: string } = {

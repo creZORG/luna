@@ -29,12 +29,31 @@ export default function LoginPage() {
   const { user, loading, userProfile, isProfilePending } = useAuth();
 
   const getRedirectPath = (roles: string[] = []) => {
-    if (roles.includes('admin')) return '/admin/dashboard';
-    if (roles.includes('sales')) return '/sales';
-    if (roles.includes('operations')) return '/operations';
-    if (roles.includes('finance')) return '/finance';
-    if (roles.includes('manufacturing')) return '/manufacturing';
-    if (roles.includes('digital-marketing')) return '/digital-marketing';
+    // Define the priority of roles for redirection.
+    const rolePriority: (UserProfile['roles'][number])[] = [
+        'sales',
+        'operations',
+        'finance',
+        'manufacturing',
+        'digital-marketing',
+        'admin', // Admin is lower priority unless it's the only role
+    ];
+    
+    // Find the highest-priority role the user has.
+    for (const role of rolePriority) {
+        if (roles.includes(role)) {
+            switch(role) {
+                case 'admin': return '/admin/dashboard';
+                case 'sales': return '/sales';
+                case 'operations': return '/operations';
+                case 'finance': return '/finance';
+                case 'manufacturing': return '/manufacturing';
+                case 'digital-marketing': return '/digital-marketing';
+            }
+        }
+    }
+
+    // Default fallback if no matching roles are found (e.g., new user)
     return '/admin/dashboard';
   };
 
