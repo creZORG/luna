@@ -1,3 +1,4 @@
+
 import { Facebook, Instagram, Moon, Twitter } from 'lucide-react';
 import Link from 'next/link';
 
@@ -10,21 +11,21 @@ export function Footer() {
 
   const footerSections = [
     {
-      title: 'Quick Links',
+      title: 'Company',
       links: [
         { label: 'Home', href: '/' },
-        { label: 'Products', href: '/products' },
+        { label: 'Our Catalog', href: '/products' },
         { label: 'Our Story', href: '#' },
         { label: 'Sustainability', href: '#' },
       ],
     },
     {
-      title: 'Support',
+      title: 'Partnerships',
       links: [
-        { label: 'Contact Us', href: '#' },
-        { label: 'FAQ', href: '#' },
-        { label: 'Privacy Policy', href: '#' },
-        { label: 'Terms of Service', href: '#' },
+        { label: 'Wholesale & Retail', href: '/#wholesale' },
+        { label: 'For Manufacturers', href: '/#partners' },
+        { label: 'Get API Key', href: '/#contact' },
+        { label: 'Sales Platform', href: 'https://tradinta.co.ke' },
       ],
     },
   ];
@@ -91,7 +92,7 @@ export function Footer() {
         <div className="mt-12 border-t pt-8 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Luna Industries Limited. All Rights Reserved.</p>
           <div className="mt-2">
-            <Link href="/login" className="text-xs hover:text-primary transition-colors">For Administrators</Link>
+            <Link href="/login" className="text-xs hover:text-primary transition-colors">Staff Portal</Link>
           </div>
         </div>
       </div>

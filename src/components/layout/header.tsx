@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,9 @@ import { ThemeToggle } from '../theme-toggle';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/products', label: 'Products' },
+  { href: '/products', label: 'Catalog' },
+  { href: '/#wholesale', label: 'Wholesale' },
+  { href: '/#partners', label: 'Partners' },
   { href: '#contact', label: 'Contact' },
 ];
 

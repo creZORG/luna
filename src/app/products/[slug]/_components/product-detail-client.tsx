@@ -1,19 +1,16 @@
+
 'use client';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import type { Product } from '@/lib/data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Check, ShoppingCart } from 'lucide-react';
+import { Check, Send } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
-import { Label } from '@/components/ui/label';
 
 export default function ProductDetailClient({ product }: { product: Product }) {
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
   const productImage = PlaceHolderImages.find(img => img.id === product.imageId);
 
   return (
@@ -46,37 +43,17 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           <p className="mt-4 text-lg text-muted-foreground">{product.description}</p>
           
           <div className="mt-6">
-            <p className="text-3xl font-bold font-headline">KShs {selectedSize.price.toFixed(2)}</p>
+            <p className="text-muted-foreground">Available in: {product.sizes.map(s => s.size).join(', ')}</p>
           </div>
 
-          {product.sizes.length > 1 && (
-            <div className="mt-6">
-              <Label className="text-base font-medium">Size</Label>
-              <RadioGroup 
-                defaultValue={selectedSize.size} 
-                onValueChange={(value) => {
-                    const newSize = product.sizes.find(s => s.size === value);
-                    if (newSize) setSelectedSize(newSize);
-                }}
-                className="flex items-center gap-4 mt-2"
-              >
-                {product.sizes.map(sizeInfo => (
-                    <div key={sizeInfo.size}>
-                        <RadioGroupItem value={sizeInfo.size} id={sizeInfo.size} className="sr-only" />
-                        <Label htmlFor={sizeInfo.size} className="flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
-                            {sizeInfo.size}
-                        </Label>
-                    </div>
-                ))}
-              </RadioGroup>
-            </div>
-          )}
-
           <div className="mt-8">
-            <Button size="lg" className="w-full">
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Add to Cart
+            <Button size="lg" className="w-full" asChild>
+                <Link href="/#contact">
+                    <Send className="mr-2 h-5 w-5" />
+                    Enquire for Wholesale Pricing
+                </Link>
             </Button>
+             <p className="text-xs text-center mt-2 text-muted-foreground">Direct sales available on <a href="https://tradinta.co.ke" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Tradinta.co.ke</a></p>
           </div>
 
           <Separator className="my-8" />
