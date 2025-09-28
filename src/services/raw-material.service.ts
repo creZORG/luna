@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy } from 'firebase/firestore';
-import type { RawMaterial, RawMaterialIntake, RAW_MATERIALS_SEED } from '@/lib/raw-materials.data';
+import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy, setDoc, updateDoc } from 'firebase/firestore';
+import type { RawMaterial, RawMaterialIntake, UnitOfMeasure } from '@/lib/raw-materials.data';
 import { userService } from './user.service';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
@@ -19,6 +19,12 @@ export interface IntakeFormData {
     batchNumber: string;
     expiryDate: Date;
     deliveryNotePhoto: File;
+}
+
+export interface NewRawMaterialData {
+    name: string;
+    unitOfMeasure: UnitOfMeasure;
+    quantity: number;
 }
 
 // Helper to convert File to Data URI
@@ -44,6 +50,18 @@ class RawMaterialService {
         return materials;
     }
     
+    async createRawMaterial(data: NewRawMaterialData, userId: string, userName: string): Promise<string> {
+        const docRef = await addDoc(collection(db, 'rawMaterials'), data);
+        activityService.logActivity(`Created new raw material: ${data.name}.`, userId, userName);
+        return docRef.id;
+    }
+
+    async updateRawMaterialQuantity(materialId: string, quantity: number, userId: string, userName: string): Promise<void> {
+        const materialRef = doc(db, 'rawMaterials', materialId);
+        await updateDoc(materialRef, { quantity });
+        activityService.logActivity(`Updated inventory for material ID ${materialId} to ${quantity}.`, userId, userName);
+    }
+
     async logIntakeAndupdateInventory(formData: IntakeFormData, userId: string): Promise<string> {
         // 1. Upload the photo
         const imageDataUri = await toDataUri(formData.deliveryNotePhoto);
@@ -68,7 +86,7 @@ class RawMaterialService {
                 }
                 materialName = materialDoc.data().name;
 
-                const newQuantity = materialDoc.data().quantity + formData.actualQuantity;
+                const newQuantity = (materialDoc.data().quantity || 0) + formData.actualQuantity;
                 
                 transaction.update(materialRef, { quantity: newQuantity });
 

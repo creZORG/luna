@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, PanelLeft, LogOut, Loader, Activity, Package, Truck, Warehouse } from 'lucide-react';
+import { Home, PanelLeft, LogOut, Loader, Activity, Package, Truck, Warehouse, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -56,6 +56,7 @@ export default function OperationsLayout({
     { separator: true, id: 'sep1' },
     { href: "/operations/raw-materials/intake", icon: Truck, label: "Material Intake" },
     { href: "/operations/raw-materials/inventory", icon: Warehouse, label: "Material Inventory" },
+    { href: "/operations/raw-materials/manage", icon: Settings, label: "Manage Materials" },
     { separator: true, id: 'sep2' },
     { href: "/admin/dashboard", icon: Home, label: "Main Admin" },
   ];

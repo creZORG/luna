@@ -1,16 +1,46 @@
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
 import { activityService } from './activity.service';
 
 class StoreItemService {
     async getStoreItems(): Promise<StoreItem[]> {
-        const querySnapshot = await getDocs(collection(db, "storeItems"));
+        const querySnapshot = await getDocs(query(collection(db, "storeItems"), where('category', '!=', 'Finished Goods')));
+        const productSnapshot = await getDocs(collection(db, "products"));
+
         const items: StoreItem[] = [];
         querySnapshot.forEach((doc) => {
             items.push({ id: doc.id, ...doc.data() } as StoreItem);
         });
-        return items;
+
+        productSnapshot.forEach((doc) => {
+            const product = doc.data();
+             product.sizes.forEach((size: { size: string, price: number}) => {
+                const compositeId = `${doc.id}-${size.size}`;
+                const existingItem = items.find(i => i.id === compositeId);
+                items.push({
+                    id: compositeId,
+                    name: `${product.name} (${size.size})`,
+                    category: 'Finished Goods',
+                    inventory: existingItem?.inventory ?? 0
+                });
+            });
+        });
+
+        // This part is a bit tricky. We should get inventory from a separate collection.
+        // For now, let's assume storeItems has inventory for equipment and we need to fetch for products.
+        const inventorySnapshot = await getDocs(collection(db, "inventory"));
+        const inventoryMap = new Map<string, number>();
+        inventorySnapshot.forEach(doc => {
+            inventoryMap.set(doc.id, doc.data().quantity);
+        });
+
+        const finalItems = items.map(item => ({
+            ...item,
+            inventory: inventoryMap.get(item.id) ?? item.inventory ?? 0,
+        }));
+        
+        return finalItems;
     }
 
     async getItemRequests(status?: RequestStatus): Promise<StoreItemRequest[]> {
@@ -24,6 +54,16 @@ class StoreItemService {
             requests.push({ id: doc.id, ...doc.data() } as StoreItemRequest);
         });
         return requests.sort((a, b) => b.requestDate.seconds - a.requestDate.seconds);
+    }
+    
+    async updateItemInventory(itemId: string, newInventory: number, adminId: string, adminName: string): Promise<void> {
+        const itemRef = doc(db, 'inventory', itemId);
+        await setDoc(itemRef, { quantity: newInventory }, { merge: true });
+         activityService.logActivity(
+            `Adjusted inventory for item ID ${itemId} to ${newInventory}.`,
+            adminId,
+            adminName
+        );
     }
 
     async createItemRequests(itemIds: string[]): Promise<void> {
@@ -64,7 +104,7 @@ class StoreItemService {
 
     // A function to seed the initial data.
     // This would typically only be run once.
-    async seedStoreItems(items: Omit<StoreItem, 'id'>[]): Promise<void> {
+    async seedStoreItems(items: Omit<StoreItem, 'id' | 'inventory'>[]): Promise<void> {
         const storeItemsRef = collection(db, "storeItems");
         const snapshot = await getDocs(storeItemsRef);
         if (!snapshot.empty) {
@@ -75,7 +115,7 @@ class StoreItemService {
         const batch = writeBatch(db);
         items.forEach(item => {
             const docRef = doc(storeItemsRef);
-            batch.set(docRef, item);
+            batch.set(docRef, { ...item, inventory: 0 });
         });
         await batch.commit();
         console.log("Successfully seeded store items.");

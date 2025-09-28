@@ -52,6 +52,13 @@ export default function StoreItemsClient({ items, initialRequests }: StoreItemsC
                         </TableRow>
                     </TableHeader>
                     <TableBody>
+                        {initialRequests.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={6} className="h-24 text-center">
+                                    No equipment requests yet.
+                                </TableCell>
+                            </TableRow>
+                        )}
                         {initialRequests.map(req => (
                             <TableRow key={req.id}>
                                 <TableCell className="font-medium">{getItemName(req.itemId)}</TableCell>

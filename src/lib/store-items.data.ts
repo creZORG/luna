@@ -2,7 +2,8 @@
 export type StoreItem = {
     id: string;
     name: string;
-    category: 'Electronics' | 'Accessories' | 'Software';
+    category: 'Electronics' | 'Accessories' | 'Software' | 'Finished Goods';
+    inventory: number; // Represents quantity in the main store
 };
 
 export type RequestStatus = 'pending' | 'approved' | 'rejected';
@@ -20,7 +21,7 @@ export interface StoreItemRequest {
 }
 
 
-export const STORE_ITEMS: Omit<StoreItem, 'id'>[] = [
+export const STORE_ITEMS: Omit<StoreItem, 'id' | 'inventory'>[] = [
     { name: 'DSLR Camera', category: 'Electronics' },
     { name: 'Tripod', category: 'Accessories' },
     { name: 'Lavalier Microphone', category: 'Electronics' },
