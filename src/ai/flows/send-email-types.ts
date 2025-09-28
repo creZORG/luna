@@ -2,6 +2,10 @@
 import {z} from 'genkit';
 
 export const SendEmailRequestSchema = z.object({
+  from: z.object({
+    address: z.string().email(),
+    name: z.string(),
+  }).optional(),
   to: z.object({
     address: z.string().email(),
     name: z.string(),

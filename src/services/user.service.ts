@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 
@@ -92,6 +92,16 @@ class UserService {
             admins.push({ uid: doc.id, ...doc.data() } as UserProfile);
         });
         return admins;
+    }
+
+    async updateUserRoles(uid: string, roles: UserProfile['roles']): Promise<void> {
+        try {
+            const userDocRef = doc(db, 'users', uid);
+            await updateDoc(userDocRef, { roles });
+        } catch (error) {
+            console.error("Error updating user roles:", error);
+            throw new Error("Could not update user roles in the database.");
+        }
     }
 }
 

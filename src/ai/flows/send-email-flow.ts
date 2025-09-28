@@ -34,7 +34,7 @@ const sendEmailFlow = ai.defineFlow(
 
     try {
       const response = await client.sendMail({
-        from: {
+        from: params.from || {
           address: 'noreply@luna.co.ke',
           name: 'Luna Essentials',
         },
