@@ -37,12 +37,9 @@ export default function LoginPage() {
   }
 
   if (user && userProfile) {
-    if (!userProfile.emailVerified) {
-      router.push('/verify-email');
-      return null;
-    }
-     // The middleware will handle the redirect to the correct dashboard
-     // based on the subdomain. We can just push to a generic path.
+    // The middleware and auth provider will handle redirects.
+    // If we're here with a user, it might be a race condition,
+    // let's let the auth state settle and redirect.
     router.push('/');
     return null;
   }
@@ -51,32 +48,22 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const userCredential = await authService.login(email, password);
-      const profile = await userService.getUserProfile(userCredential.uid);
-      
-      // onAuthStateChanged in useAuth will handle the final redirect.
-      // We just need to check for email verification status here to initiate flow.
-      if (profile && !profile.emailVerified) {
-         toast({
-            title: 'Verification Required',
-            description: 'Please check your email for a verification code.',
-         });
-         router.push('/verify-email');
-      } else {
-        toast({
-          title: 'Login Successful',
-          description: "Welcome back! Redirecting...",
-        });
-        // After login, redirect to root, middleware will handle the rest.
-        router.push('/');
-      }
+      await authService.login(email, password);
+      // onAuthStateChanged in useAuth will handle fetching the profile
+      // and triggering the next state update, which will cause a redirect.
+      toast({
+        title: 'Login Successful',
+        description: "Welcome back! Redirecting...",
+      });
+      // After login, redirect to root, middleware and auth provider will handle the rest.
+      router.push('/');
+      router.refresh(); // This helps ensure middleware and auth state re-evaluate.
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
         description: error.message || 'An unexpected error occurred. Please try again.',
       });
-    } finally {
       setIsLoading(false);
     }
   };

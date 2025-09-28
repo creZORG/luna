@@ -37,8 +37,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         setUserProfile(profile);
 
-        if (!profile.emailVerified && pathname !== '/verify-email') {
+        // Defer email verification check to avoid race conditions with login redirect
+        if (profile && !profile.emailVerified) {
+          if (pathname !== '/verify-email') {
             router.push('/verify-email');
+          }
         }
 
       } else {
