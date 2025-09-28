@@ -2,14 +2,12 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy } from 'firebase/firestore';
 import type { RawMaterial, RawMaterialIntake, RAW_MATERIALS_SEED } from '@/lib/raw-materials.data';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { userService } from './user.service';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
 import { activityService } from './activity.service';
+import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
 
-
-const storage = getStorage();
 
 export interface IntakeFormData {
     supplier: string;
@@ -22,6 +20,17 @@ export interface IntakeFormData {
     expiryDate: Date;
     deliveryNotePhoto: File;
 }
+
+// Helper to convert File to Data URI
+const toDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
+
 
 class RawMaterialService {
 
@@ -37,9 +46,12 @@ class RawMaterialService {
     
     async logIntakeAndupdateInventory(formData: IntakeFormData, userId: string): Promise<string> {
         // 1. Upload the photo
-        const photoRef = ref(storage, `delivery-notes/${Date.now()}-${formData.deliveryNotePhoto.name}`);
-        const photoSnapshot = await uploadBytes(photoRef, formData.deliveryNotePhoto);
-        const deliveryNotePhotoUrl = await getDownloadURL(photoSnapshot.ref);
+        const imageDataUri = await toDataUri(formData.deliveryNotePhoto);
+        const deliveryNotePhotoUrl = await uploadImageFlow({
+            imageDataUri: imageDataUri,
+            folder: 'delivery-notes'
+        });
+
 
         // 2. Create the intake log and update inventory in a transaction
         const intakeRef = doc(collection(db, 'rawMaterialIntakes'));

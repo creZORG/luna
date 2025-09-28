@@ -4,7 +4,8 @@ import type { User } from 'firebase/auth';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
 import { activityService } from './activity.service';
-import { getDownloadURL, ref, uploadString } from 'firebase/storage';
+import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
+
 
 export interface UserProfile {
     uid: string;
@@ -148,9 +149,11 @@ class UserService {
             if (data.socialLinks) updateData.socialLinks = data.socialLinks;
             
             if (data.photoDataUrl) {
-                const storageRef = ref(storage, `profile-photos/${uid}`);
-                await uploadString(storageRef, data.photoDataUrl, 'data_url');
-                updateData.photoURL = await getDownloadURL(storageRef);
+                const imageUrl = await uploadImageFlow({
+                    imageDataUri: data.photoDataUrl,
+                    folder: 'profile-photos'
+                });
+                updateData.photoURL = imageUrl;
             }
 
             if (Object.keys(updateData).length > 0) {
