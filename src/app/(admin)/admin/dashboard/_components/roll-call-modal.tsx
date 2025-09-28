@@ -20,12 +20,12 @@ import {
   CheckCircle,
   Ban,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { attendanceService } from '@/services/attendance.service';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { COMPANY_LOCATION, MAX_CHECK_IN_DISTANCE_METERS } from '@/lib/config';
+import { getCompanySettings } from '@/lib/config';
 
 // Haversine formula
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -58,16 +58,32 @@ export function RollCallModal({ isOpen, onClockInSuccess, onDayOff }: RollCallMo
   const [distance, setDistance] = useState<number | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [settings, setSettings] = useState<{ COMPANY_LOCATION: any, MAX_CHECK_IN_DISTANCE_METERS: number} | null>(null);
+
+   useEffect(() => {
+    async function fetchSettings() {
+      if (isOpen) {
+        const appSettings = await getCompanySettings();
+        setSettings(appSettings);
+      }
+    }
+    fetchSettings();
+  }, [isOpen]);
 
   const startClockInProcess = () => {
+    if (!settings) {
+        setLocationError("Company settings not loaded. Please wait a moment.");
+        setModalState('error');
+        return;
+    }
     setModalState('locating');
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         setLocation({ latitude, longitude });
-        const dist = getDistance(latitude, longitude, COMPANY_LOCATION.latitude, COMPANY_LOCATION.longitude);
+        const dist = getDistance(latitude, longitude, settings.COMPANY_LOCATION.latitude, settings.COMPANY_LOCATION.longitude);
         setDistance(dist);
-        if (dist <= MAX_CHECK_IN_DISTANCE_METERS) {
+        if (dist <= settings.MAX_CHECK_IN_DISTANCE_METERS) {
           setModalState('in_range');
         } else {
           setModalState('out_of_range');
@@ -125,6 +141,15 @@ export function RollCallModal({ isOpen, onClockInSuccess, onDayOff }: RollCallMo
   }
 
   const renderContent = () => {
+    if (!settings && modalState !== 'initial') {
+        return (
+             <div className="flex flex-col items-center justify-center text-center p-8 space-y-4">
+                <Loader className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-muted-foreground">Loading company settings...</p>
+            </div>
+        )
+    }
+
     switch (modalState) {
       case 'locating':
         return (
@@ -157,7 +182,7 @@ export function RollCallModal({ isOpen, onClockInSuccess, onDayOff }: RollCallMo
               <Ban className="h-4 w-4" />
               <AlertTitle>Out of Range</AlertTitle>
               <AlertDescription>
-                You must be within {MAX_CHECK_IN_DISTANCE_METERS}m of the office. You are ~{distance?.toFixed(0)}m away.
+                You must be within {settings!.MAX_CHECK_IN_DISTANCE_METERS}m of the office. You are ~{distance?.toFixed(0)}m away.
               </AlertDescription>
             </Alert>
             <Button onClick={handleTryAgain} className="w-full" variant="outline">Try Again</Button>

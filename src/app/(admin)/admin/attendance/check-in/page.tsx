@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { attendanceService, TodayAttendanceStatus } from '@/services/attendance.service';
 import { Loader, MapPin, AlertCircle, CheckCircle, Ban } from 'lucide-react';
 import { format } from 'date-fns';
-import { COMPANY_LOCATION, MAX_CHECK_IN_DISTANCE_METERS } from '@/lib/config';
+import { getCompanySettings } from '@/lib/config';
 
 // Haversine formula to calculate distance between two lat/lon points
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -39,23 +39,25 @@ export default function CheckInPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [attendanceStatus, setAttendanceStatus] = useState<TodayAttendanceStatus | null>(null);
     const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+    const [settings, setSettings] = useState<{ COMPANY_LOCATION: any, MAX_CHECK_IN_DISTANCE_METERS: number} | null>(null);
 
     useEffect(() => {
-        if (user) {
-            // Check if user has already checked in today
-            const checkStatus = async () => {
-                try {
+        const fetchSettingsAndCheckStatus = async () => {
+            try {
+                const appSettings = await getCompanySettings();
+                setSettings(appSettings);
+                
+                if (user) {
                     const status = await attendanceService.getTodayAttendanceStatus(user.uid);
                     setAttendanceStatus(status);
                     if (!status.hasCheckedIn) {
-                        // If not checked in, get current location
                         navigator.geolocation.getCurrentPosition(
                             (position) => {
                                 const { latitude, longitude } = position.coords;
                                 setLocation({ latitude, longitude });
-                                const dist = getDistance(latitude, longitude, COMPANY_LOCATION.latitude, COMPANY_LOCATION.longitude);
+                                const dist = getDistance(latitude, longitude, appSettings.COMPANY_LOCATION.latitude, appSettings.COMPANY_LOCATION.longitude);
                                 setDistance(dist);
-                                setIsWithinRange(dist <= MAX_CHECK_IN_DISTANCE_METERS);
+                                setIsWithinRange(dist <= appSettings.MAX_CHECK_IN_DISTANCE_METERS);
                                 setError(null);
                             },
                             (err) => {
@@ -76,14 +78,15 @@ export default function CheckInPage() {
                             }
                         );
                     }
-                } catch (e) {
-                    toast({ variant: 'destructive', title: "Error", description: "Could not verify today's attendance status." });
-                } finally {
-                    setIsLoadingStatus(false);
                 }
-            };
-            checkStatus();
-        }
+            } catch (e) {
+                toast({ variant: 'destructive', title: "Error", description: "Could not load app settings or verify attendance status." });
+            } finally {
+                setIsLoadingStatus(false);
+            }
+        };
+
+        fetchSettingsAndCheckStatus();
     }, [user, toast]);
 
     const handleCheckIn = async () => {
@@ -110,11 +113,11 @@ export default function CheckInPage() {
     };
 
     const renderStatus = () => {
-        if (isLoadingStatus) {
+        if (isLoadingStatus || !settings) {
             return (
                 <div className="flex flex-col items-center justify-center text-center p-8 space-y-4">
                     <Loader className="h-10 w-10 animate-spin text-primary" />
-                    <p className="text-muted-foreground">Verifying your attendance status for today...</p>
+                    <p className="text-muted-foreground">Loading settings and verifying status...</p>
                 </div>
             );
         }
@@ -166,7 +169,7 @@ export default function CheckInPage() {
                         <Ban className="h-4 w-4" />
                         <AlertTitle>Out of Range</AlertTitle>
                         <AlertDescription>
-                            You must be within {MAX_CHECK_IN_DISTANCE_METERS} meters of the office to check in. You are currently approximately {distance?.toFixed(0)} meters away.
+                            You must be within {settings.MAX_CHECK_IN_DISTANCE_METERS} meters of the office to check in. You are currently approximately {distance?.toFixed(0)} meters away.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -204,3 +207,4 @@ export default function CheckInPage() {
         </div>
     );
 }
+
