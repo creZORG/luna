@@ -44,12 +44,14 @@ function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
 }
 
 const getNavLinks = (userProfile: UserProfile | null) => {
-    const hasAdminRole = userProfile?.roles.includes('admin');
-    const isPureAdmin = hasAdminRole && userProfile?.roles.length === 1;
+    if (!userProfile) return [];
+
+    const hasRole = (role: UserProfile['roles'][number]) => userProfile.roles.includes(role);
+    const hasAnyRole = (roles: UserProfile['roles']) => roles.some(role => hasRole(role));
 
     const allLinks = [
-        { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', id: 'dashboard', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
-        { href: '/admin/media', icon: ImageIcon, label: 'Media', id: 'media', roles: ['admin'] },
+        { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
+        { href: '/admin/media', icon: ImageIcon, label: 'Media', roles: ['admin'] },
         { separator: true, id: 'sep1', roles: ['admin'] },
         {
           label: 'Store Management',
@@ -58,9 +60,9 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           id: 'store-management',
           roles: ['admin'],
           subLinks: [
-            { href: '/operations/products', icon: Briefcase, label: 'Products' },
-            { href: '/admin/products', icon: Briefcase, label: 'Pricing' },
-            { href: '/admin/store-items', icon: Factory, label: 'Store Items' },
+            { href: '/operations/products', icon: Briefcase, label: 'Products', roles:['admin'] },
+            { href: '/admin/products', icon: Briefcase, label: 'Pricing', roles:['admin'] },
+            { href: '/admin/store-items', icon: Factory, label: 'Store Items', roles:['admin'] },
           ],
         },
         {
@@ -68,14 +70,13 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           icon: ShieldAlert,
           type: 'collapsible',
           id: 'staff-portals',
-          roles: ['admin'], // This section is visible to admin
-          hidden: isPureAdmin, // But hidden if they are *only* an admin
+          roles: ['admin'],
           subLinks: [
-            { href: '/sales', icon: Target, label: 'Sales' },
-            { href: '/operations', icon: Activity, label: 'Operations' },
-            { href: '/manufacturing', icon: Factory, label: 'Manufacturing' },
-            { href: '/finance', icon: Briefcase, label: 'Finance' },
-            { href: '/digital-marketing', icon: Target, label: 'Digital Marketing' },
+            { href: '/sales', icon: Target, label: 'Sales', roles:['admin'] },
+            { href: '/operations', icon: Activity, label: 'Operations', roles:['admin'] },
+            { href: '/manufacturing', icon: Factory, label: 'Manufacturing', roles:['admin'] },
+            { href: '/finance', icon: Briefcase, label: 'Finance', roles:['admin'] },
+            { href: '/digital-marketing', icon: Target, label: 'Digital Marketing', roles:['admin'] },
           ],
         },
          {
@@ -93,23 +94,14 @@ const getNavLinks = (userProfile: UserProfile | null) => {
         },
     ];
 
-    return allLinks.filter(link => {
-        if(link.hidden) return false;
-        if (!userProfile) return false;
-        // The link should be shown if the user has any of the roles specified for the link
-        return link.roles.some(role => userProfile.roles.includes(role as any));
-    }).map(link => {
-        if(link.type === 'collapsible') {
-            return {
-                ...link,
-                subLinks: link.subLinks.filter(sublink => {
-                    if(!sublink.roles) return true; // if sublink has no specific roles, show it
-                    return sublink.roles.some(role => userProfile.roles.includes(role as any));
-                })
-            }
+    // Filter links based on user roles
+    return allLinks.map(link => {
+        if (link.type === 'collapsible') {
+            const visibleSubLinks = link.subLinks.filter(sublink => hasAnyRole(sublink.roles as any));
+            return visibleSubLinks.length > 0 ? { ...link, subLinks: visibleSubLinks } : null;
         }
-        return link;
-    }).filter(link => !link.type || (link.subLinks && link.subLinks.length > 0)); // remove empty collapsible sections
+        return hasAnyRole(link.roles as any) ? link : null;
+    }).filter(Boolean); // Remove null entries
 }
 
 
@@ -122,12 +114,13 @@ function NavContent({ isCollapsed, userProfile }: { isCollapsed: boolean, userPr
             <TooltipProvider>
                  <nav className="grid gap-1 px-2">
                     {navLinks.map((link, index) => {
+                         if (!link) return null;
                          if (link.separator) {
                             return <Separator key={index} className="my-2" />;
                          }
                          if (link.type === 'collapsible') {
                             return (
-                                <Collapsible key={link.id} defaultOpen={link.subLinks.some(sub => pathname.startsWith(sub.href))}>
+                                <Collapsible key={link.id} defaultOpen={(link.subLinks || []).some(sub => pathname.startsWith(sub.href))}>
                                      <CollapsibleTrigger asChild>
                                         <Button variant="ghost" className={cn("w-full justify-start", isCollapsed && "justify-center w-10 h-10 p-0")}>
                                             <link.icon className="h-5 w-5" />
@@ -136,7 +129,7 @@ function NavContent({ isCollapsed, userProfile }: { isCollapsed: boolean, userPr
                                         </Button>
                                     </CollapsibleTrigger>
                                      <CollapsibleContent className="space-y-1">
-                                        {link.subLinks.map(subLink => (
+                                        {(link.subLinks || []).map(subLink => (
                                              <Tooltip key={subLink.href} delayDuration={0}>
                                                 <TooltipTrigger asChild>
                                                      <Link

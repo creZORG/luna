@@ -32,7 +32,5 @@ export default function FinanceLayout({
         return null;
     }
 
-    // Since this layout is simple now, we can reuse the AdminLayout.
-    // If it becomes more complex, we can create a unique layout.
     return <AdminLayout>{children}</AdminLayout>;
 }

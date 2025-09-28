@@ -118,7 +118,7 @@ export default function OperationsLayout({
                 className="overflow-hidden rounded-full"
               >
                 <Image
-                  src={`https://i.pravatar.cc/36?u=${user.uid}`}
+                  src={userProfile?.photoURL || `https://i.pravatar.cc/36?u=${user.uid}`}
                   width={36}
                   height={36}
                   alt="Avatar"
@@ -129,8 +129,8 @@ export default function OperationsLayout({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{userProfile?.displayName || user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link href="/admin/profile">Profile</Link></DropdownMenuItem>
               <DropdownMenuItem disabled>Settings</DropdownMenuItem>
-              <DropdownMenuItem disabled>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />

@@ -28,34 +28,6 @@ export default function LoginPage() {
   const { toast } = useToast();
   const { user, loading, userProfile, isProfilePending } = useAuth();
 
-  const getRedirectPath = (roles: string[] = []) => {
-    // This logic is now primarily handled by the middleware.
-    // This is a fallback.
-    const rolePriority: (UserProfile['roles'][number])[] = [
-        'sales',
-        'operations',
-        'finance',
-        'manufacturing',
-        'digital-marketing',
-        'admin',
-    ];
-    
-    for (const role of rolePriority) {
-        if (roles.includes(role)) {
-            switch(role) {
-                case 'admin': return '/admin/dashboard';
-                case 'sales': return '/sales';
-                case 'operations': return '/operations';
-                case 'finance': return '/finance';
-                case 'manufacturing': return '/manufacturing';
-                case 'digital-marketing': return '/digital-marketing';
-            }
-        }
-    }
-
-    return '/admin/dashboard';
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center">

@@ -32,5 +32,6 @@ export default function SalesLayout({
         return null;
     }
 
+    // A sales person should get the admin layout as it's the main shell
     return <AdminLayout>{children}</AdminLayout>;
 }
