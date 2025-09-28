@@ -10,12 +10,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { UserProfile, userService } from "@/services/user.service"
+import { UserProfile } from "@/services/user.service"
 import { Button } from "@/components/ui/button";
 import { Edit, Mail } from "lucide-react";
 import { useState } from "react";
 import { EditRolesModal } from "./edit-roles-modal";
 import { EmailUserModal } from "./email-user-modal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const ALL_ROLES = ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'];
 
@@ -68,7 +69,15 @@ export default function UsersClient({ initialUsers }: { initialUsers: UserProfil
                 <TableBody>
                     {users.map((user) => (
                     <TableRow key={user.uid}>
-                        <TableCell className="font-medium">{user.displayName}</TableCell>
+                        <TableCell>
+                            <div className="flex items-center gap-3">
+                                <Avatar>
+                                    <AvatarImage src={user.photoURL || `https://i.pravatar.cc/40?u=${user.uid}`} alt={user.displayName} />
+                                    <AvatarFallback>{user.displayName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="font-medium">{user.displayName}</div>
+                            </div>
+                        </TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
                         <div className="flex flex-wrap gap-1">
@@ -114,3 +123,5 @@ export default function UsersClient({ initialUsers }: { initialUsers: UserProfil
         </>
     )
 }
+
+    

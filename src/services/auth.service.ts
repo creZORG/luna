@@ -1,9 +1,12 @@
 
+'use server';
+
 import { getAuth, signInWithEmailAndPassword, signOut, User, createUserWithEmailAndPassword } from 'firebase/auth';
 import { app, db } from '@/lib/firebase';
 import { doc, setDoc, getDoc, serverTimestamp, deleteDoc, collection, updateDoc, Timestamp } from 'firebase/firestore';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { SendEmailRequest } from '@/ai/flows/send-email-types';
+import { createEmailTemplate } from '@/lib/email-template';
 
 const auth = getAuth(app);
 
@@ -51,26 +54,18 @@ class AuthService {
       expires: Timestamp.fromDate(expires),
     });
 
-    const emailHtmlBody = `
-      <div style="font-family: 'Open Sans', sans-serif; color: #2C3E50; line-height: 1.6;">
-        <div style="max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #dadfe0; border-radius: 0.5rem; background-color: #F5F5DC;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <h1 style="font-family: 'Montserrat', sans-serif; color: #006B6B; font-size: 24px;">LUNA</h1>
-          </div>
-          <h2 style="font-family: 'Montserrat', sans-serif; color: #006B6B; font-size: 20px;">Verify Your Email Address</h2>
-          <p>Hello ${displayName},</p>
-          <p>Thank you for joining the Luna Essentials team portal. To secure your account, please use the following verification code:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <p style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #2C3E50; background-color: #FFFACD; padding: 15px 20px; border-radius: 0.5rem; display: inline-block;">
-              ${code}
-            </p>
-          </div>
-          <p>This code will expire in 15 minutes. If you did not request this code, you can safely ignore this email.</p>
-          <hr style="border: none; border-top: 1px solid #dadfe0; margin: 20px 0;"/>
-          <p style="font-size: 12px; color: #99a2a3; text-align: center;">&copy; ${new Date().getFullYear()} Luna Industries Limited. All Rights Reserved.</p>
-        </div>
+    const emailBody = `
+      <p>Hello ${displayName},</p>
+      <p>Thank you for joining the Luna Essentials team portal. To secure your account, please use the following verification code:</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <p style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #333; background-color: #f0f8ff; padding: 15px 20px; border-radius: 0.5rem; display: inline-block; border: 1px dashed #add8e6;">
+          ${code}
+        </p>
       </div>
+      <p>This code will expire in 15 minutes. If you did not request this code, you can safely ignore this email.</p>
     `;
+
+    const emailHtmlBody = createEmailTemplate('Verify Your Email Address', emailBody);
 
     const emailRequest: SendEmailRequest = {
       to: { address: email, name: displayName },

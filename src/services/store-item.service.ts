@@ -2,6 +2,7 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
+import { activityService } from './activity.service';
 
 class StoreItemService {
     async getStoreItems(): Promise<StoreItem[]> {
@@ -49,6 +50,12 @@ class StoreItemService {
             });
 
             await batch.commit();
+            
+            activityService.logActivity(
+                `Requested ${itemIds.length} store item(s).`,
+                requesterId,
+                requesterName
+            );
 
         } catch (e) {
             console.error("Error creating item requests: ", e);

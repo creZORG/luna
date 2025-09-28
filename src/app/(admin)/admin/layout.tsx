@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose } from 'lucide-react';
+import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -88,6 +88,7 @@ const getNavLinks = (userProfile: UserProfile | null) => {
             { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
             { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview', roles: ['admin'] },
             { href: '/admin/users', icon: UserCog, label: 'Staff Management', roles: ['admin'] },
+            { href: '/admin/activities', icon: Activity, label: 'Recent Activities', roles: ['admin'] },
           ],
         },
     ];
@@ -249,11 +250,11 @@ export default function AdminLayout({
                 className="rounded-full"
               >
                 <Image
-                  src={`https://i.pravatar.cc/36?u=${user.uid}`}
+                  src={userProfile?.photoURL || `https://i.pravatar.cc/36?u=${user.uid}`}
                   width={36}
                   height={36}
                   alt="Avatar"
-                  className="overflow-hidden rounded-full"
+                  className="overflow-hidden rounded-full object-cover"
                 />
                 <span className="sr-only">Toggle user menu</span>
               </Button>
@@ -261,8 +262,16 @@ export default function AdminLayout({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{userProfile?.displayName || user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>Settings</DropdownMenuItem>
-              <DropdownMenuItem disabled>Support</DropdownMenuItem>
+               <DropdownMenuItem asChild>
+                <Link href="/admin/profile">
+                  <UserIcon className="mr-2 h-4 w-4" />
+                  <span>My Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                 <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -279,3 +288,5 @@ export default function AdminLayout({
     </div>
   );
 }
+
+    

@@ -1,10 +1,15 @@
 
+'use server';
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy } from 'firebase/firestore';
 import type { RawMaterial, RawMaterialIntake, RAW_MATERIALS_SEED } from '@/lib/raw-materials.data';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { userService } from './user.service';
 import { sendEmail } from '@/ai/flows/send-email-flow';
+import { createEmailTemplate } from '@/lib/email-template';
+import { activityService } from './activity.service';
+
 
 const storage = getStorage();
 
@@ -43,6 +48,7 @@ class RawMaterialService {
         const materialRef = doc(db, 'rawMaterials', formData.rawMaterialId);
 
         let materialName = 'Unknown Material';
+        let userProfile = await userService.getUserProfile(userId);
 
         try {
             await runTransaction(db, async (transaction) => {
@@ -71,6 +77,15 @@ class RawMaterialService {
                 }
                 transaction.set(intakeRef, intakeData);
             });
+            
+            // Log activity
+            if (userProfile) {
+                 activityService.logActivity(
+                    `Logged intake of ${formData.actualQuantity} units of ${materialName} from ${formData.supplier}.`,
+                    userId,
+                    userProfile.displayName
+                );
+            }
 
             // 3. Check for discrepancy and send email if needed
             const discrepancy = formData.quantityOnNote - formData.actualQuantity;
@@ -79,7 +94,7 @@ class RawMaterialService {
                 const subject = `Alert: Delivery Discrepancy from ${formData.supplier}`;
                 const body = `
                     <p>Hello Admins,</p>
-                    <p>A discrepancy was noted during the raw material intake process from supplier <strong>${formData.supplier}</strong>.</p>
+                    <p>A discrepancy was noted during the raw material intake process from supplier <strong>${formData.supplier}</strong>, logged by ${userProfile?.displayName}.</p>
                     <ul>
                         <li>Material: ${materialName}</li>
                         <li>Quantity on Delivery Note: ${formData.quantityOnNote}</li>
@@ -88,11 +103,12 @@ class RawMaterialService {
                     </ul>
                     <p>This may require a follow-up with the supplier. The delivery note number is ${formData.deliveryNoteId}.</p>
                 `;
+                const emailHtml = createEmailTemplate(subject, body);
                 for (const admin of admins) {
                     await sendEmail({
                         to: { address: admin.email, name: admin.displayName },
                         subject: subject,
-                        htmlbody: body,
+                        htmlbody: emailHtml,
                     });
                 }
             }

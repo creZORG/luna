@@ -1,6 +1,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
+import { activityService } from './activity.service';
 
 export interface AttendanceRecord {
     id?: string;
@@ -20,7 +21,7 @@ export interface TodayAttendanceStatus {
 
 class AttendanceService {
 
-    async logAttendance(userId: string, userName: string, location: { latitude: number, longitude: number }): Promise<string> {
+    async logAttendance(userId: string, userName:string, location: { latitude: number, longitude: number }): Promise<string> {
         try {
             const docRef = await addDoc(collection(db, "attendance"), {
                 userId,
@@ -28,6 +29,10 @@ class AttendanceService {
                 checkInTime: serverTimestamp(),
                 location
             });
+
+            // Log activity
+            activityService.logActivity('Checked in for the day.', userId, userName);
+
             return docRef.id;
         } catch (e) {
             console.error("Error adding attendance document: ", e);

@@ -18,6 +18,7 @@ import { sendEmail } from '@/ai/flows/send-email-flow';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { createEmailTemplate } from '@/lib/email-template';
 
 interface EmailUserModalProps {
   isOpen: boolean;
@@ -43,11 +44,12 @@ export function EmailUserModal({ isOpen, onClose, user }: EmailUserModalProps) {
     
     setIsSubmitting(true);
     try {
+       const emailHtml = createEmailTemplate(subject, `<p>${body.replace(/\n/g, '<br>')}</p>`);
        await sendEmail({
             from: { address: 'ceo@luna.co.ke', name: 'Luna Essentials CEO' },
             to: { address: user.email, name: user.displayName },
             subject: subject,
-            htmlbody: `<p>${body.replace(/\n/g, '<br>')}</p>` // Basic conversion of newlines to breaks
+            htmlbody: emailHtml
        });
         toast({
             title: 'Email Sent!',

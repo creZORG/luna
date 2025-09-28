@@ -1,9 +1,13 @@
 
+'use server';
+
 import { db } from '@/lib/firebase';
 import { collection, writeBatch, serverTimestamp, doc } from 'firebase/firestore';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { userService } from './user.service';
 import { format } from 'date-fns';
+import { createEmailTemplate } from '@/lib/email-template';
+import { activityService } from './activity.service';
 
 export interface SalesLog {
     productId: string;
@@ -41,6 +45,14 @@ class SalesService {
 
             await batch.commit();
 
+             // Log activity
+            const totalSoldForLog = salesLogs.reduce((sum, log) => sum + log.qtySold, 0);
+             activityService.logActivity(
+                `Submitted daily sales log with ${totalSoldForLog} units sold.`,
+                salespersonId,
+                salespersonName
+            );
+
             // Send summary email to admins
             const admins = await userService.getAdmins();
             const totalSold = salesLogs.reduce((sum, log) => sum + log.qtySold, 0);
@@ -55,36 +67,37 @@ class SalesService {
                     <li><strong>Total Defects Reported:</strong> ${totalDefects}</li>
                 </ul>
                 <h3>Detailed Breakdown:</h3>
-                <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;">
-                    <thead>
+                <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse; border-color: #e2e8f0;">
+                    <thead style="background-color: #f8fafc;">
                         <tr>
-                            <th>Product ID</th>
-                            <th>Size</th>
-                            <th>Issued</th>
-                            <th>Sold</th>
-                            <th>Defects</th>
+                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Product ID</th>
+                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Size</th>
+                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Issued</th>
+                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Sold</th>
+                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Defects</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             salesLogs.forEach(log => {
                 body += `
-                    <tr>
-                        <td>${log.productId}</td>
-                        <td>${log.size}</td>
-                        <td>${log.qtyIssued}</td>
-                        <td>${log.qtySold}</td>
-                        <td>${log.defects}</td>
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td style="padding: 8px; border-color: #e2e8f0;">${log.productId}</td>
+                        <td style="padding: 8px; border-color: #e2e8f0;">${log.size}</td>
+                        <td style="padding: 8px; border-color: #e2e8f0;">${log.qtyIssued}</td>
+                        <td style="padding: 8px; border-color: #e2e8f0;">${log.qtySold}</td>
+                        <td style="padding: 8px; border-color: #e2e8f0;">${log.defects}</td>
                     </tr>
                 `;
             });
             body += `</tbody></table>`;
+            const emailHtml = createEmailTemplate(subject, body);
 
              for (const admin of admins) {
                 await sendEmail({
                     to: { address: admin.email, name: admin.displayName },
                     subject: subject,
-                    htmlbody: body,
+                    htmlbody: emailHtml,
                 });
             }
 

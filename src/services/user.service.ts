@@ -1,8 +1,13 @@
 
-import { db } from '@/lib/firebase';
+'use server';
+
+import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { sendEmail } from '@/ai/flows/send-email-flow';
+import { createEmailTemplate } from '@/lib/email-template';
+import { activityService } from './activity.service';
+import { getDownloadURL, ref, uploadString } from 'firebase/storage';
 
 export interface UserProfile {
     uid: string;
@@ -10,7 +15,18 @@ export interface UserProfile {
     displayName: string;
     roles: ('admin' | 'sales' | 'operations' | 'finance' | 'manufacturing' | 'digital-marketing')[];
     emailVerified: boolean;
+    photoURL?: string;
+    qualifications?: string;
+    socialLinks?: { platform: string; url: string }[];
 }
+
+export interface UserProfileUpdateData {
+    displayName?: string;
+    qualifications?: string;
+    socialLinks?: { platform: string; url: string }[];
+    photoDataUrl?: string; // For new photo uploads
+}
+
 
 class UserService {
     async getUserProfile(uid: string): Promise<UserProfile | null> {
@@ -37,11 +53,18 @@ class UserService {
             displayName: user.displayName || user.email?.split('@')[0] || 'New User',
             roles: [], // Start with no roles
             emailVerified: false, // Email is not verified on creation
+            photoURL: '',
+            qualifications: '',
+            socialLinks: [],
         };
 
         try {
             await setDoc(doc(db, 'users', user.uid), userProfile);
             
+            // Log this activity
+            activityService.logActivity(`New user signed up: ${userProfile.displayName} (${userProfile.email})`, 'system', 'System');
+
+
             // Notify admins of new user
             const admins = await this.getAdmins();
             const emailSubject = "New User Account Pending Setup";
@@ -55,11 +78,13 @@ class UserService {
                 <p>Please log in to the admin dashboard to assign the appropriate roles.</p>
             `;
 
+            const emailHtml = createEmailTemplate(emailSubject, emailBody);
+
             for (const admin of admins) {
                 await sendEmail({
                     to: { address: admin.email, name: admin.displayName },
                     subject: emailSubject,
-                    htmlbody: emailBody,
+                    htmlbody: emailHtml,
                 });
             }
 
@@ -98,11 +123,55 @@ class UserService {
         try {
             const userDocRef = doc(db, 'users', uid);
             await updateDoc(userDocRef, { roles });
+            
+            const adminUser = await this.getUserProfile("temp-admin-id"); // In real app, get from auth
+            const targetUser = await this.getUserProfile(uid);
+            
+            if (targetUser && adminUser) {
+                activityService.logActivity(
+                    `Updated roles for ${targetUser.displayName} to: ${roles.join(', ')}`,
+                    adminUser.uid,
+                    adminUser.displayName
+                );
+            }
+
         } catch (error) {
             console.error("Error updating user roles:", error);
             throw new Error("Could not update user roles in the database.");
         }
     }
+
+    async updateUserProfile(uid: string, data: UserProfileUpdateData): Promise<void> {
+        try {
+            const userDocRef = doc(db, 'users', uid);
+            const updateData: any = {};
+
+            if (data.displayName) updateData.displayName = data.displayName;
+            if (data.qualifications) updateData.qualifications = data.qualifications;
+            if (data.socialLinks) updateData.socialLinks = data.socialLinks;
+            
+            if (data.photoDataUrl) {
+                const storageRef = ref(storage, `profile-photos/${uid}`);
+                await uploadString(storageRef, data.photoDataUrl, 'data_url');
+                updateData.photoURL = await getDownloadURL(storageRef);
+            }
+
+            if (Object.keys(updateData).length > 0) {
+                await updateDoc(userDocRef, updateData);
+            }
+            
+            const user = await this.getUserProfile(uid);
+            if (user) {
+                activityService.logActivity(`Updated their profile.`, user.uid, user.displayName);
+            }
+
+        } catch (error) {
+            console.error("Error updating user profile:", error);
+            throw new Error("Could not update user profile.");
+        }
+    }
 }
 
 export const userService = new UserService();
+
+    
