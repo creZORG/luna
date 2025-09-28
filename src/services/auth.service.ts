@@ -1,6 +1,3 @@
-
-'use server';
-
 import { getAuth, signInWithEmailAndPassword, signOut, User, createUserWithEmailAndPassword } from 'firebase/auth';
 import { app, db } from '@/lib/firebase';
 import { doc, setDoc, getDoc, serverTimestamp, deleteDoc, collection, updateDoc, Timestamp } from 'firebase/firestore';

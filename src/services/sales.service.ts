@@ -1,6 +1,3 @@
-
-'use server';
-
 import { db } from '@/lib/firebase';
 import { collection, writeBatch, serverTimestamp, doc } from 'firebase/firestore';
 import { sendEmail } from '@/ai/flows/send-email-flow';

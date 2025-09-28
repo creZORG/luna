@@ -1,6 +1,3 @@
-
-'use server';
-
 import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
@@ -173,5 +170,3 @@ class UserService {
 }
 
 export const userService = new UserService();
-
-    
