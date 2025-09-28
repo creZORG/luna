@@ -24,36 +24,19 @@ export function middleware(request: NextRequest) {
     'digital-marketing': '/digital-marketing',
   };
 
-  const dashboardMap: { [key: string]: string } = {
-    staff: '/admin/dashboard',
-    admin: '/admin/dashboard',
-    finance: '/finance',
-    manufacturing: '/manufacturing',
-    sales: '/sales',
-    operations: '/operations',
-    'digital-marketing': '/digital-marketing',
-  }
-
   const currentHost = hostname.split('.')[0];
   const portalPath = portalMap[currentHost];
-  const dashboardPath = dashboardMap[currentHost];
 
   // If on a portal subdomain
-  if (portalPath && dashboardPath) {
-    // If user is at the root of the subdomain, redirect them to their main dashboard.
-    if (pathname === '/') {
-        url.pathname = dashboardPath;
-        return NextResponse.redirect(url);
-    }
-    
-    // Allow auth pages to be accessed directly without rewrite.
-    const isAuthPath = pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied');
-    if (isAuthPath) {
+  if (portalPath) {
+    // Allow auth pages and root to be accessed directly without rewrite.
+    // The client-side AuthProvider will handle redirection from root.
+    const isExemptedPath = pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/access-denied');
+    if (isExemptedPath) {
       return NextResponse.next();
     }
     
     // If the path already starts with the correct portal path, do nothing.
-    // This allows /admin/users to work on staff.luna.co.ke which maps to /admin portal.
     if (pathname.startsWith(portalPath)) {
       return NextResponse.next();
     }
