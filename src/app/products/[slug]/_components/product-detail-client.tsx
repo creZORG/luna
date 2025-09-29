@@ -36,36 +36,22 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const router = useRouter();
   const { addItem } = useCart();
 
-
-  const handleAddToCart = async () => {
-    try {
-      addItem({
-        productId: product.id,
-        productName: product.name,
-        imageUrl: product.imageUrl,
-        size: product.sizes[0].size, // Assuming first size for now
-        quantity,
-        price: product.sizes[0].price,
-      });
-
-      toast({
-        title: "Added to Cart!",
-        description: `${quantity} x ${product.name} has been added to your cart.`,
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: "Error",
-        description: "Could not add item to cart. Please try again.",
-      });
-    }
-  };
-
   const handleBuyNow = () => {
     if (quantity >= (product.wholesaleMoq || Infinity)) {
         setIsRedirectModalOpen(true);
     } else {
-        handleAddToCart();
+        addItem({
+            productId: product.id,
+            productName: product.name,
+            imageUrl: product.imageUrl,
+            size: product.sizes[0].size, // Assuming first size for now
+            quantity,
+            price: product.sizes[0].price,
+        });
+        toast({
+            title: "Added to Cart!",
+            description: `${quantity} x ${product.name} has been added to your cart.`,
+        });
         router.push('/checkout');
     }
   };
@@ -146,21 +132,6 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                      <div className="flex items-center border rounded-md">
-                          <Button variant="ghost" size="icon" className='h-12 w-12' onClick={() => setQuantity(q => Math.max(1, q - 1))}>
-                              <Minus className="h-5 w-5" />
-                          </Button>
-                          <span className="w-12 text-center text-lg font-bold">{quantity}</span>
-                           <Button variant="ghost" size="icon" className='h-12 w-12' onClick={() => setQuantity(q => q + 1)}>
-                              <Plus className="h-5 w-5" />
-                          </Button>
-                      </div>
-                      <Button size="lg" className="flex-grow" variant="outline" onClick={handleAddToCart}>
-                          <ShoppingCart className="mr-2 h-5 w-5"/>
-                          Add to Cart
-                      </Button>
-                  </div>
                   <Button size="lg" className="w-full" onClick={handleBuyNow}>
                       Buy Now
                   </Button>
@@ -229,5 +200,3 @@ export default function ProductDetailClient({ product }: { product: Product }) {
     </>
   );
 }
-
-    
