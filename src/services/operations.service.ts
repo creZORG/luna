@@ -1,6 +1,4 @@
 
-'use server';
-
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Order, orderService } from './order.service';
