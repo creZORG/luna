@@ -70,7 +70,7 @@ const deliveryFormSchema = z.object({
     .min(10, 'Phone number must be at least 10 digits')
     .regex(/^(\+254|0)?\d{9}$/, 'Invalid Kenyan phone number format'),
   constituency: z.string().min(1, 'Please select a constituency'),
-  address: z.string().min(10, 'Please provide a detailed address'),
+  address: z.string().min(10, 'Please provide a detailed address, including building and house number.'),
   deliveryNotes: z.string().optional(),
 });
 
@@ -181,6 +181,7 @@ export default function CheckoutClient() {
     'idle' | 'loading' | 'in_nairobi' | 'outside_nairobi' | 'error'
   >('idle');
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
 
   const form = useForm<DeliveryFormData>({
     resolver: zodResolver(deliveryFormSchema),
@@ -207,10 +208,12 @@ export default function CheckoutClient() {
 
   const handleCheckLocation = () => {
     setLocationState('loading');
+    setShowAddressForm(false);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (isWithinNairobi(position.coords)) {
           setLocationState('in_nairobi');
+          setShowAddressForm(true);
         } else {
           setLocationState('outside_nairobi');
         }
@@ -218,8 +221,10 @@ export default function CheckoutClient() {
       (err) => {
         setLocationState('error');
         setLocationError(
-          'Could not get your location. Please enable location services.'
+          'Could not get your location. Please enable location services or fill in your address manually if you are in Nairobi.'
         );
+        // Still allow manual entry if location fails
+        setShowAddressForm(true); 
       }
     );
   };
@@ -323,15 +328,24 @@ export default function CheckoutClient() {
 
                 <Separator className="my-6" />
                  <h3 className="text-lg font-medium">Delivery Address</h3>
+                 <p className="text-sm text-muted-foreground">We currently only deliver within Nairobi.</p>
 
                 {locationState === 'idle' && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleCheckLocation}
-                  >
-                    <MapPin className="mr-2 h-4 w-4" /> Check if we deliver to your area
-                  </Button>
+                  <Alert className='flex items-center justify-between'>
+                      <div>
+                          <AlertTitle>Confirm Nairobi Delivery</AlertTitle>
+                          <AlertDescription>
+                              Use your location to quickly confirm you're in our delivery zone.
+                          </AlertDescription>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCheckLocation}
+                      >
+                        <MapPin className="mr-2 h-4 w-4" /> Check Location
+                      </Button>
+                  </Alert>
                 )}
 
                  {locationState === 'loading' && <Skeleton className='h-10 w-full' />}
@@ -345,16 +359,24 @@ export default function CheckoutClient() {
                         </AlertDescription>
                     </Alert>
                  )}
+                 {locationState === 'error' && (
+                     <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Location Error</AlertTitle>
+                        <AlertDescription>{locationError}</AlertDescription>
+                    </Alert>
+                 )}
 
-                {locationState === 'in_nairobi' && (
+
+                {(locationState === 'in_nairobi' || locationState === 'error') && (
                     <div className="space-y-4 animate-in fade-in-0 duration-500">
-                        <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                        {locationState === 'in_nairobi' && <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
                             <Home className="h-4 w-4 !text-green-600" />
                             <AlertTitle className="text-green-800 dark:text-green-300">You're in Nairobi!</AlertTitle>
                              <AlertDescription className="text-green-700 dark:text-green-400">
                                 Great! We deliver to your area. Please fill out the address details below.
                             </AlertDescription>
-                        </Alert>
+                        </Alert>}
                         
                          <FormField
                             control={form.control}
@@ -381,7 +403,7 @@ export default function CheckoutClient() {
                             name="address"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Street Address & Apartment</FormLabel>
+                                <FormLabel>Street Address, Building & House No.</FormLabel>
                                 <FormControl>
                                     <Textarea placeholder="e.g., Maple Street, Crystal Apartments, Apt B4" {...field} />
                                 </FormControl>
@@ -406,7 +428,7 @@ export default function CheckoutClient() {
                 )}
 
 
-                <Button type="submit" size="lg" className="w-full" disabled={locationState !== 'in_nairobi' || form.formState.isSubmitting}>
+                <Button type="submit" size="lg" className="w-full" disabled={!form.formState.isValid || form.formState.isSubmitting}>
                     {form.formState.isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                     Proceed to Payment
                 </Button>
@@ -422,4 +444,3 @@ export default function CheckoutClient() {
   );
 }
 
-    
