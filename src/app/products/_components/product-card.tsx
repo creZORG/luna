@@ -20,8 +20,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           <Image
             src={imageUrl}
             alt={product.name || "Product Image"}
-            width={500}
-            height={500}
+            width={250}
+            height={250}
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </Link>
