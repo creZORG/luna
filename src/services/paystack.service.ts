@@ -4,15 +4,78 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
 import { orderService } from './order.service';
+import type { InitializePaymentInput, InitializePaymentOutput } from '@/ai/flows/initialize-payment-flow';
+import type { ProcessPaymentOutput } from '@/ai/flows/process-payment-flow';
 
-// This file is intentionally left almost empty.
-// All Paystack logic has been moved directly into the Genkit flows
-// to prevent client-side bundling of server-only dependencies.
-// This service file remains for structural consistency but should not
-// be used for new Paystack-related logic that could be called from the client.
+const paystack = new Paystack(process.env.PAYSTACK_SECRET_KEY!);
 
 class PaystackService {
-    // This class is now a placeholder. The core logic is in the flows.
+    
+    async initializeTransaction(data: InitializePaymentInput): Promise<InitializePaymentOutput> {
+        try {
+            const productDoc = await getDoc(doc(db, 'products', data.productId));
+            if (!productDoc.exists()) throw new Error('Product not found');
+            
+            const product = productDoc.data() as Product;
+            
+            const response = await paystack.initializeTransaction({
+                email: data.email,
+                amount: data.amount.toString(),
+                metadata: {
+                    product_id: data.productId,
+                    product_name: product.name,
+                    size: data.size,
+                    quantity: data.quantity,
+                    customer_email: data.email
+                },
+                callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/products/verify-payment`
+            });
+            
+            if (!response.status || !response.data) {
+                throw new Error(response.message || 'Failed to initialize transaction');
+            }
+            
+            return response.data;
+
+        } catch (error: any) {
+            console.error('Paystack initialization error:', error.response?.data || error.message);
+            throw new Error('Could not start the payment process.');
+        }
+    }
+
+    async verifyAndCreateOrder(reference: string): Promise<ProcessPaymentOutput> {
+         try {
+            // 1. Verify the transaction with Paystack
+            const response = await paystack.verifyTransaction(reference);
+            
+            if (!response.status || !response.data) {
+                throw new Error(response.message || 'Transaction verification failed');
+            }
+
+            if (response.data.status !== 'success') {
+                throw new Error(`Payment not successful. Status: ${response.data.status}`);
+            }
+            
+            const verifiedTransaction = response.data;
+
+            // 2. If successful, create the order in our database
+            const orderId = await orderService.createOrder(verifiedTransaction);
+            
+            // 3. Return a success response
+            return {
+                success: true,
+                orderId,
+                message: 'Payment successful and order created!',
+            };
+
+        } catch (error: any) {
+            console.error(`[Payment Flow Error] Ref: ${reference} | Error: ${error.message}`);
+            return {
+                success: false,
+                message: error.message || 'An unknown error occurred during payment processing.',
+            };
+        }
+    }
 }
 
 export const paystackService = new PaystackService();
