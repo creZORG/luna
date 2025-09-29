@@ -91,13 +91,11 @@ export async function updateProduct(id: string, productData: ProductUpdateData):
 
 
 export async function getProducts(): Promise<Product[]> {
-    console.log("--- Starting getProducts fetch ---");
     // 1. Fetch all products and all orders in parallel.
     const [productsSnapshot, allOrders] = await Promise.all([
         getDocs(collection(db, "products")),
         getOrders()
     ]);
-    console.log(`Found ${productsSnapshot.size} products and ${allOrders.length} orders.`);
     
     // 2. Create a simple map to hold sales statistics.
     const productStats = new Map<string, { orderCount: number; totalRevenue: number }>();
@@ -116,12 +114,6 @@ export async function getProducts(): Promise<Product[]> {
     const products: Product[] = productsSnapshot.docs.map((docSnap) => {
         const data = docSnap.data();
         const stats = productStats.get(docSnap.id) || { orderCount: 0, totalRevenue: 0 };
-
-        if (data.imageUrl) {
-            console.log(`[SUCCESS] Image found for product: "${data.name}"`);
-        } else {
-            console.log(`[WARNING] Image URL is MISSING for product: "${data.name}" (ID: ${docSnap.id})`);
-        }
 
         const product: Product = {
             id: docSnap.id,
@@ -148,7 +140,6 @@ export async function getProducts(): Promise<Product[]> {
         return product;
     });
 
-    console.log("--- Finished getProducts fetch ---");
     return products;
 }
 
