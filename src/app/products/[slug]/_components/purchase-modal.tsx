@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/data';
 import usePaystack from '@/hooks/use-paystack';
-import { initializePaymentFlow } from '@/ai/flows/initialize-payment-flow';
+import { initializePayment } from '@/ai/flows/initialize-payment-flow';
 import { Loader } from 'lucide-react';
 
 interface PurchaseModalProps {
@@ -44,7 +44,7 @@ export function PurchaseModal({ isOpen, onClose, product }: PurchaseModalProps) 
     try {
       const amountInKobo = sizeDetails.price * quantity * 100;
       
-      const txData = await initializePaymentFlow({
+      const txData = await initializePayment({
           email,
           amount: amountInKobo,
           productId: product.id,

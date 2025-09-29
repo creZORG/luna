@@ -21,11 +21,12 @@ const ProcessPaymentOutputSchema = z.object({
 
 export type ProcessPaymentOutput = z.infer<typeof ProcessPaymentOutputSchema>;
 
+// This is the exported server action that client components will call.
 export async function processPayment(reference: string): Promise<ProcessPaymentOutput> {
-  // This flow now correctly calls the isolated service.
   return await paystackService.verifyAndCreateOrder(reference);
 }
 
+// The Genkit flow definition is kept for internal organization.
 const processPaymentFlow = ai.defineFlow(
   {
     name: 'processPaymentFlow',
@@ -33,9 +34,6 @@ const processPaymentFlow = ai.defineFlow(
     outputSchema: ProcessPaymentOutputSchema,
   },
   async ({ reference }) => {
-     // Note: The actual logic is in the service to prevent bundling issues.
      return await paystackService.verifyAndCreateOrder(reference);
   }
 );
-
-export { processPaymentFlow };

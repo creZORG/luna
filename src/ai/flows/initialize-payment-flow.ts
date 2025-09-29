@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview A flow to initialize a Paystack payment transaction.
- * - initializePaymentFlow - Creates a transaction with Paystack and returns the details needed by the frontend.
+ * - initializePayment - Creates a transaction with Paystack and returns the details needed by the frontend.
  */
 
 import { ai } from '@/ai/genkit';
@@ -27,12 +27,15 @@ export type InitializePaymentInput = z.infer<typeof InitializePaymentInputSchema
 export type InitializePaymentOutput = z.infer<typeof InitializePaymentOutputSchema>;
 
 
+// This is the exported server action that client components will call.
+// It acts as a safe wrapper around our server-only logic.
 export async function initializePayment(input: InitializePaymentInput): Promise<InitializePaymentOutput> {
-  // This flow now correctly calls the isolated service, which is never imported by the client.
   return await paystackService.initializeTransaction(input);
 }
 
 
+// The Genkit flow definition is kept for internal organization and potential reuse
+// on the server, but it is no longer directly imported by the client.
 const initializePaymentFlow = ai.defineFlow(
   {
     name: 'initializePaymentFlow',
@@ -40,9 +43,6 @@ const initializePaymentFlow = ai.defineFlow(
     outputSchema: InitializePaymentOutputSchema,
   },
   async (data) => {
-    // Note: The actual logic is in the service to prevent bundling issues.
     return await paystackService.initializeTransaction(data);
   }
 );
-
-export { initializePaymentFlow };
