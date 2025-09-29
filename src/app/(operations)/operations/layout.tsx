@@ -21,23 +21,25 @@ function OperationsNav() {
     const pathname = usePathname();
 
     return (
-        <nav className="flex items-center space-x-1 bg-muted p-1 rounded-lg mb-6 w-fit overflow-x-auto">
-            {operationsNavLinks.map(link => (
-                <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
-                        pathname === link.href 
-                            ? "bg-background text-foreground shadow-sm" 
-                            : "text-muted-foreground hover:text-foreground"
-                    )}
-                >
-                    <link.icon className="h-4 w-4" />
-                    {link.label}
-                </Link>
-            ))}
-        </nav>
+        <div className="w-full overflow-x-auto">
+            <nav className="flex items-center space-x-1 bg-muted p-1 rounded-lg mb-6 w-fit">
+                {operationsNavLinks.map(link => (
+                    <Link
+                        key={link.href}
+                        href={link.href}
+                        className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
+                            pathname === link.href 
+                                ? "bg-background text-foreground shadow-sm" 
+                                : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        <link.icon className="h-4 w-4" />
+                        {link.label}
+                    </Link>
+                ))}
+            </nav>
+        </div>
     );
 }
 
