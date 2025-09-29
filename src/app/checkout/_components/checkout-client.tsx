@@ -67,7 +67,7 @@ import { getCompanySettings } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { verifyPaymentAndProcessOrder } from '@/ai/flows/verify-payment-and-process-order-flow';
-import { PaystackPop } from '@paystack/inline-js';
+import PaystackPop from '@paystack/inline-js';
 
 
 const deliveryFormSchema = z.object({
