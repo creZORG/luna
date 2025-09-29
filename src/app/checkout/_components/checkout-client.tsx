@@ -68,7 +68,6 @@ import { getCompanySettings } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { verifyPaymentAndProcessOrder } from '@/ai/flows/verify-payment-and-process-order-flow';
-import PaystackPop from '@paystack/inline-js';
 import { orderService } from '@/services/order.service';
 import { pickupLocationService, PickupLocation } from '@/services/pickup-location.service';
 
@@ -380,6 +379,9 @@ export default function CheckoutClient() {
   
   const handlePaymentAndOrderProcessing = async (data: DeliveryFormData) => {
     setIsProcessingOrder(true);
+
+    const PaystackPop = (await import('@paystack/inline-js')).default;
+
     const products = await Promise.all(
         Array.from(new Set(cartItems.map(item => item.productId))).map(id => productService.getProductById(id))
     );
