@@ -4,11 +4,12 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { Menu, Moon, User } from 'lucide-react';
+import { Menu, Moon, ShoppingCart, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { ThemeToggle } from '../theme-toggle';
+import { useCart } from '@/hooks/use-cart';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -22,6 +23,12 @@ export function Header() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const { cartItems, setIsCartOpen } = useCart();
+
+  const totalQuantity = React.useMemo(() => {
+    return cartItems.reduce((total, item) => total + item.quantity, 0);
+  }, [cartItems]);
+
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -51,7 +58,7 @@ export function Header() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
               <nav className="hidden md:flex items-center gap-1">
                   {navLinks.map(({ href, label }) => (
                       <Button asChild variant="ghost" key={href} className={cn(
@@ -65,6 +72,16 @@ export function Header() {
               </nav>
               
               <ThemeToggle />
+              
+               <Button variant="ghost" size="icon" className="relative rounded-full" onClick={() => setIsCartOpen(true)}>
+                <ShoppingCart className="h-5 w-5" />
+                {totalQuantity > 0 && (
+                  <span className="absolute top-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                    {totalQuantity}
+                  </span>
+                )}
+                <span className="sr-only">Open Cart</span>
+              </Button>
 
               <Button variant="outline" className="hidden md:flex rounded-full" asChild>
                 <Link href="/login">

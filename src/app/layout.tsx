@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
@@ -7,6 +8,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 import { Analytics } from '@vercel/analytics/react';
+import { CartProvider } from '@/hooks/use-cart';
+import { CartModal } from '@/components/cart/cart-modal';
 
 export const metadata: Metadata = {
   title: 'Luna Essentials',
@@ -27,16 +30,19 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased min-h-screen flex flex-col transition-colors duration-300')}>
         <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            disableTransitionOnChange
-          >
-            <Header />
-            <main className="flex-grow">{children}</main>
-            <Footer />
-            <Toaster />
-          </ThemeProvider>
+          <CartProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              disableTransitionOnChange
+            >
+              <Header />
+              <CartModal />
+              <main className="flex-grow">{children}</main>
+              <Footer />
+              <Toaster />
+            </ThemeProvider>
+          </CartProvider>
         </AuthProvider>
         <Analytics />
       </body>

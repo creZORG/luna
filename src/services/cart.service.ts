@@ -20,6 +20,11 @@ class CartService {
         }
         return [];
     }
+    
+    async setCart(userId: string, items: CartItem[]): Promise<void> {
+        const cartRef = doc(db, 'carts', userId);
+        await setDoc(cartRef, { userId, items });
+    }
 
     async addToCart(userId: string, item: Omit<CartItem, 'quantity'> & { quantity: number }): Promise<void> {
         const cartRef = doc(db, 'carts', userId);
@@ -69,7 +74,7 @@ class CartService {
 
     async clearCart(userId: string): Promise<void> {
         const cartRef = doc(db, 'carts', userId);
-        await updateDoc(cartRef, { items: [] });
+        await setDoc(cartRef, { items: [] }, { merge: true });
     }
 }
 
