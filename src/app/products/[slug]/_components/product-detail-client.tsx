@@ -6,46 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Product } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Check, Send, ShoppingCart, MessageSquare, CornerDownRight, ThumbsUp } from 'lucide-react';
+import { Check, Send, ShoppingCart, MessageSquare } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { ChatModal } from './chat-modal';
 
-// Placeholder Chat Component
-const ChatPlaceholder = () => (
-    <Card className="mt-8 border-primary/50">
-        <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="text-primary" />
-                <span>Live Chat with Operations</span>
-            </CardTitle>
-            <CardDescription>Discuss bulk pricing, availability, or custom orders directly.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="space-y-4 text-sm">
-                <div className="flex gap-3">
-                    <div className="bg-primary text-primary-foreground h-8 w-8 rounded-full flex items-center justify-center font-bold">A</div>
-                    <div className="p-3 rounded-lg bg-muted max-w-[80%]">
-                        <p className="font-semibold">Alex (Ops Manager)</p>
-                        <p>Hi there! How can I help you with your bulk order today?</p>
-                    </div>
-                </div>
-                 <div className="flex gap-3 justify-end">
-                    <div className="p-3 rounded-lg bg-primary/10 max-w-[80%]">
-                        <p>I'm interested in a large quantity of this product. Can we discuss a better price?</p>
-                    </div>
-                     <div className="bg-secondary text-secondary-foreground h-8 w-8 rounded-full flex items-center justify-center font-bold">Y</div>
-                </div>
-                 <div className="flex items-center gap-2 text-muted-foreground">
-                    <CornerDownRight className="h-4 w-4 ml-10"/>
-                    <button className="px-3 py-1 text-xs border rounded-full hover:bg-muted">That's what I want to ask</button>
-                    <button className="px-3 py-1 text-xs border rounded-full hover:bg-muted">What's the lead time?</button>
-                 </div>
-            </div>
-        </CardContent>
-    </Card>
-);
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const primaryImage = product.imageUrl;
@@ -56,6 +23,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const allImages = primaryImage ? [primaryImage, ...galleryImages] : galleryImages;
 
   const [selectedImage, setSelectedImage] = useState<string | undefined>(allImages[0]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   
   return (
     <>
@@ -65,7 +33,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               {' / '}
               <Link href="/products" className="hover:text-primary">Products</Link>
               {' / '}
-              <Link href={`/products?category=${product.category}`} className="hover:text-primary capitalize">{product.category.replace(/-/g, ' ')}</Link>
+              <Link href={`/products?category=${product.category}`} className="hovertext-primary capitalize">{product.category.replace(/-/g, ' ')}</Link>
               {' / '}
               <span className='text-foreground'>{product.name}</span>
           </div>
@@ -135,49 +103,51 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                   <ShoppingCart className="mr-2 h-5 w-5" />
                   Buy Now (Coming Soon)
               </Button>
-              <Button size="lg" variant="outline" asChild>
-                  <Link href="#chat">
-                      <Send className="mr-2 h-5 w-5" />
-                      Wholesale Enquiry
-                  </Link>
+              <Button size="lg" variant="outline" onClick={() => setIsChatOpen(true)}>
+                <MessageSquare className="mr-2 h-5 w-5" />
+                Discuss Bulk Pricing
               </Button>
             </div>
             
             <Separator className="my-8" />
             
             <div>
-              <h3 className="font-headline text-xl font-semibold mb-4">Key Benefits</h3>
-              <ul className="space-y-2">
-                {product.keyBenefits.map((benefit, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span>{benefit}</span>
-                  </li>
-                ))}
-              </ul>
+                 <h3 className="font-headline text-xl font-semibold mb-4">Product Details</h3>
+                <div className="space-y-6 text-sm text-muted-foreground">
+                    <div>
+                        <h4 className="font-semibold text-foreground mb-2">Key Benefits</h4>
+                        <ul className="space-y-2 list-disc pl-5">
+                            {product.keyBenefits.map((benefit, i) => (
+                            <li key={i} className="flex items-start gap-3">
+                                <Check className="h-4 w-4 text-primary flex-shrink-0 mt-1" />
+                                <span>{benefit}</span>
+                            </li>
+                            ))}
+                        </ul>
+                    </div>
+                     <div>
+                        <h4 className="font-semibold text-foreground mb-2">Ingredients</h4>
+                        <p>{product.ingredients.join(', ')}.</p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-foreground mb-2">Directions for Use</h4>
+                        <p>{product.directions}</p>
+                    </div>
+                     <div>
+                        <h4 className="font-semibold text-foreground mb-2">Cautions</h4>
+                        <p>{product.cautions}</p>
+                    </div>
+                </div>
             </div>
 
           </div>
         </div>
-        <div id="chat" className="mt-16">
-          <Separator/>
-          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 lg:gap-16 mt-8">
-              <div>
-                  <h3 className="font-headline text-xl font-semibold mb-4">Ingredients</h3>
-                  <p className="text-sm text-muted-foreground">{product.ingredients.join(', ')}.</p>
-                   <div className='mt-8'>
-                    <h3 className="font-headline text-xl font-semibold mb-4">Directions for Use</h3>
-                    <p className="text-sm text-muted-foreground">{product.directions}</p>
-                    <h3 className="font-headline text-xl font-semibold mt-4 mb-2">Cautions</h3>
-                    <p className="text-sm text-muted-foreground">{product.cautions}</p>
-                  </div>
-              </div>
-              <div>
-                <ChatPlaceholder />
-              </div>
-          </div>
-        </div>
       </div>
+      <ChatModal 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)}
+        productName={product.name}
+      />
     </>
   );
 }
