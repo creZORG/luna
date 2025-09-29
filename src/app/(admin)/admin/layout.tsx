@@ -330,11 +330,7 @@ export default function AdminLayout({
                 </div>
             </SheetContent>
           </Sheet>
-          <div className="flex-1">
-             <p className="text-sm font-medium text-muted-foreground">
-                <span className="capitalize">{userProfile.roles.join(', ').replace(/-/g, ' ')} Portal</span>
-             </p>
-          </div>
+          
           <p className="text-sm font-medium text-muted-foreground hidden sm:block">
             Welcome, <span className="font-semibold text-foreground">{userProfile.displayName}</span>
           </p>
