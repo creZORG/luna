@@ -14,14 +14,26 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-
-// Placeholder data for orders
-const mockOrders: { id: string, date: string, total: number, status: string }[] = [];
-
+import { useEffect, useState } from 'react';
+import { Order, orderService } from '@/services/order.service';
+import { format } from 'date-fns';
 
 export default function ProfileClient() {
     const { user, userProfile, loading } = useAuth();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [ordersLoading, setOrdersLoading] = useState(true);
     
+    useEffect(() => {
+        if (user) {
+            orderService.getOrdersByUserId(user.uid)
+                .then(setOrders)
+                .catch(err => console.error("Failed to fetch orders", err))
+                .finally(() => setOrdersLoading(false));
+        } else if (!loading) {
+            setOrdersLoading(false);
+        }
+    }, [user, loading]);
+
     if (loading || !user) {
         return (
             <div className="flex justify-center items-center h-full">
@@ -30,8 +42,6 @@ export default function ProfileClient() {
         )
     }
     
-    // We can assume if there's a user but no userProfile, they are a regular customer
-    // Or if they have a userProfile with no roles.
     const displayName = userProfile?.displayName || user.displayName || user.email;
     const email = user.email;
 
@@ -71,35 +81,44 @@ export default function ProfileClient() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Order ID</TableHead>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Total</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {mockOrders.map(order => (
-                                    <TableRow key={order.id}>
-                                        <TableCell className="font-medium">{order.id}</TableCell>
-                                        <TableCell>{order.date}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className={order.status === 'Delivered' ? 'bg-green-600/80' : ''}>
-                                                {order.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">Ksh {order.total.toFixed(2)}</TableCell>
+                         {ordersLoading ? (
+                             <div className="flex justify-center py-10">
+                                <Loader className="h-8 w-8 animate-spin" />
+                             </div>
+                         ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Order ID</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Total</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                         {mockOrders.length === 0 && (
-                            <div className="text-center py-10 border-2 border-dashed rounded-lg">
-                                <p className="text-muted-foreground">You haven't placed any orders yet.</p>
-                            </div>
-                        )}
+                                </TableHeader>
+                                <TableBody>
+                                    {orders.length > 0 ? (
+                                        orders.map(order => (
+                                            <TableRow key={order.id}>
+                                                <TableCell className="font-mono text-xs">{order.id?.substring(0, 7).toUpperCase()}</TableCell>
+                                                <TableCell>{format(order.orderDate.toDate(), 'PP')}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'} className={order.status === 'delivered' ? 'bg-green-600/80' : ''}>
+                                                        {order.status}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right">Ksh {order.totalAmount.toFixed(2)}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-24 text-center">
+                                                You haven't placed any orders yet.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                         )}
                     </CardContent>
                 </Card>
             </div>

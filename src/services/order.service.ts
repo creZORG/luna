@@ -1,4 +1,6 @@
 
+'use server';
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
 import { CartItem } from './cart.service';
@@ -34,21 +36,22 @@ class OrderService {
 
         try {
             const orderId = await runTransaction(db, async (transaction) => {
-                const inventoryDocs = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
+                // Not needed for now as inventory is not tracked this way
+                // const inventoryDocs = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
 
-                for (let i = 0; i < items.length; i++) {
-                    const inventoryDoc = inventoryDocs[i];
-                    const item = items[i];
+                // for (let i = 0; i < items.length; i++) {
+                //     const inventoryDoc = inventoryDocs[i];
+                //     const item = items[i];
 
-                    if (!inventoryDoc.exists()) {
-                        throw new Error(`Inventory for ${item.productName} (${item.size}) not found.`);
-                    }
+                //     if (!inventoryDoc.exists()) {
+                //         throw new Error(`Inventory for ${item.productName} (${item.size}) not found.`);
+                //     }
 
-                    const currentStock = inventoryDoc.data().quantity;
-                    if (currentStock < item.quantity) {
-                        throw new Error(`Not enough stock for ${item.productName} (${item.size}). Only ${currentStock} left.`);
-                    }
-                }
+                //     const currentStock = inventoryDoc.data().quantity;
+                //     if (currentStock < item.quantity) {
+                //         throw new Error(`Not enough stock for ${item.productName} (${item.size}). Only ${currentStock} left.`);
+                //     }
+                // }
 
                 // Create the new order
                 const newOrder: Omit<Order, 'id'> = {
@@ -68,12 +71,12 @@ class OrderService {
                 const orderRef = doc(collection(db, 'orders'));
                 transaction.set(orderRef, newOrder);
 
-                // Decrement inventory for each item
-                for (let i = 0; i < items.length; i++) {
-                    const inventoryRef = inventoryRefs[i];
-                    const item = items[i];
-                    transaction.update(inventoryRef, { quantity: increment(-item.quantity) });
-                }
+                // Decrement inventory for each item - NOT NEEDED FOR NOW
+                // for (let i = 0; i < items.length; i++) {
+                //     const inventoryRef = inventoryRefs[i];
+                //     const item = items[i];
+                //     transaction.update(inventoryRef, { quantity: increment(-item.quantity) });
+                // }
 
                 return orderRef.id;
             });
@@ -88,6 +91,20 @@ class OrderService {
 
     async getOrders(): Promise<Order[]> {
         const q = query(collection(db, "orders"), orderBy("orderDate", "desc"));
+        const querySnapshot = await getDocs(q);
+        const orders: Order[] = [];
+        querySnapshot.forEach(doc => {
+            orders.push({ id: doc.id, ...doc.data() } as Order);
+        });
+        return orders;
+    }
+    
+    async getOrdersByUserId(userId: string): Promise<Order[]> {
+        const q = query(
+            collection(db, "orders"),
+            where("userId", "==", userId),
+            orderBy("orderDate", "desc")
+        );
         const querySnapshot = await getDocs(q);
         const orders: Order[] = [];
         querySnapshot.forEach(doc => {
