@@ -1,4 +1,6 @@
 
+'use server';
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit, updateDoc, getDoc } from 'firebase/firestore';
 import { CartItem } from './cart.service';
@@ -25,6 +27,7 @@ export interface Order {
     orderDate: any; // Firebase Timestamp
     paystackReference?: string;
     salespersonName?: string; // For finance dashboard
+    promoCode?: string; // For campaign tracking
 }
 
 export interface CustomerInfo {
@@ -35,6 +38,7 @@ export interface CustomerInfo {
     county: string;
     deliveryNotes?: string;
     deliveryMethod: 'door-to-door' | 'pickup';
+    promoCode?: string;
 }
 
 
@@ -58,6 +62,7 @@ class OrderService {
                     status: 'paid',
                     orderDate: serverTimestamp(),
                     paystackReference,
+                    promoCode: customer.promoCode || '',
                 };
                 if (userId) {
                     newOrder.userId = userId;

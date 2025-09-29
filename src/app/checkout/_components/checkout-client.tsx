@@ -70,6 +70,7 @@ import { orderService } from '@/services/order.service';
 import { pickupLocationService, PickupLocation } from '@/services/pickup-location.service';
 import { KENYAN_COUNTIES, getDeliveryZone } from '@/lib/locations';
 import { settingsService, DeliveryZoneFees } from '@/services/settings.service';
+import { campaignService } from '@/services/campaign.service';
 
 
 const deliveryFormSchema = z.object({
@@ -84,6 +85,7 @@ const deliveryFormSchema = z.object({
   address: z.string().optional(),
   pickupLocationId: z.string().optional(),
   deliveryNotes: z.string().optional(),
+  promoCode: z.string().optional(),
 }).refine(data => {
     if (data.deliveryMethod === 'door-to-door') {
         return !!data.county && !!data.address && data.address.length >= 10;
@@ -221,6 +223,8 @@ export default function CheckoutClient() {
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [deliveryFees, setDeliveryFees] = useState<DeliveryZoneFees | null>(null);
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
 
 
   const form = useForm<DeliveryFormData>({
@@ -232,11 +236,13 @@ export default function CheckoutClient() {
       phone: '',
       address: '',
       deliveryNotes: '',
+      promoCode: '',
     },
   });
   
   const deliveryMethod = form.watch('deliveryMethod');
   const selectedCounty = form.watch('county');
+  const appliedPromoCode = form.watch('promoCode');
 
   // Effect to pre-fill form with last order details & fetch pickup locations
   useEffect(() => {
@@ -252,6 +258,7 @@ export default function CheckoutClient() {
                     address: lastOrder.shippingAddress || '',
                     county: lastOrder.county || (KENYAN_COUNTIES.includes(lastOrder.shippingAddress.split(',').pop()?.trim() || '') ? lastOrder.shippingAddress.split(',').pop()?.trim() : ''),
                     deliveryNotes: '', // Don't pre-fill notes
+                    promoCode: '',
                 });
             } else if (userProfile) {
                  // If no last order, use profile info
@@ -263,6 +270,7 @@ export default function CheckoutClient() {
                     address: '',
                     county: '',
                     deliveryNotes: '',
+                    promoCode: '',
                 });
             }
         }
@@ -281,6 +289,24 @@ export default function CheckoutClient() {
     fetchStaticData();
   }, [user, userProfile, form]);
   
+    const handleApplyPromoCode = async () => {
+        if (!promoCodeInput) return;
+        setIsVerifyingCode(true);
+        try {
+            const isValid = await campaignService.validatePromoCode(promoCodeInput);
+            if (isValid) {
+                form.setValue('promoCode', promoCodeInput);
+                toast({ title: "Promo Code Applied!", description: "Your promo code has been successfully applied." });
+            } else {
+                toast({ variant: 'destructive', title: "Invalid Promo Code", description: "The code you entered is not valid." });
+            }
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Error", description: "Could not verify the promo code." });
+        } finally {
+            setIsVerifyingCode(false);
+        }
+    };
+
   const handlePaymentAndOrderProcessing = async (data: DeliveryFormData) => {
     if (!deliveryFees) {
         toast({ variant: 'destructive', title: 'Error', description: 'Delivery fees are not configured. Please contact support.'});
@@ -558,8 +584,32 @@ export default function CheckoutClient() {
                         </FormItem>
                     )}
                 />
+                
+                <Separator className="my-6" />
 
-                <Button type="submit" size="lg" className="w-full" disabled={!form.formState.isValid || isSubmitting || cartItems.length === 0}>
+                <div className="space-y-2">
+                    <Label>Have a Promo Code?</Label>
+                     {appliedPromoCode ? (
+                         <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                            <AlertTitle className="text-green-800 dark:text-green-300">Code Applied: <span className="font-bold">{appliedPromoCode}</span></AlertTitle>
+                        </Alert>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <Input
+                                placeholder="Enter code"
+                                value={promoCodeInput}
+                                onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+                                disabled={isVerifyingCode}
+                            />
+                            <Button type="button" onClick={handleApplyPromoCode} disabled={isVerifyingCode || !promoCodeInput}>
+                                {isVerifyingCode ? <Loader className="animate-spin" /> : 'Apply'}
+                            </Button>
+                        </div>
+                    )}
+                </div>
+
+
+                <Button type="submit" size="lg" className="w-full !mt-8" disabled={!form.formState.isValid || isSubmitting || cartItems.length === 0}>
                     {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                     Proceed to Payment
                 </Button>

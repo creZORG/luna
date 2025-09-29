@@ -3,6 +3,7 @@ export interface ReferralLink {
     id: string; // The unique short code
     destinationUrl: string;
     shortUrl: string;
+    campaignId?: string; // Link to the campaign
     campaignName?: string;
     marketerId: string;
     marketerName: string;

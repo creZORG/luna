@@ -1,24 +1,35 @@
 
-import { StoreItem } from "@/lib/store-items.data";
 import { storeItemService } from "@/services/store-item.service";
 import EquipmentRequestClient from "./_components/equipment-request-client";
-import CreateReferralLinkClient from "./_components/create-referral-link-client";
-import ReferralLinksClient from "./_components/referral-links-client";
+import { campaignService, Campaign } from "@/services/campaign.service";
+import CampaignsClient from "./_components/campaigns-client";
+import { referralService } from "@/services/referral.service";
 
 export default async function DigitalMarketingDashboard() {
-    const storeItems: StoreItem[] = await storeItemService.getStoreItems();
+    const [equipmentItems, campaigns] = await Promise.all([
+        storeItemService.getStoreItems().then(items => items.filter(item => item.category !== 'Finished Goods')),
+        campaignService.getCampaigns()
+    ]);
     
-    // Filter for non-"Finished Goods" items for the request form
-    const equipmentItems = storeItems.filter(item => item.category !== 'Finished Goods');
+    // Fetch links for each campaign
+    const campaignsWithLinks = await Promise.all(campaigns.map(async (campaign) => {
+        const links = await referralService.getReferralLinksByCampaign(campaign.id);
+        return { ...campaign, links };
+    }));
+
+    // Find top 5 links overall
+    const allLinks = campaignsWithLinks.flatMap(c => c.links);
+    const topLinks = allLinks.sort((a,b) => b.clickCount - a.clickCount).slice(0, 5);
 
 
     return (
-        <div className="grid gap-6">
-            <h1 className="text-3xl font-bold">Digital Marketing Portal</h1>
+        <div className="grid gap-8">
+            <div className="mb-2">
+                 <h1 className="text-3xl font-bold">Digital Marketing Portal</h1>
+                 <p className="text-muted-foreground">Manage campaigns, create trackable links, and request equipment.</p>
+            </div>
             
-            <CreateReferralLinkClient />
-
-            <ReferralLinksClient />
+            <CampaignsClient initialCampaigns={campaignsWithLinks} topLinks={topLinks} />
 
             <EquipmentRequestClient items={equipmentItems} />
         </div>

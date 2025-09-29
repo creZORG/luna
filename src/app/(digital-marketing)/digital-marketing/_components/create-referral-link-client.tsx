@@ -11,14 +11,18 @@ import { Loader, Link2 } from 'lucide-react';
 import { createReferralLink } from '@/ai/flows/create-referral-link-flow';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
+import { Campaign } from '@/lib/campaigns.data';
 
-export default function CreateReferralLinkClient() {
+interface CreateReferralLinkClientProps {
+    campaign: Campaign;
+    onLinkCreated: () => void;
+}
+
+export default function CreateReferralLinkClient({ campaign, onLinkCreated }: CreateReferralLinkClientProps) {
     const [destinationUrl, setDestinationUrl] = useState('');
-    const [campaignName, setCampaignName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
     const { user, userProfile } = useAuth();
-    const router = useRouter();
 
     const handleSubmit = async () => {
         if (!destinationUrl) {
@@ -43,7 +47,8 @@ export default function CreateReferralLinkClient() {
         try {
             await createReferralLink({
                 destinationUrl,
-                campaignName,
+                campaignId: campaign.id,
+                campaignName: campaign.name,
                 marketerId: user.uid,
                 marketerName: userProfile.displayName
             });
@@ -52,8 +57,7 @@ export default function CreateReferralLinkClient() {
                 description: 'Your new shortlink is now active and tracking.',
             });
             setDestinationUrl('');
-            setCampaignName('');
-            router.refresh(); // Refresh the page to show the new link in the list
+            onLinkCreated(); // Notify parent to refresh
         } catch (error: any) {
             console.error("Error creating referral link:", error);
             toast({
@@ -69,12 +73,12 @@ export default function CreateReferralLinkClient() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Create Referral Link</CardTitle>
-                <CardDescription>Generate a new trackable shortlink for a product or campaign.</CardDescription>
+                <CardTitle>Generate Link for "{campaign.name}"</CardTitle>
+                <CardDescription>Generate a new trackable shortlink for this campaign. The promo code <span className="font-bold text-primary">{campaign.promoCode}</span> will be associated.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="grid md:grid-cols-3 gap-6 items-end">
-                    <div className="md:col-span-2 grid sm:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
                         <div className="space-y-2">
                             <Label htmlFor="destination-url">Destination URL</Label>
                             <Input
@@ -86,18 +90,8 @@ export default function CreateReferralLinkClient() {
                                 disabled={isSubmitting}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="campaign-name">Campaign Name (Optional)</Label>
-                            <Input
-                                id="campaign-name"
-                                placeholder="e.g., 'TikTok Summer Sale'"
-                                value={campaignName}
-                                onChange={(e) => setCampaignName(e.target.value)}
-                                disabled={isSubmitting}
-                            />
-                        </div>
                     </div>
-                    <Button onClick={handleSubmit} disabled={isSubmitting}>
+                    <Button onClick={handleSubmit} disabled={isSubmitting || !destinationUrl}>
                         {isSubmitting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
                         Generate Link
                     </Button>
@@ -106,4 +100,3 @@ export default function CreateReferralLinkClient() {
         </Card>
     );
 }
-

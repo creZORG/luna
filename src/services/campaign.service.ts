@@ -1,0 +1,53 @@
+
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
+import type { Campaign } from '@/lib/campaigns.data';
+import { activityService } from './activity.service';
+
+class CampaignService {
+
+    async createCampaign(name: string, promoCode: string, marketerId: string, marketerName: string): Promise<Campaign> {
+        // Check if promo code already exists
+        const existingCodeQuery = query(collection(db, "campaigns"), where("promoCode", "==", promoCode));
+        const existingCodeSnapshot = await getDocs(existingCodeQuery);
+        if (!existingCodeSnapshot.empty) {
+            throw new Error(`Promo code "${promoCode}" already exists. Please choose another one.`);
+        }
+        
+        const newCampaign: Omit<Campaign, 'id'> = {
+            name,
+            promoCode,
+            marketerId,
+            marketerName,
+            createdAt: serverTimestamp(),
+        };
+
+        const docRef = await addDoc(collection(db, "campaigns"), newCampaign);
+
+        activityService.logActivity(
+            `Created a new campaign: ${name} with promo code ${promoCode}`,
+            marketerId,
+            marketerName
+        );
+
+        return { id: docRef.id, ...newCampaign } as Campaign;
+    }
+
+    async getCampaigns(): Promise<Campaign[]> {
+        const q = query(collection(db, "campaigns"), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        const campaigns: Campaign[] = [];
+        querySnapshot.forEach((doc) => {
+            campaigns.push({ id: doc.id, ...doc.data() } as Campaign);
+        });
+        return campaigns;
+    }
+
+    async validatePromoCode(promoCode: string): Promise<boolean> {
+         const q = query(collection(db, "campaigns"), where("promoCode", "==", promoCode));
+         const snapshot = await getDocs(q);
+         return !snapshot.empty;
+    }
+}
+
+export const campaignService = new CampaignService();

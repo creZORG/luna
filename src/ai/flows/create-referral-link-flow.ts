@@ -10,9 +10,10 @@ import { referralService } from '@/services/referral.service';
 
 const CreateReferralLinkInputSchema = z.object({
   destinationUrl: z.string().url('Must be a valid URL.'),
-  campaignName: z.string().optional(),
   marketerId: z.string(),
   marketerName: z.string(),
+  campaignId: z.string().optional(),
+  campaignName: z.string().optional(),
 });
 
 export type CreateReferralLinkInput = z.infer<typeof CreateReferralLinkInputSchema>;
@@ -30,9 +31,10 @@ const createReferralLinkFlow = ai.defineFlow(
   async (input) => {
     const newLink = await referralService.createReferralLink(
       input.destinationUrl,
-      input.campaignName,
       input.marketerId,
-      input.marketerName
+      input.marketerName,
+      input.campaignId,
+      input.campaignName,
     );
     return newLink;
   }

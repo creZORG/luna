@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, increment, getDoc, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, increment, getDoc, orderBy, setDoc } from 'firebase/firestore';
 import type { ReferralLink } from '@/lib/referrals.data';
 import { activityService } from './activity.service';
 import { customAlphabet } from 'nanoid';
@@ -10,11 +10,12 @@ const nanoid = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 7);
 
 class ReferralService {
 
-    async createReferralLink(destinationUrl: string, campaignName: string | undefined, marketerId: string, marketerName: string): Promise<ReferralLink> {
+    async createReferralLink(destinationUrl: string, marketerId: string, marketerName: string, campaignId?: string, campaignName?: string): Promise<ReferralLink> {
         const shortCode = nanoid();
         
         const newLink: Omit<ReferralLink, 'id'> = {
             destinationUrl,
+            campaignId,
             campaignName,
             marketerId,
             marketerName,
@@ -39,6 +40,20 @@ class ReferralService {
         const q = query(
             collection(db, "referrals"),
             where("marketerId", "==", marketerId),
+            orderBy("createdAt", "desc")
+        );
+        const querySnapshot = await getDocs(q);
+        const links: ReferralLink[] = [];
+        querySnapshot.forEach((doc) => {
+            links.push({ id: doc.id, ...doc.data() } as ReferralLink);
+        });
+        return links;
+    }
+    
+    async getReferralLinksByCampaign(campaignId: string): Promise<ReferralLink[]> {
+        const q = query(
+            collection(db, "referrals"),
+            where("campaignId", "==", campaignId),
             orderBy("createdAt", "desc")
         );
         const querySnapshot = await getDocs(q);

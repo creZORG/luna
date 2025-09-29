@@ -6,6 +6,7 @@ import { Order, orderService } from './order.service';
 import { Product, productService } from './product.service';
 import { subDays, startOfDay, endOfDay, format } from 'date-fns';
 import { UserProfile, userService } from './user.service';
+import { campaignService } from './campaign.service';
 
 
 export interface SalesOverTimeData {
@@ -40,10 +41,11 @@ export interface AnalyticsData {
 class AnalyticsService {
     
     async getDashboardAnalytics(): Promise<AnalyticsData> {
-        const [orders, products, users] = await Promise.all([
+        const [orders, products, users, campaigns] = await Promise.all([
             orderService.getOrders(),
             productService.getProducts(),
             userService.getUsers(),
+            campaignService.getCampaigns(),
         ]);
 
         // 1. Calculate Total Revenue and Orders
@@ -93,12 +95,13 @@ class AnalyticsService {
             .sort((a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0))
             .slice(0, 5);
 
-        // 5. Calculate Salesperson Performance
-        const salespeople = users.filter(u => u.roles.includes('sales'));
-        const salespersonPerformanceMap = new Map<string, SalespersonPerformance>();
+        // 5. Calculate Salesperson & Marketer Performance
+        const staffWithSalesRoles = users.filter(u => u.roles.includes('sales') || u.roles.includes('digital-marketing'));
+        const performanceMap = new Map<string, SalespersonPerformance>();
+        const campaignCodeToMarketerId = new Map(campaigns.map(c => [c.promoCode, c.marketerId]));
 
-        salespeople.forEach(sp => {
-            salespersonPerformanceMap.set(sp.uid, {
+        staffWithSalesRoles.forEach(sp => {
+            performanceMap.set(sp.uid, {
                 id: sp.uid,
                 name: sp.displayName,
                 email: sp.email,
@@ -109,14 +112,26 @@ class AnalyticsService {
         });
         
         orders.forEach(order => {
-            if (order.userId && salespersonPerformanceMap.has(order.userId)) {
-                const performance = salespersonPerformanceMap.get(order.userId)!;
+            let responsibleMarketerId: string | undefined = undefined;
+
+            if (order.userId && performanceMap.has(order.userId)) {
+                // This is a direct field sale by a salesperson
+                responsibleMarketerId = order.userId;
+            } else if (order.promoCode) {
+                // This is an online sale with a promo code
+                responsibleMarketerId = campaignCodeToMarketerId.get(order.promoCode);
+            }
+
+            if (responsibleMarketerId && performanceMap.has(responsibleMarketerId)) {
+                const performance = performanceMap.get(responsibleMarketerId)!;
                 performance.orderCount += 1;
                 performance.totalRevenue += order.totalAmount;
+                performanceMap.set(responsibleMarketerId, performance);
             }
         });
         
-        const topSalespeople = Array.from(salespersonPerformanceMap.values())
+        const topSalespeople = Array.from(performanceMap.values())
+            .filter(p => p.orderCount > 0) // Only show staff with actual sales
             .sort((a, b) => b.totalRevenue - a.totalRevenue)
             .slice(0, 5);
         
