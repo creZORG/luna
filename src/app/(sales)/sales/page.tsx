@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FieldSalesClient from './_components/field-sales-client';
 import { orderService } from '@/services/order.service';
 import OnlineOrdersClient from './_components/online-orders-client';
+import SalesDashboardClient from './_components/sales-dashboard-client';
 
 async function getInitialStockData(): Promise<StockInfo[]> {
     const allStoreItems = await storeItemService.getStoreItems();
@@ -46,14 +47,18 @@ export default async function SalesDashboard() {
         <div className="grid gap-6">
              <div className="mb-2">
                  <h1 className="text-3xl font-bold">Sales Portal</h1>
-                 <p className="text-muted-foreground">Process in-person transactions and monitor online orders.</p>
+                 <p className="text-muted-foreground">Log your daily sales, process in-person transactions, and monitor online orders.</p>
             </div>
             
-            <Tabs defaultValue="field-sale">
-                <TabsList className="grid w-full grid-cols-2">
+            <Tabs defaultValue="daily-log">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="daily-log">Daily Log</TabsTrigger>
                     <TabsTrigger value="field-sale">Field Sale (POS)</TabsTrigger>
                     <TabsTrigger value="online-orders">Online Orders</TabsTrigger>
                 </TabsList>
+                <TabsContent value="daily-log">
+                    <SalesDashboardClient initialStock={stockData} />
+                </TabsContent>
                 <TabsContent value="field-sale">
                     <FieldSalesClient initialStock={stockData} />
                 </TabsContent>

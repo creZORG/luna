@@ -6,7 +6,19 @@ import { userService } from './user.service';
 import { format } from 'date-fns';
 import { createEmailTemplate } from '@/lib/email-template';
 import { activityService } from './activity.service';
-import { storeItemService } from './store-item.service';
+
+export interface SalesLog {
+    productId: string;
+    size: string;
+    openingStock: number;
+    qtyIssued: number;
+    qtySold: number;
+    qtyReturned: number;
+    defects: number;
+    date: any; // Firebase ServerTimestamp
+    salespersonId: string;
+    salespersonName: string;
+}
 
 export interface ReconciliationLog {
     itemId: string; // This is the composite ID, e.g., "productId-size"
@@ -23,6 +35,50 @@ export interface ReconciliationLog {
 }
 
 class SalesService {
+    async createSalesLogs(logs: Omit<SalesLog, 'date'|'salespersonId'|'salespersonName'>[], salespersonId: string, salespersonName: string): Promise<void> {
+        try {
+            const batch = writeBatch(db);
+            logs.forEach(log => {
+                const docRef = doc(collection(db, "salesLogs"));
+                batch.set(docRef, { 
+                    ...log, 
+                    date: serverTimestamp(),
+                    salespersonId,
+                    salespersonName
+                });
+            });
+            await batch.commit();
+
+            // Notify admins
+            const admins = await userService.getAdmins();
+            const subject = `Daily Sales Log Submitted by ${salespersonName}`;
+            const totalSold = logs.reduce((sum, log) => sum + log.qtySold, 0);
+
+            let body = `
+                <p>Hello Admins,</p>
+                <p><strong>${salespersonName}</strong> has submitted their daily sales log for ${format(new Date(), 'PPP')}.</p>
+                <h3>Summary</h3>
+                <ul>
+                    <li><strong>Total Units Sold:</strong> ${totalSold}</li>
+                </ul>
+                <p>Please review the detailed logs in the system.</p>
+            `;
+            const emailHtml = createEmailTemplate(subject, body);
+            
+            for (const admin of admins) {
+                await sendEmail({
+                    to: { address: admin.email, name: admin.displayName },
+                    subject: subject,
+                    htmlbody: emailHtml,
+                });
+            }
+
+        } catch (e) {
+            console.error("Error creating sales logs: ", e);
+            throw new Error("Could not create sales logs");
+        }
+    }
+
     async createReconciliationLogs(
         logs: Omit<ReconciliationLog, 'date' | 'salespersonId' | 'salespersonName' | 'operatorId' | 'operatorName' | 'qtySold'>[], 
         salespersonId: string, 
@@ -65,73 +121,11 @@ class SalesService {
                 operatorName
             );
 
-            // Send summary email to admins and the salesperson
-            const admins = await userService.getAdmins();
-            const salesperson = await userService.getUserProfile(salespersonId);
-            const recipients = [...admins];
-            if (salesperson && !admins.some(a => a.uid === salesperson.uid)) {
-                recipients.push(salesperson);
-            }
-            
-            const totalSold = logsWithCalculations.reduce((sum, log) => sum + log.qtySold, 0);
-            const subject = `Daily Reconciliation for ${salespersonName} - ${format(new Date(), 'PPP')}`;
-            
-            const allItems = await storeItemService.getStoreItems();
-            const itemMap = new Map(allItems.map(i => [i.id, i.name]));
-
-            let body = `
-                <p>Hello,</p>
-                <p><strong>${operatorName}</strong> has submitted the end-of-day stock reconciliation for <strong>${salespersonName}</strong>.</p>
-                <h3>Summary</h3>
-                <ul>
-                    <li><strong>Total Units Sold:</strong> ${totalSold}</li>
-                </ul>
-                <h3>Detailed Breakdown:</h3>
-                <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse; border-color: #e2e8f0;">
-                    <thead style="background-color: #f8fafc;">
-                        <tr>
-                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Product</th>
-                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Issued</th>
-                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Returned</th>
-                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Samples</th>
-                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Defects</th>
-                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0; font-weight: bold;">Sold</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            logsWithCalculations.forEach((log) => {
-                const itemName = itemMap.get(log.itemId) || 'Unknown Item';
-                body += `
-                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 8px; border-color: #e2e8f0;">${itemName}</td>
-                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0;">${log.qtyIssued}</td>
-                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0;">${log.qtyReturned}</td>
-                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0;">${log.samples}</td>
-                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0;">${log.defects}</td>
-                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0; font-weight: bold;">${log.qtySold}</td>
-                    </tr>
-                `;
-            });
-            body += `</tbody></table>`;
-            const emailHtml = createEmailTemplate(subject, body);
-
-             for (const recipient of recipients) {
-                await sendEmail({
-                    to: { address: recipient.email, name: recipient.displayName },
-                    subject: subject,
-                    htmlbody: emailHtml,
-                });
-            }
-
         } catch (e) {
-            console.error("Error creating reconciliation logs or sending email: ", e);
+            console.error("Error creating reconciliation logs: ", e);
             throw new Error(`Could not create reconciliation logs: ${e instanceof Error ? e.message : String(e)}`);
         }
     }
 }
 
 export const salesService = new SalesService();
-
-    
