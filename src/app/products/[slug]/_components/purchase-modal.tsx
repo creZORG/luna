@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/data';
 import usePaystack from '@/hooks/use-paystack';
-import { paystackService } from '@/services/paystack.service';
+import { initializePaymentFlow } from '@/ai/flows/initialize-payment-flow';
 import { Loader } from 'lucide-react';
 
 interface PurchaseModalProps {
@@ -25,7 +25,7 @@ export function PurchaseModal({ isOpen, onClose, product }: PurchaseModalProps) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { toast } = useToast();
-  const initializePayment = usePaystack();
+  const initializePaystackPayment = usePaystack();
 
   const handlePayment = async () => {
     if (!email || quantity < 1) {
@@ -44,7 +44,7 @@ export function PurchaseModal({ isOpen, onClose, product }: PurchaseModalProps) 
     try {
       const amountInKobo = sizeDetails.price * quantity * 100;
       
-      const txData = await paystackService.initializeTransaction({
+      const txData = await initializePaymentFlow({
           email,
           amount: amountInKobo,
           productId: product.id,
@@ -52,7 +52,7 @@ export function PurchaseModal({ isOpen, onClose, product }: PurchaseModalProps) 
           quantity,
       });
 
-      initializePayment({
+      initializePaystackPayment({
         publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
         email,
         amount: amountInKobo,
