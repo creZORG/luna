@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Leaf, Recycle, Handshake, Bike, Warehouse } from 'lucide-react';
@@ -45,19 +44,19 @@ export default async function Home() {
       title: 'Shower Gels',
       description: 'Indulge in luxurious cleansing and captivating aromas.',
       image: showerGelImage,
-      link: '/products?category=shower-gel',
+      link: '#',
     },
     {
       title: 'Fabric Softeners',
       description: 'Experience irresistible softness and lasting freshness for your clothes.',
       image: fabricSoftenerImage,
-      link: '/products?category=fabric-softener',
+      link: '#',
     },
     {
       title: 'Dish Wash',
       description: 'Powerful cleaning that leaves dishes spotless and delightfully scented.',
       image: dishWashImage,
-      link: '/products?category=dish-wash',
+      link: '#',
     },
   ];
 
@@ -103,7 +102,7 @@ export default async function Home() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
              <Button asChild size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white hover:text-black">
-                <Link href="/products">Explore Our Products</Link>
+                <Link href="#">Explore Our Products</Link>
             </Button>
             <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
               <Link href="/#wholesale">Wholesale Inquiries</Link>

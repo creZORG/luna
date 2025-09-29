@@ -1,4 +1,3 @@
-
 import { Facebook, Instagram, Moon, Twitter } from 'lucide-react';
 import Link from 'next/link';
 
@@ -14,7 +13,6 @@ export function Footer() {
       title: 'Company',
       links: [
         { label: 'Home', href: '/' },
-        { label: 'Our Catalog', href: '/products' },
         { label: 'Our Story', href: '#' },
         { label: 'Sustainability', href: '#' },
       ],
