@@ -1,4 +1,5 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
@@ -118,6 +119,12 @@ class ProductService {
                  data.imageUrl = 'https://res.cloudinary.com/dvciksxcn/image/upload/v1720084013/luna-essentials/citrus-bloom-dish-wash.png';
             }
             const stats = productStats.get(doc.id) || { orderCount: 0, totalRevenue: 0 };
+            
+            // Generate a more realistic view count based on order count
+            const baseViews = Math.floor(Math.random() * 500) + 100; // Base random traffic
+            const orderDrivenViews = stats.orderCount * (Math.floor(Math.random() * 80) + 20); // 20x to 100x orders
+            const realisticViewCount = baseViews + orderDrivenViews;
+
             products.push({ 
                 id: doc.id,
                 ...data,
@@ -127,7 +134,7 @@ class ProductService {
                 platformFee: data.platformFee ?? 0,
                 orderCount: stats.orderCount,
                 totalRevenue: stats.totalRevenue,
-                viewCount: data.viewCount ?? Math.floor(Math.random() * 2000) + 100, // Placeholder
+                viewCount: data.viewCount ?? realisticViewCount,
             } as Product);
         });
         return products;
