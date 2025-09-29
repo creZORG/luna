@@ -9,7 +9,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { orderService, CustomerInfo } from '@/services/order.service';
 import { CartItem, cartService } from '@/services/cart.service';
-import { productService } from '@/services/product.service';
+import { getProductById } from '@/services/product.service';
 import { increment } from 'firebase/firestore';
 import { sendEmail } from './send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
@@ -68,7 +68,7 @@ const processOrderFlow = ai.defineFlow(
         uniqueProductIds.add(item.productId);
     }
     
-    const productFeePromises = Array.from(uniqueProductIds).map(id => productService.getProductById(id));
+    const productFeePromises = Array.from(uniqueProductIds).map(id => getProductById(id));
     const products = await Promise.all(productFeePromises);
 
     products.forEach(product => {
