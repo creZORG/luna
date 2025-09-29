@@ -14,7 +14,7 @@ export interface UserProfile {
     uid: string;
     email: string;
     displayName: string;
-    roles: ('admin' | 'sales' | 'operations' | 'finance' | 'manufacturing' | 'digital-marketing')[];
+    roles: ('admin' | 'sales' | 'operations' | 'finance' | 'manufacturing' | 'digital-marketing' | 'influencer' | 'delivery-partner' | 'pickup-location-staff')[];
     emailVerified: boolean;
     profileSetupComplete: boolean; // New field
     photoURL?: string;

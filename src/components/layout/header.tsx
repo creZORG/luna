@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Catalog' },
   { href: '/#wholesale', label: 'Wholesale' },
-  { href: '#partners', label: 'Partners' },
+  { href: '/partners', label: 'Partners' },
   { href: '#contact', label: 'Contact' },
 ];
 

@@ -27,7 +27,8 @@ const ROLE_DASHBOARDS: Record<string, string> = {
     'operations': '/operations',
     'finance': '/finance',
     'manufacturing': '/manufacturing',
-    'digital-marketing': '/digital-marketing',
+    'digital-marketing': '/campaigns',
+    'influencer': '/campaigns',
 };
 
 // This defines the order of importance for roles if a user has multiple.
@@ -38,6 +39,7 @@ const ROLE_PRIORITY: (keyof typeof ROLE_DASHBOARDS)[] = [
     'manufacturing',
     'finance',
     'digital-marketing',
+    'influencer',
 ];
 
 const getPrimaryDashboard = (roles: UserProfile['roles']): string => {

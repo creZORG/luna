@@ -1,4 +1,5 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
 import type { Campaign } from '@/lib/campaigns.data';
@@ -35,6 +36,16 @@ class CampaignService {
 
     async getCampaigns(): Promise<Campaign[]> {
         const q = query(collection(db, "campaigns"), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        const campaigns: Campaign[] = [];
+        querySnapshot.forEach((doc) => {
+            campaigns.push({ id: doc.id, ...doc.data() } as Campaign);
+        });
+        return campaigns;
+    }
+    
+    async getCampaignsByMarketer(marketerId: string): Promise<Campaign[]> {
+        const q = query(collection(db, "campaigns"), where("marketerId", "==", marketerId), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         const campaigns: Campaign[] = [];
         querySnapshot.forEach((doc) => {

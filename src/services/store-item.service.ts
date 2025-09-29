@@ -1,4 +1,5 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc, Transaction, increment } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
@@ -77,11 +78,9 @@ class StoreItemService {
         transaction.set(inventoryRef, { quantity: increment(quantity) }, { merge: true });
     }
 
-    async createItemRequests(itemIds: string[]): Promise<void> {
+    async createItemRequests(itemIds: string[], requesterId: string, requesterName: string): Promise<void> {
         try {
-            // In a real app, user details would come from the auth context
-            const requesterId = "temp-digital-markerter-id";
-            const requesterName = "Jane Doe"; 
+            // Determine department from user roles - simplified for now
             const department = "Digital Marketing";
 
             const batch = writeBatch(db);

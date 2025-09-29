@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -18,7 +19,8 @@ import { EditRolesModal } from "./edit-roles-modal";
 import { EmailUserModal } from "./email-user-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const ALL_ROLES = ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'];
+const ALL_ROLES: UserProfile['roles'] = ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing', 'influencer', 'delivery-partner', 'pickup-location-staff'];
+
 
 const getRoleBadge = (role: UserProfile['roles'][number]) => {
     const variant = {
@@ -28,6 +30,9 @@ const getRoleBadge = (role: UserProfile['roles'][number]) => {
       finance: "secondary",
       manufacturing: "secondary",
       "digital-marketing": "secondary",
+      "influencer": "secondary",
+      "delivery-partner": "secondary",
+      "pickup-location-staff": "secondary"
     }[role]  || 'outline'
     
     return <Badge key={role} variant={variant as any} className="capitalize">{role.replace(/-/g, ' ')}</Badge>

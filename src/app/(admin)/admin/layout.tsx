@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import Link from 'next/link';
-import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart, Package2, Users, FileText, Moon, Warehouse, PieChart, Menu, LocateFixed, CheckCheck } from 'lucide-react';
+import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart, Package2, Users, FileText, Moon, Warehouse, PieChart, Menu, LocateFixed, CheckCheck, Megaphone, Handshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -51,7 +52,8 @@ const getNavLinks = (userProfile: UserProfile | null) => {
     const hasAnyRole = (roles: UserProfile['roles']) => roles.some(role => hasRole(role));
 
     const allLinks = [
-        { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
+        { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing', 'influencer'] },
+        { href: '/campaigns', icon: Megaphone, label: 'Campaigns', roles: ['digital-marketing', 'influencer'] },
         { href: '/admin/analytics', icon: PieChart, label: 'Analytics', roles: ['admin'] },
         { href: '/admin/orders', icon: Package2, label: 'Orders', roles: ['admin', 'sales', 'operations'] },
         { href: '/admin/media', icon: ImageIcon, label: 'Media Library', roles: ['admin'] },
@@ -90,7 +92,7 @@ const getNavLinks = (userProfile: UserProfile | null) => {
             { href: '/operations', icon: Activity, label: 'Operations', roles:['admin'] },
             { href: '/manufacturing', icon: Factory, label: 'Manufacturing', roles:['admin'] },
             { href: '/finance', icon: Briefcase, label: 'Finance', roles:['admin'] },
-            { href: '/digital-marketing', icon: Target, label: 'Digital Marketing', roles:['admin'] },
+            { href: '/campaigns', icon: Megaphone, label: 'Campaigns', roles:['admin'] },
           ],
         },
          {
@@ -98,9 +100,9 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           icon: UserCog,
           type: 'collapsible',
           id: 'hr',
-          roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'],
+          roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing', 'influencer'],
           subLinks: [
-            { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
+            { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing', 'influencer'] },
             { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview', roles: ['admin'] },
             { href: '/operations/stock-reconciliation', icon: CheckCheck, label: 'Stock Reconciliation', roles: ['admin', 'operations'] },
             { href: '/admin/users', icon: Users, label: 'Staff Management', roles: ['admin'] },

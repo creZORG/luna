@@ -1,4 +1,5 @@
 
+
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -18,7 +19,7 @@ export function middleware(request: NextRequest) {
   
   const portalPaths = [
     '/admin', '/sales', '/operations', '/finance', 
-    '/manufacturing', '/digital-marketing'
+    '/manufacturing', '/digital-marketing', '/campaigns'
   ];
 
   // If on the main marketing domain, block access to any staff portal paths.

@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function DigitalMarketingLayout({
+export default function CampaignsLayout({
     children,
 }: {
     children: React.ReactNode;
