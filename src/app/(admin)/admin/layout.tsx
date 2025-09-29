@@ -75,6 +75,7 @@ const getNavLinks = (userProfile: UserProfile | null) => {
             { href: '/admin/raw-materials/orders', icon: FileText, label: 'Purchase Orders', roles: ['admin'] },
             { href: '/operations/raw-materials/manage', icon: Factory, label: 'Manage Materials', roles: ['admin'] },
             { href: '/admin/users', icon: Users, label: 'Staff Management', roles: ['admin'] },
+            { href: '/admin/partners', icon: Handshake, label: 'Partner Requests', roles: ['admin'] },
             { href: '/admin/activities', icon: Activity, label: 'Recent Activities', roles: ['admin'] },
             { href: '/admin/field-sale-logs', icon: LocateFixed, label: 'Field Sale Logs', roles: ['admin'] },
              { href: '/admin/settings', icon: Settings, label: 'Company Settings', roles: ['admin'] },
