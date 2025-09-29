@@ -1,7 +1,7 @@
 
 
 import { db, storage } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc, orderBy } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
@@ -63,7 +63,19 @@ class UserService {
         };
 
         try {
-            await setDoc(doc(db, 'users', user.uid), userProfile);
+            // Ensure the data being set includes the uid and email inside the document
+            const dataToSet = {
+                uid: userProfile.uid,
+                email: userProfile.email,
+                displayName: userProfile.displayName,
+                roles: userProfile.roles,
+                emailVerified: userProfile.emailVerified,
+                profileSetupComplete: userProfile.profileSetupComplete,
+                photoURL: userProfile.photoURL,
+                qualifications: userProfile.qualifications,
+                socialLinks: userProfile.socialLinks,
+            };
+            await setDoc(doc(db, 'users', user.uid), dataToSet);
             
             // Log this activity
             activityService.logActivity(`New user signed up: ${userProfile.displayName} (${userProfile.email})`, 'system', 'System');
@@ -101,7 +113,8 @@ class UserService {
 
     async getUsers(): Promise<UserProfile[]> {
         try {
-            const usersSnapshot = await getDocs(collection(db, 'users'));
+            const q = query(collection(db, 'users'), orderBy('displayName'));
+            const usersSnapshot = await getDocs(q);
             const users: UserProfile[] = [];
             usersSnapshot.forEach(doc => {
                 users.push({ uid: doc.id, ...doc.data() } as UserProfile);
@@ -118,7 +131,7 @@ class UserService {
         const querySnapshot = await getDocs(q);
         const admins: UserProfile[] = [];
         querySnapshot.forEach((doc) => {
-            admins.push({ id: doc.id, ...doc.data() } as UserProfile);
+            admins.push({ uid: doc.id, ...doc.data() } as UserProfile);
         });
         return admins;
     }
