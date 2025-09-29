@@ -29,7 +29,7 @@ class StoreItemService {
                         price: size.price,
                         productId: doc.id,
                         size: size.size,
-                        imageUrl: product.imageUrl,
+                        imageUrl: product.imageUrl, // Ensure imageUrl is passed here
                     } as any);
                 }
             });

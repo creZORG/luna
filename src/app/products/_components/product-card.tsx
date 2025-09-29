@@ -34,25 +34,20 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
 
 export default function ProductCard({ product }: ProductCardProps) {
   const basePrice = Math.min(...product.sizes.map(s => s.price));
+  const placeholderImageUrl = `https://placehold.co/600x600/e2e8f0/64748b?text=${encodeURIComponent(product.name.split(' ').join('\\n'))}`;
 
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl group bg-card text-foreground">
       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
         <CardHeader className="p-0 border-b">
           <div className="aspect-square w-full relative">
-            {product.imageUrl ? (
-              <Image
-                src={product.imageUrl}
+            <Image
+                src={product.imageUrl || placeholderImageUrl}
                 alt={product.name}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
-            ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
-                    <span className="text-muted-foreground text-sm">No Image</span>
-                </div>
-            )}
              <div className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm text-foreground text-xs font-semibold px-2 py-1 rounded-full capitalize flex items-center gap-1">
                 <Tag className="w-3 h-3"/>
                 {product.category.replace(/-/g, ' ')}
