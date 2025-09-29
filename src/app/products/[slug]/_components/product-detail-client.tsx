@@ -12,6 +12,10 @@ import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChatModal } from './chat-modal';
+import { useAuth } from '@/hooks/use-auth';
+import { cartService } from '@/services/cart.service';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 
 export default function ProductDetailClient({ product }: { product: Product }) {
@@ -25,6 +29,60 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const [selectedImage, setSelectedImage] = useState<string | undefined>(allImages[0]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleAddToCart = async () => {
+    try {
+      if (user) {
+        // Logged-in user: save to Firebase
+        await cartService.addToCart(user.uid, {
+          productId: product.id,
+          productName: product.name,
+          imageUrl: product.imageUrl,
+          size: product.sizes[0].size, // Assuming first size for now
+          quantity,
+          price: product.sizes[0].price,
+        });
+      } else {
+        // Guest user: save to localStorage
+        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const existingItemIndex = cart.findIndex(
+          (item: any) => item.productId === product.id && item.size === product.sizes[0].size
+        );
+
+        if (existingItemIndex > -1) {
+          cart[existingItemIndex].quantity += quantity;
+        } else {
+          cart.push({
+            productId: product.id,
+            productName: product.name,
+            imageUrl: product.imageUrl,
+            size: product.sizes[0].size,
+            quantity,
+            price: product.sizes[0].price,
+          });
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+      }
+      toast({
+        title: "Added to Cart!",
+        description: `${quantity} x ${product.name} has been added to your cart.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: "Error",
+        description: "Could not add item to cart. Please try again.",
+      });
+    }
+  };
+
+  const handleBuyNow = () => {
+    // For now, it just navigates. Later it could add the item and then navigate.
+    router.push('/checkout');
+  };
   
   return (
     <>
@@ -101,21 +159,27 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     )}
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center border rounded-md">
-                        <Button variant="ghost" size="icon" className='h-12 w-12' onClick={() => setQuantity(q => Math.max(1, q - 1))}>
-                            <Minus className="h-5 w-5" />
-                        </Button>
-                        <span className="w-12 text-center text-lg font-bold">{quantity}</span>
-                         <Button variant="ghost" size="icon" className='h-12 w-12' onClick={() => setQuantity(q => q + 1)}>
-                            <Plus className="h-5 w-5" />
-                        </Button>
-                    </div>
-                    <Button size="lg" className="flex-grow">
-                        <ShoppingCart className="mr-2 h-5 w-5"/>
-                        Add to Cart
-                    </Button>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                      <div className="flex items-center border rounded-md">
+                          <Button variant="ghost" size="icon" className='h-12 w-12' onClick={() => setQuantity(q => Math.max(1, q - 1))}>
+                              <Minus className="h-5 w-5" />
+                          </Button>
+                          <span className="w-12 text-center text-lg font-bold">{quantity}</span>
+                           <Button variant="ghost" size="icon" className='h-12 w-12' onClick={() => setQuantity(q => q + 1)}>
+                              <Plus className="h-5 w-5" />
+                          </Button>
+                      </div>
+                      <Button size="lg" className="flex-grow" variant="outline" onClick={handleAddToCart}>
+                          <ShoppingCart className="mr-2 h-5 w-5"/>
+                          Add to Cart
+                      </Button>
+                  </div>
+                  <Button size="lg" className="w-full" onClick={handleBuyNow}>
+                      Buy Now
+                  </Button>
                 </div>
+
 
                 <Card className="bg-accent/50 border-accent">
                     <CardHeader className='pb-4'>
