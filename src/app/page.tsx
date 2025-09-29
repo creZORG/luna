@@ -44,19 +44,19 @@ export default async function Home() {
       title: 'Shower Gels',
       description: 'Indulge in luxurious cleansing and captivating aromas.',
       image: showerGelImage,
-      link: '#',
+      link: '/shower-gels',
     },
     {
       title: 'Fabric Softeners',
       description: 'Experience irresistible softness and lasting freshness for your clothes.',
       image: fabricSoftenerImage,
-      link: '#',
+      link: '/fabric-softeners',
     },
     {
       title: 'Dish Wash',
       description: 'Powerful cleaning that leaves dishes spotless and delightfully scented.',
       image: dishWashImage,
-      link: '#',
+      link: '/dish-wash',
     },
   ];
 
@@ -102,7 +102,7 @@ export default async function Home() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
              <Button asChild size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white hover:text-black">
-                <Link href="#">Explore Our Products</Link>
+                <Link href="/#products">Explore Our Products</Link>
             </Button>
             <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
               <Link href="/#wholesale">Wholesale Inquiries</Link>
@@ -112,7 +112,7 @@ export default async function Home() {
       </section>
       
       {/* Product Categories Section */}
-      <section id="wholesale" className="py-16 md:py-24 bg-background">
+      <section id="products" className="py-16 md:py-24 bg-background">
         <div className="container mx-auto px-4 text-center">
             <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">
                 Wholesale & Retail Opportunities
@@ -173,7 +173,7 @@ export default async function Home() {
       </section>
 
       {/* Partner with us section */}
-      <section className="py-16 md:py-24 bg-background">
+      <section id="wholesale" className="py-16 md:py-24 bg-background">
         <div className="container mx-auto px-4">
            <div className="text-center mb-12">
                 <h2 className="font-headline text-3xl md:text-4xl font-bold">

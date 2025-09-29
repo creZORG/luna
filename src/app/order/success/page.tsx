@@ -36,7 +36,7 @@ function SuccessContent() {
                     </p>
                     <div className='flex gap-4'>
                         <Button asChild className="w-full">
-                            <Link href="/products">Continue Shopping</Link>
+                            <Link href="/">Continue Shopping</Link>
                         </Button>
                         <Button asChild className="w-full" variant="outline">
                             <Link href="/profile">View My Orders</Link>
@@ -55,5 +55,3 @@ export default function OrderSuccessPage() {
         </Suspense>
     )
 }
-
-    
