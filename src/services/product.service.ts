@@ -186,6 +186,7 @@ export async function incrementViewCount(productId: string): Promise<void> {
             viewCount: increment(1)
         });
     } catch (error) {
+        // Non-critical error, so we just log it and don't interrupt the user.
         console.error(`Failed to increment view count for product ${productId}:`, error);
     }
 }

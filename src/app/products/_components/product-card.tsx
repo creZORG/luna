@@ -1,10 +1,8 @@
-
 'use client';
 
 import type { Product } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Star } from 'lucide-react';
 
@@ -13,12 +11,12 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const imageUrl = product.imageUrl || `https://placehold.co/400x400/EEE/31343C`;
-
+  const imageUrl = product.imageUrl || `https://placehold.co/600x600/EEE/31343C`;
+  
   return (
     <div className="group relative">
-      <Link href={`/products/${product.slug}`} className="block">
-        <div className="relative w-full overflow-hidden rounded-lg border bg-muted aspect-square transition-all group-hover:shadow-xl">
+      <div className="relative w-full overflow-hidden rounded-lg border bg-muted aspect-square transition-all group-hover:shadow-xl">
+        <Link href={`/products/${product.slug}`} className="block h-full w-full">
           <Image
             src={imageUrl}
             alt={product.name || "Product Image"}
@@ -26,8 +24,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
-        </div>
-      </Link>
+        </Link>
+      </div>
       <div className="mt-4 text-center">
         <h3 className="text-lg font-headline font-semibold text-foreground">
           <Link href={`/products/${product.slug}`}>
