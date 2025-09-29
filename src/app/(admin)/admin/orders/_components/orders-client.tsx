@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Order, OrderStatus, orderService } from '@/services/order.service';
+import { Order, OrderStatus } from '@/services/order.service';
 import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Loader, PackageCheck, Send, Truck, Undo2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { updateOrderStatus } from '@/services/update-order-status.action';
 
 interface OrdersClientProps {
   initialOrders: Order[];
@@ -84,7 +85,7 @@ function OrderList({ orders, onStatusUpdate }: { orders: Order[]; onStatusUpdate
     }
     setUpdatingOrderId(orderId);
     try {
-        await orderService.updateOrderStatus(orderId, newStatus, user.uid, userProfile.displayName);
+        await updateOrderStatus(orderId, newStatus, user.uid, userProfile.displayName);
         onStatusUpdate(orderId, newStatus);
         toast({ title: 'Order Status Updated!', description: `Order has been marked as ${newStatus.replace('-', ' ')}.`});
     } catch (error) {
