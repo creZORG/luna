@@ -1,5 +1,4 @@
 
-import SalesDashboardClient from './_components/sales-dashboard-client';
 import type { StockInfo } from './_components/sales-dashboard-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { storeItemService } from '@/services/store-item.service';
@@ -47,18 +46,14 @@ export default async function SalesDashboard() {
         <div className="grid gap-6">
              <div className="mb-2">
                  <h1 className="text-3xl font-bold">Sales Portal</h1>
-                 <p className="text-muted-foreground">Log your daily sales and process in-person transactions.</p>
+                 <p className="text-muted-foreground">Process in-person transactions and monitor online orders.</p>
             </div>
             
-            <Tabs defaultValue="daily-log">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="daily-log">Daily Log</TabsTrigger>
+            <Tabs defaultValue="field-sale">
+                <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="field-sale">Field Sale (POS)</TabsTrigger>
                     <TabsTrigger value="online-orders">Online Orders</TabsTrigger>
                 </TabsList>
-                <TabsContent value="daily-log">
-                    <SalesDashboardClient initialStock={stockData} />
-                </TabsContent>
                 <TabsContent value="field-sale">
                     <FieldSalesClient initialStock={stockData} />
                 </TabsContent>
