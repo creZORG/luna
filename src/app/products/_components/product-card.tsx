@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Product } from '@/lib/data';
@@ -19,12 +18,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="group relative border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full bg-card">
       <Link href={`/products/${product.slug}`} className="block">
-        <div className="bg-muted flex justify-center items-center">
+        <div className="relative aspect-square bg-muted">
           <Image
             src={imageUrl}
             alt={product.name || "Product Image"}
-            width={250}
-            height={250}
+            fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
