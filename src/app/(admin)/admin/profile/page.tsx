@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { UserProfileUpdateData, userService } from '@/services/user.service';
 import { useRef, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+
 
 const profileFormSchema = z.object({
   displayName: z.string().min(2, 'Display name must be at least 2 characters.'),
@@ -38,7 +40,7 @@ const platformIcons = {
 };
 
 export default function ProfilePage() {
-    const { user, userProfile, loading } = useAuth();
+    const { user, userProfile, loading, refetchUserProfile } = useAuth();
     const { toast } = useToast();
     const [photo, setPhoto] = useState<File | null>(null);
     const [photoPreview, setPhotoPreview] = useState<string | null>(userProfile?.photoURL || null);
@@ -95,6 +97,9 @@ export default function ProfilePage() {
             });
             // Reset form dirty state after successful submission
             form.reset(data);
+            if (refetchUserProfile) {
+                await refetchUserProfile();
+            }
         } catch (error) {
             toast({
                 variant: 'destructive',
@@ -145,12 +150,18 @@ export default function ProfilePage() {
                                     />
                                 </div>
                                 <div className="text-center w-full">
-                                    <Controller
-                                        name="displayName"
+                                    <FormField
                                         control={form.control}
-                                        render={({ field }) => <Input {...field} className="text-2xl font-bold text-center border-none focus-visible:ring-1" />}
+                                        name="displayName"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input {...field} className="text-2xl font-bold text-center border-none focus-visible:ring-1" />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
                                     />
-                                    <FormMessage>{form.formState.errors.displayName?.message}</FormMessage>
 
                                     <div className="flex items-center justify-center gap-2 mt-2 text-muted-foreground">
                                         <Mail className="h-4 w-4" />
@@ -215,12 +226,18 @@ export default function ProfilePage() {
                                                     />
                                                 </div>
                                                 <div className="w-2/3">
-                                                    <Controller
-                                                        name={`socialLinks.${index}.url`}
+                                                   <FormField
                                                         control={form.control}
-                                                        render={({ field }) => <Input {...field} placeholder="https://..." />}
+                                                        name={`socialLinks.${index}.url`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormControl>
+                                                                    <Input {...field} placeholder="https://..." />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
                                                     />
-                                                    <FormMessage>{form.formState.errors.socialLinks?.[index]?.url?.message}</FormMessage>
                                                 </div>
                                             </div>
                                             <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
@@ -253,6 +270,3 @@ export default function ProfilePage() {
     );
 }
 
-// Dummy Form and FormMessage components for type-checking, since they are not exported from form.tsx
-const Form = ({ children, ...props }: { children: React.ReactNode, [key: string]: any }) => <div {...props}>{children}</div>;
-const FormMessage = ({ children }: { children: React.ReactNode }) => <p className="text-sm font-medium text-destructive mt-1">{children}</p>;

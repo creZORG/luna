@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { userService, UserProfile } from '@/services/user.service';
@@ -14,6 +14,7 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   isProfilePending: boolean;
+  refetchUserProfile?: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({ user: null, userProfile: null, loading: true, isProfilePending: false });
@@ -57,17 +58,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
   const router = useRouter();
 
+  const fetchUserProfile = useCallback(async (firebaseUser: User) => {
+      let profile = await userService.getUserProfile(firebaseUser.uid);
+      if (!profile) {
+        profile = await userService.createDefaultUserProfile(firebaseUser);
+      }
+      setUserProfile(profile);
+      return profile;
+  }, []);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
       if (user) {
         setUser(user);
-        let profile = await userService.getUserProfile(user.uid);
-        if (!profile) {
-          profile = await userService.createDefaultUserProfile(user);
-        }
-        setUserProfile(profile);
+        const profile = await fetchUserProfile(user);
 
         // --- START REDIRECTION LOGIC ---
         const isAuthPage = pathname === '/login' || pathname === '/verify-email';
@@ -95,15 +101,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [pathname, router]);
+  }, [pathname, router, fetchUserProfile]);
+  
+  const refetchUserProfile = useCallback(async () => {
+    if (user) {
+        await fetchUserProfile(user);
+    }
+  }, [user, fetchUserProfile]);
   
   const isProfilePending = !userProfile?.roles || userProfile.roles.length === 0;
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, isProfilePending }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, isProfilePending, refetchUserProfile }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
+
