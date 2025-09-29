@@ -13,15 +13,13 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
-  console.log(`[ProductCard] Rendering card for "${product.name}". Image URL:`, product.imageUrl);
-
   // Use the provided fallback URL if imageUrl is missing.
   const imageUrl = product.imageUrl || `https://placehold.co/400x600/EEE/31343C`;
 
   return (
     <div className="group relative">
       <Link href={`/products/${product.slug}`} className="block">
-        <div className="aspect-square w-full relative bg-muted rounded-lg overflow-hidden border transition-all group-hover:shadow-xl">
+        <div className="relative aspect-square w-full bg-muted rounded-lg overflow-hidden border transition-all group-hover:shadow-xl">
           <Image
             src={imageUrl}
             alt={product.name || "Product Image"}

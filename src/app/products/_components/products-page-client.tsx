@@ -10,8 +10,6 @@ import Image from 'next/image';
 import { websiteImageService, WebsiteImage } from '@/services/website-images.service';
 
 function ProductsPageClientContent({ products }: { products: Product[] }) {
-  console.log('[ProductsPageClient] Received initial products from server:', products);
-
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category') || 'all';
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
