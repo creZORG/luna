@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, writeBatch, serverTimestamp, doc } from 'firebase/firestore';
+import { collection, writeBatch, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { userService } from './user.service';
 import { format } from 'date-fns';
@@ -20,14 +20,8 @@ export interface SalesLog {
 }
 
 class SalesService {
-    async createSalesLogs(salesLogs: Omit<SalesLog, 'date' | 'salespersonId' | 'salespersonName'>[]): Promise<void> {
+    async createSalesLogs(salesLogs: Omit<SalesLog, 'date' | 'salespersonId' | 'salespersonName'>[], salespersonId: string, salespersonName: string): Promise<void> {
         try {
-            const user = await userService.getUserProfile("temp-salesperson-id"); // In real app, get from auth
-            if (!user) throw new Error("Salesperson profile not found");
-            
-            const salespersonId = user.uid;
-            const salespersonName = user.displayName;
-
             const batch = writeBatch(db);
 
             salesLogs.forEach(log => {
@@ -38,6 +32,12 @@ class SalesService {
                     salespersonId,
                     salespersonName,
                 });
+                
+                // Update inventory
+                const closingStock = log.openingStock + log.qtyIssued - log.qtySold - log.qtyReturned - log.defects;
+                const inventoryId = `${log.productId}-${log.size.replace(/\s/g, '')}`;
+                const inventoryRef = doc(db, 'inventory', inventoryId);
+                batch.set(inventoryRef, { quantity: closingStock }, { merge: true });
             });
 
             await batch.commit();
@@ -55,6 +55,7 @@ class SalesService {
             const totalSold = salesLogs.reduce((sum, log) => sum + log.qtySold, 0);
             const totalDefects = salesLogs.reduce((sum, log) => sum + log.defects, 0);
             const subject = `Daily Sales Summary: ${salespersonName} - ${format(new Date(), 'PPP')}`;
+            
             let body = `
                 <p>Hello Admins,</p>
                 <p>Here is the end-of-day sales summary submitted by <strong>${salespersonName}</strong>.</p>
@@ -67,23 +68,32 @@ class SalesService {
                 <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse; border-color: #e2e8f0;">
                     <thead style="background-color: #f8fafc;">
                         <tr>
-                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Product ID</th>
-                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Size</th>
-                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Issued</th>
-                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Sold</th>
-                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Defects</th>
+                            <th style="text-align: left; padding: 8px; border-color: #e2e8f0;">Product</th>
+                             <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Opening</th>
+                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Issued</th>
+                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Sold</th>
+                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Returned</th>
+                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Defects</th>
+                            <th style="text-align: right; padding: 8px; border-color: #e2e8f0;">Closing</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
-            salesLogs.forEach(log => {
+            
+            const products = await Promise.all(salesLogs.map(l => userService.getProduct(l.productId)));
+
+            salesLogs.forEach((log, index) => {
+                const productName = products[index]?.name || 'Unknown Product';
+                const closingStock = log.openingStock + log.qtyIssued - log.qtySold - log.qtyReturned - log.defects;
                 body += `
                     <tr style="border-bottom: 1px solid #e2e8f0;">
-                        <td style="padding: 8px; border-color: #e2e8f0;">${log.productId}</td>
-                        <td style="padding: 8px; border-color: #e2e8f0;">${log.size}</td>
-                        <td style="padding: 8px; border-color: #e2e8f0;">${log.qtyIssued}</td>
-                        <td style="padding: 8px; border-color: #e2e8f0;">${log.qtySold}</td>
-                        <td style="padding: 8px; border-color: #e2e8f0;">${log.defects}</td>
+                        <td style="padding: 8px; border-color: #e2e8f0;">${productName} (${log.size})</td>
+                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0;">${log.openingStock}</td>
+                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0;">${log.qtyIssued}</td>
+                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0;">${log.qtySold}</td>
+                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0;">${log.qtyReturned}</td>
+                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0;">${log.defects}</td>
+                        <td style="text-align: right; padding: 8px; border-color: #e2e8f0; font-weight: bold;">${closingStock}</td>
                     </tr>
                 `;
             });

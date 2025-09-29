@@ -6,6 +6,7 @@ import { sendEmail } from '@/ai/flows/send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
 import { activityService } from './activity.service';
 import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
+import type { Product } from '@/lib/data';
 
 
 export interface UserProfile {
@@ -170,6 +171,15 @@ class UserService {
             console.error("Error updating user profile:", error);
             throw new Error("Could not update user profile.");
         }
+    }
+
+    async getProduct(productId: string): Promise<Product | null> {
+        const docRef = doc(db, 'products', productId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Product;
+        }
+        return null;
     }
 }
 

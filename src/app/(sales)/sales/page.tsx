@@ -1,6 +1,5 @@
 
 import SalesDashboardClient from './_components/sales-dashboard-client';
-import type { Product } from '@/lib/data';
 import type { StockInfo } from './_components/sales-dashboard-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { storeItemService } from '@/services/store-item.service';
@@ -10,13 +9,12 @@ async function getInitialStockData(): Promise<StockInfo[]> {
     const finishedGoods = allStoreItems.filter(item => item.category === 'Finished Goods');
     
     return finishedGoods.map(item => ({
-        // The composite ID is what we'll use to track inventory
-        productId: item.id,
-        productName: item.name,
-        size: (item as any).size, // This property is added in the service
+        productId: (item as any).productId,
+        productName: item.name.replace(`(${(item as any).size})`, '').trim(),
+        size: (item as any).size,
         openingStock: item.inventory,
-        price: (item as any).price, // This property is added in the service
-        productImageId: (item as any).productImageId, // This property is added in the service
+        price: (item as any).price,
+        imageUrl: (item as any).imageUrl,
     }));
 }
 

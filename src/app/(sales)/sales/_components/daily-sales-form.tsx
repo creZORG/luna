@@ -5,13 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { StockInfo } from './sales-dashboard-client';
 import type { SalesLog } from '@/services/sales.service';
 
 interface DailySalesFormProps {
     stockItems: StockInfo[];
-    logs: Map<string, Omit<SalesLog, 'date' | 'salespersonId'>>;
+    logs: Map<string, Omit<SalesLog, 'date' | 'salespersonId' | 'salespersonName'>>;
     onLogChange: (productId: string, size: string, data: Partial<Omit<SalesLog, 'date' | 'salespersonId' | 'productId' | 'size'>>) => void;
 }
 
@@ -35,7 +34,6 @@ export default function DailySalesForm({ stockItems, onLogChange, logs }: DailyS
             <CardContent>
                 <Accordion type="multiple" className="w-full space-y-4">
                     {stockItems.map((item) => {
-                        const productImage = PlaceHolderImages.find(img => img.id === item.productImageId);
                         const logKey = `${item.productId}-${item.size}`;
                         const currentLog = logs.get(logKey);
 
@@ -43,9 +41,9 @@ export default function DailySalesForm({ stockItems, onLogChange, logs }: DailyS
                             <AccordionItem key={logKey} value={logKey} className="border bg-card rounded-lg overflow-hidden">
                                 <AccordionTrigger className="p-4 hover:no-underline">
                                     <div className="flex items-center gap-4">
-                                        {productImage && (
+                                        {item.imageUrl && (
                                             <Image 
-                                                src={productImage.imageUrl} 
+                                                src={item.imageUrl} 
                                                 alt={item.productName} 
                                                 width={64} 
                                                 height={64} 

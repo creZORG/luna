@@ -3,11 +3,10 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
 import { activityService } from './activity.service';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 class StoreItemService {
     async getStoreItems(): Promise<StoreItem[]> {
-        const querySnapshot = await getDocs(query(collection(db, "storeItems"), where('category', '!=', 'Finished Goods')));
+        const querySnapshot = await getDocs(query(collection(db, "storeItems")));
         const productSnapshot = await getDocs(collection(db, "products"));
 
         const items: StoreItem[] = [];
@@ -19,25 +18,22 @@ class StoreItemService {
             const product = doc.data();
              product.sizes.forEach((size: { size: string, price: number}) => {
                 const compositeId = `${doc.id}-${size.size.replace(/\s/g, '')}`;
-                const placeholderImage = PlaceHolderImages.find(p => p.id === product.slug);
 
-                // Do not add if it already exists from a dedicated storeItem entry
                 if (!items.some(i => i.id === compositeId)) {
                     items.push({
                         id: compositeId,
-                        name: `${product.name} (${size.size})`,
+                        name: `${product.name}`,
                         category: 'Finished Goods',
-                        inventory: 0, // Default inventory
-                        imageUrl: placeholderImage?.imageUrl,
+                        inventory: 0, 
                         price: size.price,
                         productId: doc.id,
                         size: size.size,
+                        imageUrl: product.imageUrl,
                     } as any);
                 }
             });
         });
 
-        // Get inventory levels from the central inventory collection
         const inventorySnapshot = await getDocs(collection(db, "inventory"));
         const inventoryMap = new Map<string, number>();
         inventorySnapshot.forEach(doc => {
@@ -111,8 +107,6 @@ class StoreItemService {
         }
     }
 
-    // A function to seed the initial data.
-    // This would typically only be run once.
     async seedStoreItems(items: Omit<StoreItem, 'id' | 'inventory'>[]): Promise<void> {
         const storeItemsRef = collection(db, "storeItems");
         const snapshot = await getDocs(storeItemsRef);
@@ -132,7 +126,3 @@ class StoreItemService {
 }
 
 export const storeItemService = new StoreItemService();
-
-// Example of how you might seed the data (optional, could be run from a script)
-// import { STORE_ITEMS } from '@/lib/store-items.data';
-// storeItemService.seedStoreItems(STORE_ITEMS);

@@ -3,8 +3,6 @@
 import { useState, useMemo } from 'react';
 import DailySalesForm from './daily-sales-form';
 import SalesSummaryCard from './sales-summary-card';
-import { Product } from '@/lib/data';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
   Table,
   TableBody,
@@ -18,6 +16,7 @@ import { SalesLog, salesService } from '@/services/sales.service';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Loader, Send } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 
 export interface StockInfo {
@@ -26,15 +25,16 @@ export interface StockInfo {
     size: string;
     openingStock: number;
     price: number;
-    productImageId: string;
+    imageUrl?: string;
 }
 
 export default function SalesDashboardClient({ initialStock }: { initialStock: StockInfo[] }) {
-    const [dailyLogs, setDailyLogs] = useState<Map<string, Omit<SalesLog, 'date' | 'salespersonId'>>>(new Map());
+    const [dailyLogs, setDailyLogs] = useState<Map<string, Omit<SalesLog, 'date' | 'salespersonId' | 'salespersonName'>>>(new Map());
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
+    const { user, userProfile } = useAuth();
 
-    const handleLogChange = (productId: string, size: string, logData: Omit<SalesLog, 'date' | 'salespersonId' | 'productId' | 'size' >) => {
+    const handleLogChange = (productId: string, size: string, logData: Partial<Omit<SalesLog, 'date' | 'salespersonId' | 'productId' | 'size' >>) => {
         const key = `${productId}-${size}`;
         setDailyLogs(prev => {
             const newLogs = new Map(prev);
@@ -54,13 +54,18 @@ export default function SalesDashboardClient({ initialStock }: { initialStock: S
             const sold = log?.qtySold ?? 0;
             const returned = log?.qtyReturned ?? 0;
             const defects = log?.defects ?? 0;
-            const closing = opening - issued + returned - sold - defects;
+            const closing = opening + issued - sold - returned - defects;
             closingStockMap.set(key, closing);
         });
         return closingStockMap;
     }, [initialStock, dailyLogs]);
 
     const handleSubmitAll = async () => {
+        if (!user || !userProfile) {
+            toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to submit.' });
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const logsToSubmit = Array.from(dailyLogs.values());
@@ -68,7 +73,7 @@ export default function SalesDashboardClient({ initialStock }: { initialStock: S
                 toast({ variant: 'destructive', title: 'Nothing to submit', description: 'Please enter some sales data first.' });
                 return;
             }
-            await salesService.createSalesLogs(logsToSubmit);
+            await salesService.createSalesLogs(logsToSubmit, user.uid, userProfile.displayName);
             toast({ title: 'Success!', description: 'Your daily sales logs have been submitted.' });
             // Optionally reset state after submission
             setDailyLogs(new Map());
@@ -82,7 +87,7 @@ export default function SalesDashboardClient({ initialStock }: { initialStock: S
 
 
     const totalStock = useMemo(() => initialStock.reduce((sum, item) => sum + item.openingStock, 0), [initialStock]);
-    const lowStockThreshold = 20;
+    const lowStockThreshold = 10;
     const lowStockItems = useMemo(() => {
        return Array.from(closingStockData.entries())
             .filter(([, closingStock]) => closingStock < lowStockThreshold)
