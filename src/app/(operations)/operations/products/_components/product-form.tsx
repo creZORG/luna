@@ -51,7 +51,7 @@ const fileSchema = z.any()
   .refine(file => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
   .refine(file => ACCEPTED_IMAGE_TYPES.includes(file?.type), "Only .jpg, .jpeg, .png and .webp formats are supported.");
 
-const formSchema = z.object({
+const createFormSchema = z.object({
   name: z.string().min(2, 'Name is too short'),
   slug: z.string().min(2, 'Slug is too short').regex(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens.'),
   description: z.string().min(10, 'Description is too short'),
@@ -63,15 +63,20 @@ const formSchema = z.object({
   cautions: z.string().min(10, 'Cautions are too short'),
   wholesaleMoq: z.coerce.number().int().min(1, 'MOQ must be at least 1').optional(),
   platformFee: z.coerce.number().min(0, 'Platform fee cannot be negative').optional(),
-  imageUrl: z.any().optional(),
-  galleryImageUrls: z.array(z.any()).optional(),
+  imageUrl: z.string().min(1, "A primary image is required."), // Required for creation
+  galleryImageUrls: z.array(z.string()).optional(),
   sizes: z.array(z.object({
     size: z.string().min(1, "Size cannot be empty"),
     price: z.coerce.number().optional(), // Price is optional for ops manager
   })).min(1, "Add at least one size"),
 });
 
-export type ProductFormData = z.infer<typeof formSchema>;
+const editFormSchema = createFormSchema.extend({
+  imageUrl: z.string().optional(), // Optional for editing
+});
+
+
+export type ProductFormData = z.infer<typeof createFormSchema>;
 
 interface ProductFormProps {
     product?: Product; // For editing
@@ -79,6 +84,7 @@ interface ProductFormProps {
 
 export function ProductForm({ product }: ProductFormProps) {
     const isEditMode = !!product;
+    const formSchema = isEditMode ? editFormSchema : createFormSchema;
     const { toast } = useToast();
     const router = useRouter();
     const { user, userProfile } = useAuth();
@@ -93,6 +99,7 @@ export function ProductForm({ product }: ProductFormProps) {
             ...product,
             keyBenefits: product.keyBenefits.join('\n'),
             ingredients: product.ingredients.join(', '),
+            imageUrl: product.imageUrl || '',
         } : {
             name: '',
             slug: '',
@@ -103,7 +110,7 @@ export function ProductForm({ product }: ProductFormProps) {
             ingredients: '',
             directions: '',
             cautions: '',
-            imageUrl: undefined,
+            imageUrl: '',
             galleryImageUrls: [],
             wholesaleMoq: 120,
             platformFee: 0,
@@ -120,7 +127,10 @@ export function ProductForm({ product }: ProductFormProps) {
             try {
                 const draftData = JSON.parse(savedDraft);
                 form.reset(draftData);
-                 if (draftData.imageUrl) setImagePreview(draftData.imageUrl);
+                 if (draftData.imageUrl) {
+                    setImagePreview(draftData.imageUrl);
+                    form.setValue('imageUrl', draftData.imageUrl);
+                 }
                  if (draftData.galleryImageUrls) setGalleryPreviews(draftData.galleryImageUrls);
                 toast({ title: "Draft Loaded", description: "Your previous work has been restored." });
             } catch (e) {
@@ -156,7 +166,7 @@ export function ProductForm({ product }: ProductFormProps) {
         } : {
             name: '', slug: '', description: '', shortDescription: '',
             sizes: [{ size: '', price: 0 }], keyBenefits: '', ingredients: '',
-            directions: '', cautions: '', imageUrl: undefined, galleryImageUrls: [],
+            directions: '', cautions: '', imageUrl: '', galleryImageUrls: [],
         });
         setImagePreview(product?.imageUrl || null);
         setGalleryPreviews(product?.galleryImageUrls || []);
@@ -167,20 +177,6 @@ export function ProductForm({ product }: ProductFormProps) {
     control: form.control,
     name: "sizes"
   });
-  
-  const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({
-      control: form.control,
-      name: "galleryImageUrls"
-  });
-
-  const toDataUri = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-  };
 
   async function onSubmit(values: ProductFormData) {
     if (!user || !userProfile) {
@@ -191,6 +187,11 @@ export function ProductForm({ product }: ProductFormProps) {
         const finalImageUrl = imagePreview && imagePreview.startsWith('data:') 
           ? await uploadImageFlow({ imageDataUri: imagePreview, folder: 'products' })
           : imagePreview;
+
+        if (!finalImageUrl) {
+            toast({ variant: 'destructive', title: "Primary Image Required", description: "You must upload a primary image to save the product." });
+            return;
+        }
         
         const finalGalleryUrls = await Promise.all(
             (galleryPreviews || []).map(async (img) => {
@@ -230,7 +231,6 @@ export function ProductForm({ product }: ProductFormProps) {
         });
       }
       
-      // Clear draft on successful submission
       localStorage.removeItem(getDraftKey());
 
       router.push('/operations/products');
@@ -500,15 +500,15 @@ export function ProductForm({ product }: ProductFormProps) {
                   <FormField
                       control={form.control}
                       name="imageUrl"
-                      render={({ field: { onChange, value, ...rest } }) => (
+                      render={({ field }) => (
                           <FormItem>
                           <FormLabel>Primary Image</FormLabel>
                           <FormControl>
-                              <div className={cn("relative w-full h-48 border-2 border-dashed rounded-lg flex flex-col justify-center items-center text-muted-foreground", imagePreview && "border-solid")}>
+                              <div className={cn("relative w-full h-48 border-2 border-dashed rounded-lg flex flex-col justify-center items-center text-muted-foreground", imagePreview && "border-solid", form.formState.errors.imageUrl && "border-destructive")}>
                                   {imagePreview ? (
                                       <>
                                           <Image src={imagePreview} alt="Primary image preview" layout="fill" objectFit="contain" className="rounded-lg p-2" />
-                                          <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => { setImagePreview(null); }}>
+                                          <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => { setImagePreview(null); form.setValue('imageUrl', '')}}>
                                               <X className="h-4 w-4" />
                                           </Button>
                                       </>
@@ -527,12 +527,13 @@ export function ProductForm({ product }: ProductFormProps) {
                                           if (file) {
                                               const reader = new FileReader();
                                               reader.onloadend = () => {
-                                                  setImagePreview(reader.result as string);
+                                                  const dataUrl = reader.result as string;
+                                                  setImagePreview(dataUrl);
+                                                  form.setValue('imageUrl', dataUrl, { shouldValidate: true });
                                               };
                                               reader.readAsDataURL(file);
                                           }
                                       }}
-                                      {...rest}
                                   />
                               </div>
                           </FormControl>
@@ -544,7 +545,7 @@ export function ProductForm({ product }: ProductFormProps) {
                   <FormField
                       control={form.control}
                       name="galleryImageUrls"
-                      render={({ field: { onChange, value } }) => (
+                      render={({ field }) => (
                           <FormItem>
                           <FormLabel>Gallery Images</FormLabel>
                           <div className="grid grid-cols-2 gap-4">
