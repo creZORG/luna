@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 import * as React from 'react';
 import { ThemeToggle } from '../theme-toggle';
 import { useCart } from '@/hooks/use-cart';
+import { useAuth } from '@/hooks/use-auth';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -24,6 +25,7 @@ export function Header() {
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const { cartItems, setIsCartOpen } = useCart();
+  const { user } = useAuth();
 
   const totalQuantity = React.useMemo(() => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -82,12 +84,21 @@ export function Header() {
                 )}
                 <span className="sr-only">Open Cart</span>
               </Button>
+              
+              {user ? (
+                 <Button variant="outline" className="hidden md:flex rounded-full" asChild>
+                    <Link href="/profile">
+                    <User className="mr-2 h-4 w-4"/> My Account
+                    </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" className="hidden md:flex rounded-full" asChild>
+                    <Link href="/login">
+                    <User className="mr-2 h-4 w-4"/> Login
+                    </Link>
+                </Button>
+              )}
 
-              <Button variant="outline" className="hidden md:flex rounded-full" asChild>
-                <Link href="/login">
-                  <User className="mr-2 h-4 w-4"/> Login
-                </Link>
-              </Button>
 
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
