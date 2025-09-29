@@ -29,6 +29,8 @@ const ROLE_DASHBOARDS: Record<string, string> = {
     'manufacturing': '/manufacturing',
     'digital-marketing': '/campaigns',
     'influencer': '/campaigns',
+    'delivery-partner': '/profile',
+    'pickup-location-staff': '/profile',
 };
 
 // This defines the order of importance for roles if a user has multiple.
@@ -40,16 +42,17 @@ const ROLE_PRIORITY: (keyof typeof ROLE_DASHBOARDS)[] = [
     'finance',
     'digital-marketing',
     'influencer',
+    'delivery-partner',
+    'pickup-location-staff',
 ];
 
 const getPrimaryDashboard = (roles: UserProfile['roles']): string => {
     for (const role of ROLE_PRIORITY) {
-        if (roles.includes(role)) {
+        if (roles.includes(role as any)) {
             return ROLE_DASHBOARDS[role];
         }
     }
-    // Fallback for users with no roles or unrecognized roles (e.g. delivery-partner)
-    // will just go to the generic profile page.
+    // Fallback for users with no roles will just go to the generic profile page.
     return '/profile';
 };
 
@@ -80,6 +83,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // --- START REDIRECTION LOGIC ---
         const isAuthPage = ['/login', '/verify-email', '/profile-setup'].includes(pathname);
+        const hostname = window.location.hostname;
+        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'luna.co.ke';
+        const isStaffDomain = hostname === `staff.${rootDomain}`;
         
         if (profile) {
             // If email is not verified, force them to the verification page.
@@ -94,10 +100,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     router.push('/profile-setup');
                 }
             }
-            // If everything is complete and they are on an auth page, redirect to dashboard
-            else if (isAuthPage) {
+            // If everything is complete, handle role-based redirection
+            else {
                 const dashboardUrl = getPrimaryDashboard(profile.roles);
-                router.push(dashboardUrl);
+
+                // If user is on an auth page, redirect to their dashboard
+                if (isAuthPage) {
+                    router.push(dashboardUrl);
+                }
+                // If user is on the staff domain but on the wrong dashboard, redirect them
+                else if (isStaffDomain && pathname !== dashboardUrl && !pathname.startsWith('/profile') && !pathname.startsWith('/admin/attendance')) {
+                    // Check if they are on a generic page that isn't their primary dashboard
+                     if (['/admin/dashboard', '/sales', '/operations', '/finance', '/manufacturing', '/campaigns'].includes(pathname)) {
+                         router.push(dashboardUrl);
+                     }
+                }
             }
         }
         // --- END REDIRECTION LOGIC ---
@@ -128,4 +145,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-

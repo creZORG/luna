@@ -1,5 +1,4 @@
 
-
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -15,7 +14,9 @@ export function middleware(request: NextRequest) {
   }
 
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'luna.co.ke';
+  const staffDomain = `staff.${rootDomain}`;
   const isMainDomain = hostname === rootDomain || hostname === `www.${rootDomain}`;
+  const isStaffDomain = hostname === staffDomain;
   
   // These paths are for internal staff and should be blocked on the main domain.
   // Paths for external partners (like /campaigns, /profile) are excluded from this list.
@@ -31,6 +32,12 @@ export function middleware(request: NextRequest) {
           url.pathname = '/access-denied';
           return NextResponse.rewrite(url);
       }
+  }
+
+  // If on the staff domain and at the root, redirect to a default dashboard.
+  if (isStaffDomain && pathname === '/') {
+      url.pathname = '/admin/dashboard';
+      return NextResponse.redirect(url);
   }
 
   // Allow all other requests to proceed. Client-side logic in AuthProvider
