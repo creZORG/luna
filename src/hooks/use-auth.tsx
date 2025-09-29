@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const profile = await fetchUserProfile(user);
 
         // --- START REDIRECTION LOGIC ---
-        const isAuthPage = pathname === '/login' || pathname === '/verify-email';
+        const isAuthPage = ['/login', '/verify-email', '/profile-setup'].includes(pathname);
         
         if (profile) {
             // If email is not verified, force them to the verification page.
@@ -85,7 +85,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     router.push('/verify-email');
                 }
             } 
-            // If email is verified and they are on an auth page, redirect to their dashboard.
+            // If email is verified but profile setup is not complete
+            else if (!profile.profileSetupComplete) {
+                 if (pathname !== '/profile-setup') {
+                    router.push('/profile-setup');
+                }
+            }
+            // If everything is complete and they are on an auth page, redirect to dashboard
             else if (isAuthPage) {
                 const dashboardUrl = getPrimaryDashboard(profile.roles);
                 router.push(dashboardUrl);
@@ -109,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, fetchUserProfile]);
   
-  const isProfilePending = !userProfile?.roles || userProfile.roles.length === 0;
+  const isProfilePending = userProfile && (!userProfile.roles || userProfile.roles.length === 0);
 
   return (
     <AuthContext.Provider value={{ user, userProfile, loading, isProfilePending, refetchUserProfile }}>

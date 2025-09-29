@@ -16,6 +16,7 @@ export interface UserProfile {
     displayName: string;
     roles: ('admin' | 'sales' | 'operations' | 'finance' | 'manufacturing' | 'digital-marketing')[];
     emailVerified: boolean;
+    profileSetupComplete: boolean; // New field
     photoURL?: string;
     qualifications?: string;
     socialLinks?: { platform: string; url: string }[];
@@ -26,6 +27,7 @@ export interface UserProfileUpdateData {
     qualifications?: string;
     socialLinks?: { platform: string; url: string }[];
     photoDataUrl?: string; // For new photo uploads
+    profileSetupComplete?: boolean;
 }
 
 
@@ -54,6 +56,7 @@ class UserService {
             displayName: user.displayName || user.email?.split('@')[0] || 'New User',
             roles: [], // Start with no roles
             emailVerified: false, // Email is not verified on creation
+            profileSetupComplete: false, // Profile setup is not complete
             photoURL: '',
             qualifications: '',
             socialLinks: [],
@@ -115,7 +118,7 @@ class UserService {
         const querySnapshot = await getDocs(q);
         const admins: UserProfile[] = [];
         querySnapshot.forEach((doc) => {
-            admins.push({ uid: doc.id, ...doc.data() } as UserProfile);
+            admins.push({ id: doc.id, ...doc.data() } as UserProfile);
         });
         return admins;
     }
@@ -149,6 +152,7 @@ class UserService {
             if (data.displayName) updateData.displayName = data.displayName;
             if (data.qualifications) updateData.qualifications = data.qualifications;
             if (data.socialLinks) updateData.socialLinks = data.socialLinks;
+            if (data.profileSetupComplete) updateData.profileSetupComplete = data.profileSetupComplete;
             
             if (data.photoDataUrl) {
                 const imageUrl = await uploadImageFlow({
@@ -164,7 +168,11 @@ class UserService {
             
             const user = await this.getUserProfile(uid);
             if (user) {
-                activityService.logActivity(`Updated their profile.`, user.uid, user.displayName);
+                 activityService.logActivity(
+                    data.profileSetupComplete ? `Completed their profile setup.` : `Updated their profile.`,
+                    user.uid,
+                    user.displayName
+                );
             }
 
         } catch (error) {
