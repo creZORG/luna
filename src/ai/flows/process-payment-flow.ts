@@ -34,7 +34,7 @@ const processPaymentFlow = ai.defineFlow(
   },
   async ({ reference }) => {
     try {
-      // 1. Verify the transaction with Paystack
+      // 1. Verify the transaction with Paystack by calling the server-side service
       const verifiedTransaction = await paystackService.verifyTransaction(reference);
 
       // 2. If successful, create the order in our database
