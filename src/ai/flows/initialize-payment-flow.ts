@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview A flow to initialize a Paystack payment transaction.
- * - initializePayment - Creates a transaction with Paystack and returns the details needed by the frontend.
+ * - initializePaymentFlow - Creates a transaction with Paystack and returns the details needed by the frontend.
  */
 
 import { ai } from '@/ai/genkit';
@@ -33,13 +33,14 @@ export async function initializePaymentFlow(input: InitializePaymentInput): Prom
 }
 
 
-const initializePayment = ai.defineFlow(
+ai.defineFlow(
   {
     name: 'initializePaymentFlow',
     inputSchema: InitializePaymentInputSchema,
     outputSchema: InitializePaymentOutputSchema,
   },
   async (data) => {
+    // Note: The actual logic is in the service to prevent bundling issues.
     return await paystackService.initializeTransaction(data);
   }
 );

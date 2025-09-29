@@ -26,13 +26,14 @@ export async function processPayment(reference: string): Promise<ProcessPaymentO
   return await paystackService.verifyAndCreateOrder(reference);
 }
 
-const processPaymentFlow = ai.defineFlow(
+ai.defineFlow(
   {
     name: 'processPaymentFlow',
     inputSchema: ProcessPaymentInputSchema,
     outputSchema: ProcessPaymentOutputSchema,
   },
   async ({ reference }) => {
+     // Note: The actual logic is in the service to prevent bundling issues.
      return await paystackService.verifyAndCreateOrder(reference);
   }
 );
