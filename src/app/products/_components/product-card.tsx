@@ -13,7 +13,7 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const placeholderImageUrl = `https://placehold.co/600x600/e2e8f0/64748b?text=Image`;
+  const placeholderImageUrl = `https://placehold.co/400x600/EEE/31343C`;
 
   return (
     <div className="group relative">
