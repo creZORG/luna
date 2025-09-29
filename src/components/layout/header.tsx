@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { Menu, Moon } from 'lucide-react';
+import { Menu, Moon, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
@@ -14,7 +14,7 @@ const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/products', label: 'Catalog' },
   { href: '/#wholesale', label: 'Wholesale' },
-  { href: '/#partners', label: 'Partners' },
+  { href: '#partners', label: 'Partners' },
   { href: '#contact', label: 'Contact' },
 ];
 
@@ -51,8 +51,8 @@ export function Header() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-4">
-              <nav className="hidden md:flex items-center gap-2">
+          <div className="flex items-center gap-2">
+              <nav className="hidden md:flex items-center gap-1">
                   {navLinks.map(({ href, label }) => (
                       <Button asChild variant="ghost" key={href} className={cn(
                           'text-sm font-medium rounded-full',
@@ -65,6 +65,12 @@ export function Header() {
               </nav>
               
               <ThemeToggle />
+
+              <Button variant="outline" className="hidden md:flex rounded-full" asChild>
+                <Link href="/login">
+                  <User className="mr-2 h-4 w-4"/> Login
+                </Link>
+              </Button>
 
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -96,6 +102,13 @@ export function Header() {
                       </Link>
                     ))}
                   </nav>
+                   <div className="mt-auto p-4 border-t">
+                     <Button className="w-full" asChild>
+                       <Link href="/login">
+                          <User className="mr-2 h-4 w-4"/> Customer Login
+                        </Link>
+                     </Button>
+                   </div>
                 </div>
               </SheetContent>
             </Sheet>

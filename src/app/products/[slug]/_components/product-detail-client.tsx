@@ -10,7 +10,7 @@ import { Check, Send, ShoppingCart, MessageSquare } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChatModal } from './chat-modal';
 
 
@@ -82,31 +82,38 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </div>
 
           <div>
-            <h1 className="font-headline text-3xl md:text-4xl font-bold">{product.name}</h1>
+            <Badge variant="secondary" className='capitalize'>{product.category.replace(/-/g, ' ')}</Badge>
+            <h1 className="font-headline text-3xl md:text-4xl font-bold mt-2">{product.name}</h1>
             <p className="mt-4 text-lg text-muted-foreground">{product.shortDescription}</p>
             
-            <div className="mt-6">
-              <p className="text-muted-foreground">Available in: {product.sizes.map(s => `${s.size} (Ksh ${s.price})`).join(', ')}</p>
-            </div>
+             <Separator className="my-8" />
 
-             <Card className="mt-6 bg-accent/50 border-accent">
-                <CardContent className="pt-6">
-                    <p className="font-bold text-accent-foreground">Wholesale Available!</p>
-                    <p className="text-sm text-accent-foreground/80">
-                        Get a discount on orders of <span className="font-semibold">{product.wholesaleMoq} units</span> or more. Perfect for retailers and distributors.
-                    </p>
-                </CardContent>
-            </Card>
+            <div className="space-y-6">
+                <div>
+                    <h3 className='text-sm font-semibold text-muted-foreground'>Recommended Retail Price (RRP)</h3>
+                    <div className='flex items-baseline gap-4'>
+                        <p className="text-4xl font-bold text-primary">Ksh {product.sizes[0].price.toFixed(2)}</p>
+                        <p className='text-muted-foreground'>per {product.sizes[0].size} unit</p>
+                    </div>
+                    {product.sizes.length > 1 && (
+                        <p className='text-sm text-muted-foreground mt-2'>Other sizes available.</p>
+                    )}
+                </div>
 
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button size="lg" disabled>
-                  <ShoppingCart className="mr-2 h-5 w-5" />
-                  Buy Now (Coming Soon)
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => setIsChatOpen(true)}>
-                <MessageSquare className="mr-2 h-5 w-5" />
-                Discuss Bulk Pricing
-              </Button>
+                <Card className="bg-accent/50 border-accent">
+                    <CardHeader className='pb-4'>
+                        <CardTitle className='text-accent-foreground text-lg'>Wholesale Available</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-accent-foreground/90 mb-4">
+                            Get a significant discount on orders of <span className="font-bold">{product.wholesaleMoq} units</span> or more. Perfect for retailers and distributors.
+                        </p>
+                         <Button size="default" variant="secondary" onClick={() => setIsChatOpen(true)} className='bg-primary/20 text-primary hover:bg-primary/30'>
+                            <MessageSquare className="mr-2 h-5 w-5" />
+                            Discuss Bulk Pricing
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
             
             <Separator className="my-8" />
