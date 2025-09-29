@@ -1,13 +1,4 @@
-'use client';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { ShoppingCart } from 'lucide-react';
 import CheckoutClient from './_components/checkout-client';
 
 export default function CheckoutPage() {
@@ -26,3 +17,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+    
