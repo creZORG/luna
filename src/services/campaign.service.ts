@@ -5,30 +5,37 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc
 import type { Campaign } from '@/lib/campaigns.data';
 import { activityService } from './activity.service';
 
+interface CreateCampaignData {
+    name: string;
+    promoCode: string;
+    marketerId: string;
+    marketerName: string;
+}
+
 class CampaignService {
 
-    async createCampaign(name: string, promoCode: string, marketerId: string, marketerName: string): Promise<Campaign> {
+    async createCampaign(data: CreateCampaignData, adminId: string, adminName: string): Promise<Campaign> {
         // Check if promo code already exists
-        const existingCodeQuery = query(collection(db, "campaigns"), where("promoCode", "==", promoCode));
+        const existingCodeQuery = query(collection(db, "campaigns"), where("promoCode", "==", data.promoCode));
         const existingCodeSnapshot = await getDocs(existingCodeQuery);
         if (!existingCodeSnapshot.empty) {
-            throw new Error(`Promo code "${promoCode}" already exists. Please choose another one.`);
+            throw new Error(`Promo code "${data.promoCode}" already exists. Please choose another one.`);
         }
         
         const newCampaign: Omit<Campaign, 'id'> = {
-            name,
-            promoCode,
-            marketerId,
-            marketerName,
+            name: data.name,
+            promoCode: data.promoCode,
+            marketerId: data.marketerId,
+            marketerName: data.marketerName,
             createdAt: serverTimestamp(),
         };
 
         const docRef = await addDoc(collection(db, "campaigns"), newCampaign);
 
         activityService.logActivity(
-            `Created a new campaign: ${name} with promo code ${promoCode}`,
-            marketerId,
-            marketerName
+            `Created a new campaign: ${data.name} and assigned it to ${data.marketerName}`,
+            adminId,
+            adminName
         );
 
         return { id: docRef.id, ...newCampaign } as Campaign;

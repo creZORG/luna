@@ -13,6 +13,9 @@ export default async function CampaignsPage() {
     // Fetch all campaigns. The client component will filter based on the logged-in user's role.
     const campaigns = await campaignService.getCampaigns();
 
+    // Fetch all users with the 'influencer' role
+    const influencers = await userService.getUsersByRole('influencer');
+
     // Fetch links for each campaign
     const campaignsWithLinks = await Promise.all(campaigns.map(async (campaign) => {
         const links = await referralService.getReferralLinksByCampaign(campaign.id);
@@ -31,7 +34,11 @@ export default async function CampaignsPage() {
                  <p className="text-muted-foreground">Manage campaigns, create trackable links, and request equipment.</p>
             </div>
             
-            <CampaignsClient initialCampaigns={campaignsWithLinks} topLinks={topLinks} />
+            <CampaignsClient 
+                initialCampaigns={campaignsWithLinks} 
+                topLinks={topLinks} 
+                influencers={influencers} 
+            />
 
             <EquipmentRequestClient items={equipmentItems} />
         </div>

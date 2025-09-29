@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader, PlusCircle, Link as LinkIcon, Copy, TrendingUp, Megaphone, Star } from 'lucide-react';
+import { Loader, PlusCircle, Link as LinkIcon, Copy, TrendingUp, Megaphone, Star, Users, User } from 'lucide-react';
 import { Campaign } from '@/lib/campaigns.data';
 import { ReferralLink } from '@/lib/referrals.data';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,10 @@ import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import CreateReferralLinkClient from './create-referral-link-client';
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { UserProfile } from '@/services/user.service';
+
 
 interface CampaignWithLinks extends Campaign {
     links: ReferralLink[];
@@ -33,13 +37,17 @@ interface CampaignWithLinks extends Campaign {
 interface CampaignsClientProps {
     initialCampaigns: CampaignWithLinks[];
     topLinks: ReferralLink[];
+    influencers: UserProfile[];
 }
 
-export default function CampaignsClient({ initialCampaigns, topLinks }: CampaignsClientProps) {
+export default function CampaignsClient({ initialCampaigns, topLinks, influencers }: CampaignsClientProps) {
     const [campaigns, setCampaigns] = useState<CampaignWithLinks[]>(initialCampaigns);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [newCampaignName, setNewCampaignName] = useState('');
     const [newPromoCode, setNewPromoCode] = useState('');
+    const [assignmentType, setAssignmentType] = useState<'team' | 'influencer'>('team');
+    const [selectedInfluencerId, setSelectedInfluencerId] = useState<string>('');
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
     const { user, userProfile } = useAuth();
@@ -55,6 +63,10 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
             toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please enter a name and a promo code.' });
             return;
         }
+        if (assignmentType === 'influencer' && !selectedInfluencerId) {
+            toast({ variant: 'destructive', title: 'Influencer Not Selected', description: 'Please select an influencer to assign this campaign to.' });
+            return;
+        }
          if (!user || !userProfile) {
              toast({ variant: 'destructive', title: 'Authentication Error' });
              return;
@@ -62,12 +74,36 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
         
         setIsSubmitting(true);
         try {
-            const newCampaign = await campaignService.createCampaign(newCampaignName, newPromoCode.toUpperCase(), user.uid, userProfile.displayName);
+            let marketerId = 'team';
+            let marketerName = 'Digital Marketing Team';
+
+            if (assignmentType === 'influencer') {
+                const influencer = influencers.find(inf => inf.uid === selectedInfluencerId);
+                if (influencer) {
+                    marketerId = influencer.uid;
+                    marketerName = influencer.displayName;
+                } else {
+                    throw new Error("Selected influencer not found.");
+                }
+            }
+
+            const newCampaign = await campaignService.createCampaign({
+                name: newCampaignName,
+                promoCode: newPromoCode.toUpperCase(),
+                marketerId,
+                marketerName
+            }, user.uid, userProfile.displayName);
+            
             setCampaigns(prev => [{...newCampaign, links: []}, ...prev]);
             toast({ title: 'Campaign Created!', description: `The campaign "${newCampaign.name}" is now active.` });
+            
+            // Reset form
             setNewCampaignName('');
             setNewPromoCode('');
+            setAssignmentType('team');
+            setSelectedInfluencerId('');
             setIsAddDialogOpen(false);
+
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Creation Failed', description: error.message || "Could not create campaign." });
         } finally {
@@ -79,10 +115,7 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
         // In a real app, you might only refetch the specific campaign that was updated.
         // For simplicity, we'll refetch all of them.
         if (!user) return;
-        const updatedCampaigns = userProfile?.roles.includes('admin')
-            ? await campaignService.getCampaigns()
-            : await campaignService.getCampaignsByMarketer(user.uid);
-
+        const updatedCampaigns = await campaignService.getCampaigns();
          const campaignsWithLinks = await Promise.all(updatedCampaigns.map(async (campaign) => {
             const links = await referralService.getReferralLinksByCampaign(campaign.id);
             return { ...campaign, links };
@@ -92,10 +125,19 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
     
     const visibleCampaigns = useMemo(() => {
         if (!user || !userProfile) return [];
+        // Admins see everything
         if (userProfile.roles.includes('admin')) {
             return campaigns;
         }
-        return campaigns.filter(c => c.marketerId === user.uid);
+        // Digital Marketers see their team campaigns and any campaigns specifically assigned to them by mistake
+        if (userProfile.roles.includes('digital-marketing')) {
+             return campaigns.filter(c => c.marketerId === 'team' || c.marketerId === user.uid);
+        }
+        // Influencers only see campaigns assigned to them
+        if (userProfile.roles.includes('influencer')) {
+            return campaigns.filter(c => c.marketerId === user.uid);
+        }
+        return [];
     }, [campaigns, user, userProfile]);
 
     return (
@@ -113,14 +155,14 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
                                     <DialogTrigger asChild>
                                         <Button size="sm"><PlusCircle className="mr-2 h-4 w-4" />New Campaign</Button>
                                     </DialogTrigger>
-                                    <DialogContent>
+                                    <DialogContent className="sm:max-w-[480px]">
                                         <DialogHeader>
                                             <DialogTitle>Create New Campaign</DialogTitle>
                                             <DialogDescription>
-                                                A campaign groups your marketing links under a single promo code for sales attribution.
+                                                A campaign groups marketing links under a single promo code for sales attribution.
                                             </DialogDescription>
                                         </DialogHeader>
-                                        <div className="space-y-4 py-4">
+                                        <div className="space-y-6 py-4">
                                             <div className="space-y-2">
                                                 <Label htmlFor="campaign-name">Campaign Name</Label>
                                                 <Input id="campaign-name" placeholder="e.g., Easter Sale 2024" value={newCampaignName} onChange={e => setNewCampaignName(e.target.value)} />
@@ -128,8 +170,47 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
                                             <div className="space-y-2">
                                                 <Label htmlFor="promo-code">Promo Code</Label>
                                                 <Input id="promo-code" placeholder="e.g., EASTER20" value={newPromoCode} onChange={e => setNewPromoCode(e.target.value.toUpperCase())} />
-                                                <p className="text-xs text-muted-foreground">Short, memorable, and unique. This is what customers will use at checkout.</p>
+                                                <p className="text-xs text-muted-foreground">Short, memorable, and unique.</p>
                                             </div>
+
+                                            <Separator />
+
+                                            <div className="space-y-3">
+                                                 <Label>Assign To</Label>
+                                                 <RadioGroup value={assignmentType} onValueChange={(v) => setAssignmentType(v as any)} className="grid grid-cols-2 gap-4">
+                                                     <div>
+                                                        <RadioGroupItem value="team" id="team" className="peer sr-only" />
+                                                        <Label htmlFor="team" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                                                          <Users className="mb-3 h-6 w-6"/>
+                                                          Digital Marketing Team
+                                                        </Label>
+                                                      </div>
+                                                      <div>
+                                                        <RadioGroupItem value="influencer" id="influencer" className="peer sr-only" />
+                                                        <Label htmlFor="influencer" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer">
+                                                           <User className="mb-3 h-6 w-6"/>
+                                                          Specific Influencer
+                                                        </Label>
+                                                      </div>
+                                                 </RadioGroup>
+                                            </div>
+
+                                            {assignmentType === 'influencer' && (
+                                                <div className="space-y-2">
+                                                    <Label>Select Influencer</Label>
+                                                    <Select value={selectedInfluencerId} onValueChange={setSelectedInfluencerId}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Choose an influencer..." />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {influencers.map(inf => (
+                                                                <SelectItem key={inf.uid} value={inf.uid}>{inf.displayName}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
+
                                         </div>
                                         <DialogFooter>
                                             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>

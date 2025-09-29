@@ -10,11 +10,13 @@ import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
 import type { Product } from '@/lib/data';
 
 
+export type UserRole = 'admin' | 'sales' | 'operations' | 'finance' | 'manufacturing' | 'digital-marketing' | 'influencer' | 'delivery-partner' | 'pickup-location-staff';
+
 export interface UserProfile {
     uid: string;
     email: string;
     displayName: string;
-    roles: ('admin' | 'sales' | 'operations' | 'finance' | 'manufacturing' | 'digital-marketing' | 'influencer' | 'delivery-partner' | 'pickup-location-staff')[];
+    roles: UserRole[];
     emailVerified: boolean;
     profileSetupComplete: boolean; // New field
     photoURL?: string;
@@ -125,6 +127,22 @@ class UserService {
             throw new Error("Could not fetch user list.");
         }
     }
+    
+    async getUsersByRole(role: UserRole): Promise<UserProfile[]> {
+         try {
+            const q = query(collection(db, 'users'), where('roles', 'array-contains', role), orderBy('displayName'));
+            const usersSnapshot = await getDocs(q);
+            const users: UserProfile[] = [];
+            usersSnapshot.forEach(doc => {
+                users.push({ uid: doc.id, ...doc.data() } as UserProfile);
+            });
+            return users;
+        } catch (error) {
+            console.error(`Error fetching users with role ${role}:`, error);
+            throw new Error(`Could not fetch users with role ${role}.`);
+        }
+    }
+
 
     async getAdmins(): Promise<UserProfile[]> {
         const q = query(collection(db, 'users'), where('roles', 'array-contains', 'admin'));
