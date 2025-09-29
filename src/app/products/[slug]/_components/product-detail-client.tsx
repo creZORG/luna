@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Product } from '@/lib/data';
-import { PlaceHolderImages, ImagePlaceholder } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { Check, Send, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
@@ -14,23 +13,16 @@ import { useState, useMemo } from 'react';
 import { PurchaseModal } from './purchase-modal';
 
 export default function ProductDetailClient({ product }: { product: Product }) {
-  const primaryImage = PlaceHolderImages.find(img => img.id === product.imageId);
+  const primaryImage = product.imageUrl;
   const galleryImages = useMemo(() => {
-    return (product.galleryImageIds || [])
-      .map(id => PlaceHolderImages.find(img => img.id === id))
-      .filter((img): img is ImagePlaceholder => !!img);
-  }, [product.galleryImageIds]);
+    return (product.galleryImageUrls || []).filter((url): url is string => !!url);
+  }, [product.galleryImageUrls]);
   
   const allImages = primaryImage ? [primaryImage, ...galleryImages] : galleryImages;
 
-  const [selectedImage, setSelectedImage] = useState<ImagePlaceholder | undefined>(allImages[0]);
+  const [selectedImage, setSelectedImage] = useState<string | undefined>(allImages[0]);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   
-  // Set the primary image as selected initially
-  useState(() => {
-    setSelectedImage(primaryImage);
-  });
-
   return (
     <>
       <PurchaseModal 
@@ -54,12 +46,11 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               <div className="aspect-square w-full bg-card rounded-lg overflow-hidden shadow-lg border">
                 {selectedImage && (
                   <Image
-                    src={selectedImage.imageUrl}
-                    alt={selectedImage.description}
+                    src={selectedImage}
+                    alt={product.name}
                     width={800}
                     height={800}
                     className="object-cover w-full h-full"
-                    data-ai-hint={selectedImage.imageHint}
                     priority
                   />
                 )}
@@ -69,16 +60,16 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5 gap-2">
                     {allImages.map((image, idx) => (
                         <button 
-                            key={image.id + idx}
+                            key={idx}
                             onClick={() => setSelectedImage(image)}
                             className={cn(
                                 "aspect-square rounded-md overflow-hidden border-2 transition",
-                                selectedImage?.id === image.id ? "border-primary ring-2 ring-primary" : "border-transparent hover:border-primary/50"
+                                selectedImage === image ? "border-primary ring-2 ring-primary" : "border-transparent hover:border-primary/50"
                             )}
                         >
                             <Image 
-                                src={image.imageUrl}
-                                alt={image.description}
+                                src={image}
+                                alt={`${product.name} gallery image ${idx + 1}`}
                                 width={150}
                                 height={150}
                                 className="object-cover w-full h-full"

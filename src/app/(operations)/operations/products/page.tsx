@@ -19,7 +19,6 @@ import {
   import { Edit, PlusCircle } from "lucide-react"
   import Link from "next/link"
   import Image from "next/image"
-  import { PlaceHolderImages } from "@/lib/placeholder-images"
   import { Badge } from "@/components/ui/badge"
   import { productService } from "@/services/product.service"
 import { Product } from "@/lib/data"
@@ -67,15 +66,14 @@ import { Product } from "@/lib/data"
             </TableHeader>
             <TableBody>
               {products.map(product => {
-                  const productImage = PlaceHolderImages.find(img => img.id === product.imageId);
                   return (
                     <TableRow key={product.id}>
                         <TableCell className="hidden sm:table-cell">
-                        {productImage && <Image
+                        {product.imageUrl && <Image
                             alt={product.name}
                             className="aspect-square rounded-md object-cover"
                             height="64"
-                            src={productImage.imageUrl}
+                            src={product.imageUrl}
                             width="64"
                         />}
                         </TableCell>

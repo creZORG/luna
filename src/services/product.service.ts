@@ -2,34 +2,51 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
+import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
 
-// A leaner version of the form data for this service
-export interface ProductData {
-  name: string;
-  slug: string;
-  description: string;
-  shortDescription: string;
-  category: string;
-  keyBenefits: string;
-  ingredients: string;
-  directions: string;
-  cautions: string;
-  imageId: string;
-  galleryImageIds?: string[];
-  sizes: {
+export interface ProductUpdateData {
+  name?: string;
+  slug?: string;
+  description?: string;
+  shortDescription?: string;
+  category?: string;
+  keyBenefits?: string | string[];
+  ingredients?: string | string[];
+  directions?: string;
+  cautions?: string;
+  imageUrl?: string; // Can be a data URI for new uploads or existing URL
+  galleryImageUrls?: (string | undefined)[]; // Can contain data URIs or existing URLs
+  sizes?: {
     size: string;
     price?: number;
   }[];
 }
 
-export interface ProductUpdateData extends Partial<ProductData> {};
-
 class ProductService {
-    async createProduct(productData: Product): Promise<string> {
+    async createProduct(productData: Omit<Product, 'id'>): Promise<string> {
         try {
+            // Handle image uploads first
+            let finalImageUrl = productData.imageUrl;
+            if (productData.imageUrl && productData.imageUrl.startsWith('data:')) {
+                finalImageUrl = await uploadImageFlow({ imageDataUri: productData.imageUrl, folder: 'products' });
+            }
+
+            let finalGalleryUrls: string[] = [];
+            if (productData.galleryImageUrls) {
+                finalGalleryUrls = await Promise.all(
+                    productData.galleryImageUrls.map(async (img) => {
+                        if (img && img.startsWith('data:')) {
+                            return await uploadImageFlow({ imageDataUri: img, folder: 'products' });
+                        }
+                        return img || ''; // Keep existing URLs
+                    })
+                );
+            }
+            
             const productToSave = {
                 ...productData,
-                galleryImageIds: productData.galleryImageIds || [],
+                imageUrl: finalImageUrl,
+                galleryImageUrls: finalGalleryUrls.filter(url => url), // Filter out any empty strings
             }
             
             const batch = writeBatch(db);
@@ -37,7 +54,6 @@ class ProductService {
             
             batch.set(productRef, productToSave);
 
-            // Also create initial inventory records for each size
             productData.sizes.forEach(s => {
                 const inventoryId = `${productRef.id}-${s.size.replace(/\s/g, '')}`;
                 const inventoryRef = doc(db, 'inventory', inventoryId);
@@ -59,6 +75,24 @@ class ProductService {
             
             const dataToUpdate: any = { ...productData };
 
+            // Handle image uploads
+            if (dataToUpdate.imageUrl && dataToUpdate.imageUrl.startsWith('data:')) {
+                dataToUpdate.imageUrl = await uploadImageFlow({ imageDataUri: dataToUpdate.imageUrl, folder: 'products' });
+            }
+
+            if (dataToUpdate.galleryImageUrls) {
+                dataToUpdate.galleryImageUrls = await Promise.all(
+                    dataToUpdate.galleryImageUrls.map(async (img: string) => {
+                        if (img && img.startsWith('data:')) {
+                            return await uploadImageFlow({ imageDataUri: img, folder: 'products' });
+                        }
+                        return img; // Keep existing URLs
+                    })
+                );
+                // Filter out any null/undefined from failed uploads if necessary, though flow throws error
+                dataToUpdate.galleryImageUrls = dataToUpdate.galleryImageUrls.filter((url: string | null) => url);
+            }
+
             if (productData.keyBenefits && typeof productData.keyBenefits === 'string') {
                 dataToUpdate.keyBenefits = productData.keyBenefits.split('\n').filter(b => b.trim() !== '');
             }
@@ -67,9 +101,6 @@ class ProductService {
             }
             if (productData.sizes) {
                  dataToUpdate.sizes = productData.sizes.map(s => ({ size: s.size, price: s.price || 0 }));
-            }
-            if (productData.galleryImageIds) {
-                dataToUpdate.galleryImageIds = productData.galleryImageIds;
             }
             
             await updateDoc(productRef, dataToUpdate);

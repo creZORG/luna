@@ -13,8 +13,8 @@ export type Product = {
   ingredients: string[];
   directions: string;
   cautions: string;
-  imageId: string;
-  galleryImageIds?: string[];
+  imageUrl: string; // Now a direct URL
+  galleryImageUrls?: string[]; // Now a direct URL
   shortDescription: string;
 };
 

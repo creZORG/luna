@@ -4,7 +4,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Product } from '@/lib/data';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -13,21 +12,18 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const productImage = PlaceHolderImages.find(img => img.id === product.imageId);
-
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-foreground">
       <Link href={`/products/${product.slug}`} className="flex flex-col h-full">
         <CardHeader className="p-0">
           <div className="aspect-square w-full relative">
-            {productImage ? (
+            {product.imageUrl ? (
               <Image
-                src={productImage.imageUrl}
+                src={product.imageUrl}
                 alt={product.name}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                data-ai-hint={productImage.imageHint}
               />
             ) : (
                 <div className="w-full h-full bg-muted flex items-center justify-center">

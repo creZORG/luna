@@ -23,42 +23,6 @@
       "description": "A bright and energetic shot that focuses on cleanliness and efficacy.",
       "imageUrl": "https://res.cloudinary.com/dvciksxcn/image/upload/v1719927689/luna-essentials/category-dish-wash.png",
       "imageHint": "clean dishes"
-    },
-    {
-      "id": "product-juicy-mango-shower-gel",
-      "description": "Luna Juicy Mango Shower Gel bottle.",
-      "imageUrl": "https://images.unsplash.com/photo-1626750793465-9975c2b4ebb1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYW5nbyUyMHByb2R1Y3R8ZW58MHx8fHwxNzU4NTkwOTcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "mango product"
-    },
-    {
-      "id": "product-cool-lavender-fabric-softener",
-      "description": "Luna Cool Lavender Fabric Softener bottle.",
-      "imageUrl": "https://images.unsplash.com/photo-1563398643312-ae05ad974668?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxsYXZlbmRlciUyMHByb2R1Y3R8ZW58MHx8fHwxNzU4NTkwOTcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "lavender product"
-    },
-    {
-      "id": "product-fruity-orange-dish-wash",
-      "description": "Luna Fruity Orange Dish Wash bottle.",
-      "imageUrl": "https://images.unsplash.com/flagged/photo-1550713090-5a093719add2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxvcmFuZ2UlMjBwcm9kdWN0fGVufDB8fHx8MTc1ODU5MDk3MHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "orange product"
-    },
-    {
-      "id": "product-mint-fresh-shower-gel",
-      "description": "Luna Mint Fresh Shower Gel bottle.",
-      "imageUrl": "https://images.unsplash.com/photo-1612468549071-f9a1a5429876?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtaW50JTIwcHJvZHVjdHxlbnwwfHx8fDE3NTg1OTA5NzB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "mint product"
-    },
-    {
-      "id": "product-ocean-breeze-fabric-softener",
-      "description": "Luna Ocean Breeze Fabric Softener bottle.",
-      "imageUrl": "https://images.unsplash.com/photo-1585052031332-89492b749b4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxvY2VhbiUyMGZhYnJpY3xlbnwwfHx8fDE3NTg1OTA5NzB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "ocean fabric"
-    },
-    {
-      "id": "product-lemon-zest-dish-wash",
-      "description": "Luna Lemon Zest Dish Wash bottle.",
-      "imageUrl": "https://images.unsplash.com/photo-1610483296893-03b2c72625f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxsZW1vbiUyMHByb2R1Y3R8ZW58MHx8fHwxNzU4NTkwOTcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "lemon product"
     }
   ]
 }

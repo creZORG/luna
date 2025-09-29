@@ -31,11 +31,22 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { ALL_CATEGORIES } from '@/lib/data';
-import { Loader, Trash, Plus } from 'lucide-react';
+import { Loader, Trash, Plus, UploadCloud, X } from 'lucide-react';
 import { productService, ProductUpdateData } from '@/services/product.service';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Product } from '@/lib/data';
+import Image from 'next/image';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+const fileSchema = z.any()
+  .refine(file => file, "Image is required.")
+  .refine(file => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+  .refine(file => ACCEPTED_IMAGE_TYPES.includes(file?.type), "Only .jpg, .jpeg, .png and .webp formats are supported.");
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name is too short'),
@@ -47,11 +58,11 @@ const formSchema = z.object({
   ingredients: z.string().min(10, 'Ingredients are too short'),
   directions: z.string().min(10, 'Directions are too short'),
   cautions: z.string().min(10, 'Cautions are too short'),
-  imageId: z.string().min(2, 'Image ID is too short'),
-  galleryImageIds: z.array(z.object({ id: z.string().min(1, "ID cannot be empty") })).optional(),
+  image: z.any(),
+  galleryImages: z.array(z.any()).optional(),
   sizes: z.array(z.object({
     size: z.string().min(1, "Size cannot be empty"),
-    price: z.coerce.number().optional(), // Price is now optional
+    price: z.coerce.number().optional(),
   })).min(1, "Add at least one size"),
 });
 
@@ -62,16 +73,22 @@ interface ProductFormProps {
     product?: Product; // For editing
 }
 
-
 export function ProductForm({ role = "operations", product }: ProductFormProps) {
     const isEditMode = !!product;
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
+    const [galleryPreviews, setGalleryPreviews] = useState<string[]>(product?.galleryImageUrls || []);
+
     const form = useForm<ProductFormData>({
         resolver: zodResolver(formSchema),
         defaultValues: isEditMode ? {
             ...product,
             keyBenefits: product.keyBenefits.join('\n'),
             ingredients: product.ingredients.join(', '),
-            galleryImageIds: product.galleryImageIds?.map(id => ({ id })) || [],
+            image: product.imageUrl,
+            galleryImages: product.galleryImageUrls,
         } : {
             name: '',
             slug: '',
@@ -82,13 +99,10 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
             ingredients: '',
             directions: '',
             cautions: '',
-            imageId: '',
-            galleryImageIds: [],
+            image: undefined,
+            galleryImages: [],
         },
     });
-
-  const { toast } = useToast();
-  const router = useRouter();
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -97,17 +111,31 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
   
   const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({
       control: form.control,
-      name: "galleryImageIds"
+      name: "galleryImages"
   });
 
+  const toDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+  };
 
   async function onSubmit(values: ProductFormData) {
     try {
+        const imageAsDataUri = values.image instanceof File ? await toDataUri(values.image) : (isEditMode ? product.imageUrl : undefined);
+        const galleryAsDataUris = values.galleryImages ? await Promise.all(
+            values.galleryImages.map(img => img instanceof File ? toDataUri(img) : Promise.resolve(img))
+        ) : [];
+
        const productPayload: ProductUpdateData = {
         ...values,
         keyBenefits: values.keyBenefits.split('\n').filter(b => b.trim() !== ''),
         ingredients: values.ingredients.split(',').map(i => i.trim()).filter(i => i !== ''),
-        galleryImageIds: values.galleryImageIds?.map(item => item.id),
+        imageUrl: imageAsDataUri,
+        galleryImageUrls: galleryAsDataUris,
         sizes: values.sizes.map(s => ({
           size: s.size,
           price: role === 'admin' ? s.price || 0 : isEditMode ? (product.sizes.find(ps => ps.size === s.size)?.price || 0) : 0
@@ -121,7 +149,7 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
           description: `The product "${values.name}" has been updated successfully.`,
         });
       } else {
-        await productService.createProduct(productPayload as Product);
+        await productService.createProduct(productPayload as Omit<Product, 'id'>);
         toast({
           title: 'Product Created!',
           description: `The product "${values.name}" has been created successfully.`,
@@ -148,7 +176,6 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
           <div className="md:col-span-2 space-y-8">
             
-            {/* Show these cards only for Operations role */}
             {!isAdminView && (
               <>
                 <Card>
@@ -169,7 +196,7 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
                             <Input placeholder="e.g. Juicy Mango Shower Gel" {...field} 
                               onChange={(e) => {
                                 field.onChange(e);
-                                if (!isEditMode) { // Only auto-update slug on create
+                                if (!isEditMode) {
                                     const newSlug = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
                                     form.setValue('slug', newSlug);
                                 }
@@ -386,47 +413,99 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="imageId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Primary Image ID</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. product-juicy-mango" {...field} />
-                        </FormControl>
-                        <FormDescription>The main image for the product. Must match an ID in `placeholder-images.json`.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="space-y-2">
-                    <FormLabel>Gallery Image IDs</FormLabel>
-                     {galleryFields.map((field, index) => (
-                        <div key={field.id} className="flex gap-2 items-center">
-                             <FormField
-                                control={form.control}
-                                name={`galleryImageIds.${index}.id`}
-                                render={({ field }) => (
-                                    <FormItem className="flex-grow">
-                                        <FormControl>
-                                            <Input placeholder="e.g. juicy-mango-model" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="button" variant="destructive" size="icon" onClick={() => removeGallery(index)}>
-                                <Trash className="h-4 w-4" />
-                            </Button>
-                        </div>
-                     ))}
-                     <Button type="button" variant="outline" size="sm" onClick={() => appendGallery({ id: '' })}>
-                        <Plus className="mr-2 h-4 w-4"/>
-                        Add Gallery Image
-                     </Button>
-                     <FormDescription>Additional images for the product page gallery.</FormDescription>
-                  </div>
+                    <FormField
+                        control={form.control}
+                        name="image"
+                        render={({ field: { onChange, value, ...rest } }) => (
+                            <FormItem>
+                            <FormLabel>Primary Image</FormLabel>
+                            <FormControl>
+                                <div className={cn("relative w-full h-48 border-2 border-dashed rounded-lg flex flex-col justify-center items-center text-muted-foreground", imagePreview && "border-solid")}>
+                                    {imagePreview ? (
+                                        <>
+                                            <Image src={imagePreview} alt="Primary image preview" layout="fill" objectFit="contain" className="rounded-lg p-2" />
+                                            <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => { onChange(null); setImagePreview(null); }}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <UploadCloud className="h-10 w-10" />
+                                            <span>Click or drag to upload</span>
+                                        </>
+                                    )}
+                                    <Input
+                                        type="file"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                onChange(file);
+                                                setImagePreview(URL.createObjectURL(file));
+                                            }
+                                        }}
+                                        {...rest}
+                                    />
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    
+                    <FormField
+                        control={form.control}
+                        name="galleryImages"
+                        render={({ field: { onChange, value } }) => (
+                            <FormItem>
+                            <FormLabel>Gallery Images</FormLabel>
+                            <div className="grid grid-cols-2 gap-4">
+                                {galleryPreviews.map((src, index) => (
+                                    <div key={index} className="relative w-full aspect-square border rounded-lg">
+                                        <Image src={src} alt={`Gallery image ${index + 1}`} layout="fill" objectFit="cover" className="rounded-lg" />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-1 right-1 h-6 w-6"
+                                            onClick={() => {
+                                                const newValue = [...(value || [])];
+                                                newValue.splice(index, 1);
+                                                onChange(newValue);
+                                                setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
+                                            }}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+
+                                <FormControl>
+                                    <div className="relative w-full aspect-square border-2 border-dashed rounded-lg flex flex-col justify-center items-center text-muted-foreground">
+                                        <UploadCloud className="h-8 w-8" />
+                                        <span>Add Image</span>
+                                        <Input
+                                            type="file"
+                                            multiple
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            accept={ACCEPTED_IMAGE_TYPES.join(",")}
+                                            onChange={(e) => {
+                                                const files = Array.from(e.target.files || []);
+                                                const currentFiles = value || [];
+                                                onChange([...currentFiles, ...files]);
+                                                
+                                                const newPreviews = files.map(file => URL.createObjectURL(file));
+                                                setGalleryPreviews(prev => [...prev, ...newPreviews]);
+                                            }}
+                                        />
+                                    </div>
+                                </FormControl>
+                            </div>
+                             <FormMessage />
+                             </FormItem>
+                        )}
+                    />
                 </CardContent>
               </Card>
             </div>
