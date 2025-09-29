@@ -211,15 +211,6 @@ class UserService {
             throw new Error("Could not update user profile.");
         }
     }
-
-    async getProduct(productId: string): Promise<Product | null> {
-        const docRef = doc(db, 'products', productId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as Product;
-        }
-        return null;
-    }
 }
 
 export const userService = new UserService();

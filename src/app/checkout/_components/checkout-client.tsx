@@ -61,7 +61,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Label } from "@/components/ui/label";
-import { productService } from '@/services/product.service';
+import { getProductById } from '@/services/product.service';
 import { Product } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -118,7 +118,7 @@ function OrderSummary({ deliveryMethod, county } : { deliveryMethod: 'door-to-do
         if (cartItems.length > 0) {
             const productIds = Array.from(new Set(cartItems.map(item => item.productId)));
             const fetchedProducts = await Promise.all(
-                productIds.map(id => productService.getProductById(id))
+                productIds.map(id => getProductById(id))
             );
             setProducts(fetchedProducts.filter(p => p !== null) as Product[]);
         }
@@ -319,7 +319,7 @@ export default function CheckoutClient() {
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
     const products = await Promise.all(
-        Array.from(new Set(cartItems.map(item => item.productId))).map(id => productService.getProductById(id))
+        Array.from(new Set(cartItems.map(item => item.productId))).map(id => getProductById(id))
     );
      const totalPlatformFee = Array.from(new Set(cartItems.map(item => item.productId))).reduce((acc, productId) => {
         const product = products.find(p => p && p.id === productId);

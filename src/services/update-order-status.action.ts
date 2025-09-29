@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase";
 import { activityService } from "./activity.service";
 import { sendEmail } from "@/ai/flows/send-email-flow";
 import { createEmailTemplate } from "@/lib/email-template";
-import { productService } from "./product.service";
+import { getProductById } from "./product.service";
 import type { Order, OrderStatus } from "./order.service";
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus, userId: string, userName: string): Promise<void> {
@@ -28,7 +28,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus, us
             
             // We only need the first product to link to.
             const firstItem = orderData.items[0];
-            const product = await productService.getProductById(firstItem.productId);
+            const product = await getProductById(firstItem.productId);
             
             if (product) {
                 const subject = `How did you like your ${product.name}?`;

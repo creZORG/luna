@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc, increment } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
 import { activityService } from './activity.service';
-import { orderService, Order } from './order.service';
+import { getOrders } from './order.service';
 
 export interface ProductUpdateData {
   name?: string;
@@ -31,167 +31,156 @@ export interface ProductUpdateData {
   reviewCount?: number;
 }
 
-class ProductService {
-    async createProduct(productData: Omit<Product, 'id' | 'orderCount' | 'totalRevenue' | 'viewCount' >, userId: string, userName: string): Promise<string> {
-        try {
-            if (!productData.imageUrl) {
-              throw new Error("A primary image (imageUrl) is required to create a product.");
-            }
 
-            const productToSave: any = {
-                 ...productData,
-                 rating: 0,
-                 reviewCount: 0,
-                 orderCount: 0,
-                 totalRevenue: 0,
-                 viewCount: 0,
-            };
-            
-            const batch = writeBatch(db);
-            const productRef = doc(collection(db, "products"));
-            
-            batch.set(productRef, productToSave);
-
-            productData.sizes.forEach(s => {
-                const inventoryId = `${productRef.id}-${s.size.replace(/\s/g, '')}`;
-                const inventoryRef = doc(db, 'inventory', inventoryId);
-                batch.set(inventoryRef, { quantity: 0 });
-            });
-
-            await batch.commit();
-
-             activityService.logActivity(
-                `Created new product: ${productData.name}`,
-                userId,
-                userName
-            );
-
-            return productRef.id;
-        } catch (e: any) {
-            console.error("Error adding document: ", e);
-            throw new Error(`Could not create product: ${e.message}`);
+export async function createProduct(productData: Omit<Product, 'id' | 'orderCount' | 'totalRevenue' | 'viewCount' >, userId: string, userName: string): Promise<string> {
+    try {
+        if (!productData.imageUrl) {
+            throw new Error("A primary image (imageUrl) is required to create a product.");
         }
+
+        const productToSave: any = {
+                ...productData,
+                rating: 0,
+                reviewCount: 0,
+                orderCount: 0,
+                totalRevenue: 0,
+                viewCount: 0,
+        };
+        
+        const batch = writeBatch(db);
+        const productRef = doc(collection(db, "products"));
+        
+        batch.set(productRef, productToSave);
+
+        await batch.commit();
+
+        activityService.logActivity(
+            `Created new product: ${productData.name}`,
+            userId,
+            userName
+        );
+
+        return productRef.id;
+    } catch (e: any) {
+        console.error("Error adding document: ", e);
+        throw new Error(`Could not create product: ${e.message}`);
     }
+}
+
+export async function updateProduct(id: string, productData: ProductUpdateData): Promise<void> {
+    try {
+        const productRef = doc(db, "products", id);
+        
+        const dataToUpdate: any = { ...productData };
+        
+        if (productData.sizes) {
+                dataToUpdate.sizes = productData.sizes.map(s => ({
+                    size: s.size,
+                    price: s.price || 0,
+                    wholesalePrice: s.wholesalePrice || 0
+            }));
+        }
+        
+        await updateDoc(productRef, dataToUpdate);
+
+    } catch (e) {
+        console.error("Error updating document: ", e);
+        throw new Error("Could not update product");
+    }
+}
+
+
+export async function getProducts(): Promise<Product[]> {
+    const productsSnapshot = await getDocs(collection(db, "products"));
+    const allOrders = await getOrders();
     
-    async updateProduct(id: string, productData: ProductUpdateData): Promise<void> {
-        try {
-            const productRef = doc(db, "products", id);
-            
-            const dataToUpdate: any = { ...productData };
-            
-            if (productData.sizes) {
-                 dataToUpdate.sizes = productData.sizes.map(s => ({
-                     size: s.size,
-                     price: s.price || 0,
-                     wholesalePrice: s.wholesalePrice || 0
-                }));
-            }
-            
-            await updateDoc(productRef, dataToUpdate);
+    const productStats = new Map<string, { orderCount: number; totalRevenue: number }>();
 
-        } catch (e) {
-            console.error("Error updating document: ", e);
-            throw new Error("Could not update product");
-        }
-    }
-
-
-    async getProducts(): Promise<Product[]> {
-        const productsSnapshot = await getDocs(collection(db, "products"));
-        const allOrders = await orderService.getOrders();
-        
-        const productStats = new Map<string, { orderCount: number; totalRevenue: number }>();
-
-        // Calculate sales stats from all orders
-        allOrders.forEach(order => {
-            order.items.forEach(item => {
-                if (!item.productId) return;
-                const stats = productStats.get(item.productId) || { orderCount: 0, totalRevenue: 0 };
-                stats.orderCount += 1; // This might be better as order count, not item count. For now, it's item count.
-                stats.totalRevenue += item.price * item.quantity;
-                productStats.set(item.productId, stats);
-            });
+    allOrders.forEach(order => {
+        order.items.forEach(item => {
+            if (!item.productId) return;
+            const stats = productStats.get(item.productId) || { orderCount: 0, totalRevenue: 0 };
+            stats.orderCount += 1;
+            stats.totalRevenue += item.price * item.quantity;
+            productStats.set(item.productId, stats);
         });
-        
-        // Map over all products and correctly merge stats
-        const products: Product[] = productsSnapshot.docs.map((docSnap) => {
-            const data = docSnap.data();
-            const stats = productStats.get(docSnap.id) || { orderCount: 0, totalRevenue: 0 };
+    });
+    
+    const products: Product[] = productsSnapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const stats = productStats.get(docSnap.id) || { orderCount: 0, totalRevenue: 0 };
 
-            return {
-                id: docSnap.id,
-                slug: data.slug,
-                name: data.name,
-                category: data.category,
-                sizes: data.sizes || [],
-                description: data.description,
-                keyBenefits: data.keyBenefits || [],
-                ingredients: data.ingredients || [],
-                directions: data.directions,
-                cautions: data.cautions,
-                imageUrl: data.imageUrl || '',
-                galleryImageUrls: data.galleryImageUrls || [],
-                shortDescription: data.shortDescription,
-                rating: data.rating ?? 0,
-                reviewCount: data.reviewCount ?? 0,
-                wholesaleMoq: data.wholesaleMoq ?? 120,
-                platformFee: data.platformFee ?? 0,
-                orderCount: stats.orderCount,
-                totalRevenue: stats.totalRevenue,
-                viewCount: data.viewCount ?? 0,
-            } as Product;
-        });
+        return {
+            id: docSnap.id,
+            slug: data.slug,
+            name: data.name,
+            category: data.category,
+            sizes: data.sizes || [],
+            description: data.description,
+            keyBenefits: data.keyBenefits || [],
+            ingredients: data.ingredients || [],
+            directions: data.directions,
+            cautions: data.cautions,
+            imageUrl: data.imageUrl || '',
+            galleryImageUrls: data.galleryImageUrls || [],
+            shortDescription: data.shortDescription,
+            rating: data.rating ?? 0,
+            reviewCount: data.reviewCount ?? 0,
+            wholesaleMoq: data.wholesaleMoq ?? 120,
+            platformFee: data.platformFee ?? 0,
+            orderCount: stats.orderCount,
+            totalRevenue: stats.totalRevenue,
+            viewCount: data.viewCount ?? 0,
+        } as Product;
+    });
 
-        return products;
+    return products;
+}
+
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+    const q = query(collection(db, "products"), where("slug", "==", slug));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+        return null;
     }
+    const docSnap = querySnapshot.docs[0];
+    let data = docSnap.data();
 
-    async getProductBySlug(slug: string): Promise<Product | null> {
-        const q = query(collection(db, "products"), where("slug", "==", slug));
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-            return null;
-        }
-        const docSnap = querySnapshot.docs[0];
+    return { 
+        id: docSnap.id,
+        ...data,
+        rating: data.rating ?? 5,
+        reviewCount: data.reviewCount ?? Math.floor(Math.random() * 50) + 5,
+        wholesaleMoq: data.wholesaleMoq ?? 120,
+        platformFee: data.platformFee ?? 0,
+    } as Product;
+}
+
+export async function getProductById(id: string): Promise<Product | null> {
+    const docRef = doc(db, 'products', id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
         let data = docSnap.data();
-
         return { 
             id: docSnap.id,
             ...data,
-            rating: data.rating ?? 5,
-            reviewCount: data.reviewCount ?? Math.floor(Math.random() * 50) + 5,
+            rating: data.rating ?? 0,
+            reviewCount: data.reviewCount ?? 0,
             wholesaleMoq: data.wholesaleMoq ?? 120,
             platformFee: data.platformFee ?? 0,
         } as Product;
     }
-
-     async getProductById(id: string): Promise<Product | null> {
-        const docRef = doc(db, 'products', id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            let data = docSnap.data();
-            return { 
-                id: docSnap.id,
-                ...data,
-                rating: data.rating ?? 0,
-                reviewCount: data.reviewCount ?? 0,
-                wholesaleMoq: data.wholesaleMoq ?? 120,
-                platformFee: data.platformFee ?? 0,
-            } as Product;
-        }
-        return null;
-    }
-
-    async incrementViewCount(productId: string): Promise<void> {
-        try {
-            const productRef = doc(db, 'products', productId);
-            await updateDoc(productRef, {
-                viewCount: increment(1)
-            });
-        } catch (error) {
-            // Non-critical error, so we just log it and don't throw
-            console.error(`Failed to increment view count for product ${productId}:`, error);
-        }
-    }
+    return null;
 }
 
-export const productService = new ProductService();
+export async function incrementViewCount(productId: string): Promise<void> {
+    try {
+        const productRef = doc(db, 'products', productId);
+        await updateDoc(productRef, {
+            viewCount: increment(1)
+        });
+    } catch (error) {
+        // Non-critical error, so we just log it and don't throw
+        console.error(`Failed to increment view count for product ${productId}:`, error);
+    }
+}

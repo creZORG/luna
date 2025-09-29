@@ -5,7 +5,7 @@ import { CartItem } from './cart.service';
 import { activityService } from './activity.service';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
-import { productService }from './product.service';
+import { getProductById }from './product.service';
 
 export type OrderStatus = 'pending-payment' | 'paid' | 'processing' | 'ready-for-dispatch' | 'shipped' | 'delivered' | 'cancelled' | 'return-pending' | 'returned';
 
@@ -134,3 +134,5 @@ class OrderService {
 }
 
 export const orderService = new OrderService();
+// Re-export for server actions
+export const { getOrders, getOrdersByUserId, getLastOrderByUserId, createOrder } = new OrderService();

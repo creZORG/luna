@@ -1,10 +1,9 @@
 
 
-import { products as mockProducts } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import ProductDetailClient from './_components/product-detail-client';
 import type { Metadata, ResolvingMetadata } from 'next';
-import { productService } from '@/services/product.service';
+import { getProducts, getProductBySlug, incrementViewCount } from '@/services/product.service';
 
 type Props = {
   params: { slug: string };
@@ -14,7 +13,7 @@ export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const product = await productService.getProductBySlug(params.slug);
+  const product = await getProductBySlug(params.slug);
 
   if (!product) {
     return {
@@ -38,7 +37,7 @@ export async function generateMetadata(
 }
 
 export async function generateStaticParams() {
-    const products = await productService.getProducts();
+    const products = await getProducts();
     if (!products) return [];
     return products.map(product => ({
       slug: product.slug,
@@ -47,14 +46,14 @@ export async function generateStaticParams() {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = params;
-  const product = await productService.getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     notFound();
   }
 
   // Increment view count - this is a fire-and-forget operation
-  productService.incrementViewCount(product.id);
+  incrementViewCount(product.id);
 
   return <ProductDetailClient product={product} />;
 }

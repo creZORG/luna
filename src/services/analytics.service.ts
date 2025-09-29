@@ -3,7 +3,7 @@
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Order, orderService } from './order.service';
-import { Product, productService } from './product.service';
+import { Product, getProducts } from './product.service';
 import { subDays, startOfDay, endOfDay, format } from 'date-fns';
 import { UserProfile, userService } from './user.service';
 import { campaignService } from './campaign.service';
@@ -43,7 +43,7 @@ class AnalyticsService {
     async getDashboardAnalytics(): Promise<AnalyticsData> {
         const [orders, products, users, campaigns] = await Promise.all([
             orderService.getOrders(),
-            productService.getProducts(),
+            getProducts(),
             userService.getUsers(),
             campaignService.getCampaigns(),
         ]);

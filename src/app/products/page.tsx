@@ -1,6 +1,6 @@
 import ProductsPageClient from './_components/products-page-client';
 import type { Metadata } from 'next';
-import { productService } from '@/services/product.service';
+import { getProducts } from '@/services/product.service';
 import { Product } from '@/lib/data';
 
 export const metadata: Metadata = {
@@ -9,6 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default async function ProductsPage() {
-  const products: Product[] = await productService.getProducts();
+  const products: Product[] = await getProducts();
   return <ProductsPageClient products={products} />;
 }

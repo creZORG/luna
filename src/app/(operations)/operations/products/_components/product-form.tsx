@@ -32,7 +32,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { ALL_CATEGORIES } from '@/lib/data';
 import { Loader, Trash, Plus, UploadCloud, X, Save, Eraser } from 'lucide-react';
-import { productService } from '@/services/product.service';
+import { createProduct, updateProduct } from '@/services/product.service';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Product } from '@/lib/data';
@@ -79,10 +79,11 @@ const editFormSchema = createFormSchema.extend({
 export type ProductFormData = z.infer<typeof createFormSchema>;
 
 interface ProductFormProps {
+    role?: 'operations' | 'admin';
     product?: Product; // For editing
 }
 
-export function ProductForm({ product }: ProductFormProps) {
+export function ProductForm({ product, role = 'admin' }: ProductFormProps) {
     const isEditMode = !!product;
     const formSchema = isEditMode ? editFormSchema : createFormSchema;
     const { toast } = useToast();
@@ -218,13 +219,13 @@ export function ProductForm({ product }: ProductFormProps) {
       };
       
       if (isEditMode) {
-        await productService.updateProduct(product.id, productPayload);
+        await updateProduct(product.id, productPayload);
         toast({
           title: 'Product Updated!',
           description: `The product "${values.name}" has been updated successfully.`,
         });
       } else {
-        await productService.createProduct(productPayload as Omit<Product, 'id'>, user.uid, userProfile.displayName);
+        await createProduct(productPayload as Omit<Product, 'id'>, user.uid, userProfile.displayName);
         toast({
           title: 'Product Created!',
           description: `The product "${values.name}" has been created successfully.`,
