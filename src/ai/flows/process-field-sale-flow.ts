@@ -33,11 +33,11 @@ export async function processFieldSale(input: ProcessFieldSaleInput) {
     return await processFieldSaleFlow(input);
 }
 
-// Helper to format phone number to 254... format reliably
+// Helper to format phone number to 0... format reliably
 const formatPhoneNumber = (phone: string): string => {
     const cleaned = phone.replace(/\D/g, ''); // Remove all non-digit characters
     const last9 = cleaned.slice(-9); // Get the last 9 digits
-    return `254${last9}`; // Prepend 254
+    return `0${last9}`; // Prepend 0
 };
 
 
