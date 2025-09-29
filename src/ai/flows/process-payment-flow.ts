@@ -26,7 +26,7 @@ export async function processPayment(reference: string): Promise<ProcessPaymentO
   return await paystackService.verifyAndCreateOrder(reference);
 }
 
-ai.defineFlow(
+const processPaymentFlow = ai.defineFlow(
   {
     name: 'processPaymentFlow',
     inputSchema: ProcessPaymentInputSchema,
@@ -37,3 +37,5 @@ ai.defineFlow(
      return await paystackService.verifyAndCreateOrder(reference);
   }
 );
+
+export { processPaymentFlow };

@@ -27,13 +27,13 @@ export type InitializePaymentInput = z.infer<typeof InitializePaymentInputSchema
 export type InitializePaymentOutput = z.infer<typeof InitializePaymentOutputSchema>;
 
 
-export async function initializePaymentFlow(input: InitializePaymentInput): Promise<InitializePaymentOutput> {
+export async function initializePayment(input: InitializePaymentInput): Promise<InitializePaymentOutput> {
   // This flow now correctly calls the isolated service, which is never imported by the client.
   return await paystackService.initializeTransaction(input);
 }
 
 
-ai.defineFlow(
+const initializePaymentFlow = ai.defineFlow(
   {
     name: 'initializePaymentFlow',
     inputSchema: InitializePaymentInputSchema,
@@ -44,3 +44,5 @@ ai.defineFlow(
     return await paystackService.initializeTransaction(data);
   }
 );
+
+export { initializePaymentFlow };
