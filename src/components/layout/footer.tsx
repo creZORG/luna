@@ -20,7 +20,6 @@ export function Footer() {
     {
       title: 'Partnerships',
       links: [
-        { label: 'Wholesale & Retail', href: '/#wholesale' },
         { label: 'Sales Platform', href: 'https://tradinta.co.ke' },
       ],
     },
