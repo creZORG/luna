@@ -1,26 +1,27 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { ShoppingCart } from 'lucide-react';
+import CheckoutClient from './_components/checkout-client';
 
 export default function CheckoutPage() {
-    return (
-        <div className="container mx-auto px-4 py-12 md:py-20">
-            <Card className="max-w-2xl mx-auto">
-                <CardHeader className="text-center">
-                     <div className='flex justify-center mb-4'>
-                        <ShoppingCart className="w-12 h-12 text-primary" />
-                    </div>
-                    <CardTitle className="text-2xl">Checkout</CardTitle>
-                    <CardDescription>
-                        This is the checkout page. Please review your order and proceed to payment.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-center p-8 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground">Checkout functionality will be implemented here.</p>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    );
+  return (
+    <div className="container mx-auto px-4 py-12 md:py-20">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-headline font-bold">Checkout</h1>
+        <p className="text-muted-foreground mt-2">
+          Almost there! Please confirm your order and enter your delivery details.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+        <CheckoutClient />
+      </div>
+    </div>
+  );
 }
