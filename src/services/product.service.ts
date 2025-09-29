@@ -33,11 +33,11 @@ export interface ProductUpdateData {
 
 
 export async function createProduct(productData: Omit<Product, 'id' | 'orderCount' | 'totalRevenue' | 'viewCount' >, userId: string, userName: string): Promise<string> {
-    try {
-        if (!productData.imageUrl) {
-            throw new Error("A primary image (imageUrl) is required to create a product.");
-        }
+    if (!productData.imageUrl) {
+        throw new Error("A primary image (imageUrl) is required to create a product.");
+    }
 
+    try {
         const productToSave: any = {
                 ...productData,
                 rating: 0,
@@ -91,9 +91,13 @@ export async function updateProduct(id: string, productData: ProductUpdateData):
 
 
 export async function getProducts(): Promise<Product[]> {
-    const productsSnapshot = await getDocs(collection(db, "products"));
-    const allOrders = await getOrders();
+    // 1. Fetch all products and all orders in parallel.
+    const [productsSnapshot, allOrders] = await Promise.all([
+        getDocs(collection(db, "products")),
+        getOrders()
+    ]);
     
+    // 2. Create a simple map to hold sales statistics.
     const productStats = new Map<string, { orderCount: number; totalRevenue: number }>();
 
     allOrders.forEach(order => {
@@ -106,11 +110,13 @@ export async function getProducts(): Promise<Product[]> {
         });
     });
     
+    // 3. Map over the fetched products and safely merge the stats.
     const products: Product[] = productsSnapshot.docs.map((docSnap) => {
         const data = docSnap.data();
         const stats = productStats.get(docSnap.id) || { orderCount: 0, totalRevenue: 0 };
 
-        return {
+        // This ensures all original product data is preserved, especially imageUrl.
+        const product: Product = {
             id: docSnap.id,
             slug: data.slug,
             name: data.name,
@@ -128,10 +134,12 @@ export async function getProducts(): Promise<Product[]> {
             reviewCount: data.reviewCount ?? 0,
             wholesaleMoq: data.wholesaleMoq ?? 120,
             platformFee: data.platformFee ?? 0,
+            viewCount: data.viewCount ?? 0,
+            // Safely merge the stats
             orderCount: stats.orderCount,
             totalRevenue: stats.totalRevenue,
-            viewCount: data.viewCount ?? 0,
-        } as Product;
+        };
+        return product;
     });
 
     return products;
