@@ -1,4 +1,5 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
@@ -82,7 +83,11 @@ class ProductService {
         const querySnapshot = await getDocs(collection(db, "products"));
         const products: Product[] = [];
         querySnapshot.forEach((doc) => {
-            const data = doc.data();
+            let data = doc.data();
+             // Temporary fix for incorrect category data
+            if (data.slug === 'citrus-bloom-dish-wash') {
+                data.category = 'dish-wash';
+            }
             products.push({ 
                 id: doc.id,
                 ...data,
@@ -101,7 +106,13 @@ class ProductService {
             return null;
         }
         const docSnap = querySnapshot.docs[0];
-        const data = docSnap.data();
+        let data = docSnap.data();
+
+        // Temporary fix for incorrect category data
+        if (slug === 'citrus-bloom-dish-wash') {
+            data.category = 'dish-wash';
+        }
+
         return { 
             id: docSnap.id,
             ...data,
@@ -115,7 +126,11 @@ class ProductService {
         const docRef = doc(db, 'products', id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            const data = docSnap.data();
+            let data = docSnap.data();
+             // Temporary fix for incorrect category data
+            if (data.slug === 'citrus-bloom-dish-wash') {
+                data.category = 'dish-wash';
+            }
             return { 
                 id: docSnap.id,
                 ...data,
