@@ -36,6 +36,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { rawMaterialService } from "@/services/raw-material.service";
+import { useAuth } from "@/hooks/use-auth";
 
 const formSchema = z.object({
   supplier: z.string().min(2, "Supplier name is required."),
@@ -45,25 +46,33 @@ const formSchema = z.object({
   actualQuantity: z.coerce.number().min(0.1, "Actual quantity must be greater than 0."),
   alkalinity: z.string().min(1, "Alkalinity check result is required."),
   batchNumber: z.string().min(1, "Batch number is required."),
+  manufacturingDate: z.date({ required_error: "A manufacturing date is required."}),
   expiryDate: z.date({ required_error: "An expiry date is required." }),
+  physicalCheck: z.string({ required_error: "Please select a seal status."}),
   deliveryNotePhoto: z.instanceof(File, { message: "A photo of the delivery note is required." }),
+  certificateOfAnalysis: z.instanceof(File).optional(),
 });
 
 type IntakeFormValues = z.infer<typeof formSchema>;
 
+const PHYSICAL_CHECK_OPTIONS = ['Seals OK', 'Broken Seals Noted', 'No Seals Present'];
+
 export default function IntakeFormClient({ rawMaterials }: { rawMaterials: RawMaterial[] }) {
   const { toast } = useToast();
   const router = useRouter();
+  const { user, userProfile } = useAuth();
 
   const form = useForm<IntakeFormValues>({
     resolver: zodResolver(formSchema),
   });
 
   const onSubmit = async (data: IntakeFormValues) => {
+    if (!user || !userProfile) {
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to perform this action." });
+        return;
+    }
     try {
-      // In a real app, userId would come from useAuth() hook
-      const userId = 'ops-manager-001'; 
-      await rawMaterialService.logIntakeAndupdateInventory(data, userId);
+      await rawMaterialService.logIntakeAndupdateInventory(data, user.uid);
       toast({
         title: "Intake Logged Successfully!",
         description: `The delivery from ${data.supplier} has been logged and inventory has been updated.`,
@@ -144,41 +153,65 @@ export default function IntakeFormClient({ rawMaterials }: { rawMaterials: RawMa
                 )}
               />
             </div>
-            <FormField
-                control={form.control}
-                name="deliveryNotePhoto"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Delivery Note Photo</FormLabel>
-                        <FormControl>
-                             <div 
-                                className="border-2 border-dashed border-muted-foreground rounded-lg p-8 text-center cursor-pointer hover:bg-muted relative"
-                            >
-                                <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-                                <p className="mt-4 text-sm text-muted-foreground">
-                                    {field.value ? `Selected: ${field.value.name}` : 'Click to upload or drag & drop'}
-                                </p>
-                                <Input
-                                    type="file"
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    accept="image/*"
-                                    onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)}
-                                />
-                            </div>
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
+            <div className="space-y-4">
+                <FormField
+                    control={form.control}
+                    name="deliveryNotePhoto"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Delivery Note Photo</FormLabel>
+                            <FormControl>
+                                <div className="border-2 border-dashed border-muted-foreground rounded-lg p-4 text-center cursor-pointer hover:bg-muted relative">
+                                    <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground" />
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                        {field.value ? `Selected: ${field.value.name}` : 'Click to upload'}
+                                    </p>
+                                    <Input
+                                        type="file"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        accept="image/*,application/pdf"
+                                        onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)}
+                                    />
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="certificateOfAnalysis"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Certificate of Analysis (Optional)</FormLabel>
+                            <FormControl>
+                               <div className="border-2 border-dashed border-muted-foreground rounded-lg p-4 text-center cursor-pointer hover:bg-muted relative">
+                                    <UploadCloud className="mx-auto h-8 w-8 text-muted-foreground" />
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                        {field.value ? `Selected: ${field.value.name}` : 'Click to upload'}
+                                    </p>
+                                    <Input
+                                        type="file"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        accept="image/*,application/pdf"
+                                        onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)}
+                                    />
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
           </CardContent>
         </Card>
 
         <Card>
             <CardHeader>
                 <CardTitle>Quality & Quantity Checks</CardTitle>
-                <CardDescription>Verify the received materials against the delivery note.</CardDescription>
+                <CardDescription>Verify the received materials against the delivery note and perform quality checks.</CardDescription>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                  <FormField
                     control={form.control}
                     name="quantityOnNote"
@@ -233,6 +266,69 @@ export default function IntakeFormClient({ rawMaterials }: { rawMaterials: RawMa
                 />
                  <FormField
                     control={form.control}
+                    name="physicalCheck"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Physical Check (Seals)</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select seal status" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {PHYSICAL_CHECK_OPTIONS.map(option => (
+                            <SelectItem key={option} value={option}>
+                                {option}
+                            </SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="manufacturingDate"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                        <FormLabel>Date of Manufacture</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                )}
+                                >
+                                {field.value ? (
+                                    format(field.value, "PPP")
+                                ) : (
+                                    <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date > new Date()}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
                     name="expiryDate"
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
@@ -261,9 +357,7 @@ export default function IntakeFormClient({ rawMaterials }: { rawMaterials: RawMa
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
-                                disabled={(date) =>
-                                date < new Date()
-                                }
+                                disabled={(date) => date < new Date()}
                                 initialFocus
                             />
                             </PopoverContent>

@@ -17,8 +17,11 @@ export interface IntakeFormData {
     actualQuantity: number;
     alkalinity: string;
     batchNumber: string;
+    manufacturingDate: Date;
     expiryDate: Date;
+    physicalCheck: string;
     deliveryNotePhoto: File;
+    certificateOfAnalysis?: File;
 }
 
 export interface NewRawMaterialData {
@@ -82,15 +85,25 @@ class RawMaterialService {
     }
 
     async logIntakeAndupdateInventory(formData: IntakeFormData, userId: string): Promise<string> {
-        // 1. Upload the photo
-        const imageDataUri = await toDataUri(formData.deliveryNotePhoto);
+        // 1. Upload the delivery note photo
+        const deliveryNoteDataUri = await toDataUri(formData.deliveryNotePhoto);
         const deliveryNotePhotoUrl = await uploadImageFlow({
-            imageDataUri: imageDataUri,
+            imageDataUri: deliveryNoteDataUri,
             folder: 'delivery-notes'
         });
 
+        // 2. Upload the CoA if it exists
+        let certificateOfAnalysisUrl: string | undefined = undefined;
+        if (formData.certificateOfAnalysis) {
+            const coaDataUri = await toDataUri(formData.certificateOfAnalysis);
+            certificateOfAnalysisUrl = await uploadImageFlow({
+                imageDataUri: coaDataUri,
+                folder: 'certificates-of-analysis'
+            });
+        }
 
-        // 2. Create the intake log and update inventory in a transaction
+
+        // 3. Create the intake log and update inventory in a transaction
         const intakeRef = doc(collection(db, 'rawMaterialIntakes'));
         const materialRef = doc(db, 'rawMaterials', formData.rawMaterialId);
         const inventoryRef = doc(db, 'inventory', formData.rawMaterialId);
@@ -121,8 +134,11 @@ class RawMaterialService {
                     actualQuantity: formData.actualQuantity,
                     alkalinity: formData.alkalinity,
                     batchNumber: formData.batchNumber,
+                    manufacturingDate: formData.manufacturingDate,
                     expiryDate: formData.expiryDate,
+                    physicalCheck: formData.physicalCheck,
                     deliveryNotePhotoUrl: deliveryNotePhotoUrl,
+                    certificateOfAnalysisUrl: certificateOfAnalysisUrl,
                     receivedAt: serverTimestamp(),
                     receivedBy: userId,
                 }
@@ -138,19 +154,20 @@ class RawMaterialService {
                 );
             }
 
-            // 3. Check for discrepancy and send email if needed
+            // 4. Check for discrepancy and send email if needed
             const discrepancy = formData.quantityOnNote - formData.actualQuantity;
-            if (discrepancy !== 0) {
+            if (discrepancy !== 0 || formData.physicalCheck !== 'Seals OK') {
                 const admins = await userService.getAdmins();
-                const subject = `Alert: Delivery Discrepancy from ${formData.supplier}`;
+                const subject = `Alert: Delivery Issue from ${formData.supplier}`;
                 const body = `
                     <p>Hello Admins,</p>
-                    <p>A discrepancy was noted during the raw material intake process from supplier <strong>${formData.supplier}</strong>, logged by ${userProfile?.displayName}.</p>
+                    <p>An issue was noted during the raw material intake process from supplier <strong>${formData.supplier}</strong>, logged by ${userProfile?.displayName}.</p>
                     <ul>
                         <li>Material: ${materialName}</li>
                         <li>Quantity on Delivery Note: ${formData.quantityOnNote}</li>
                         <li>Actual Quantity Received: ${formData.actualQuantity}</li>
                         <li><strong>Discrepancy: ${discrepancy.toFixed(2)}</strong></li>
+                        <li>Physical Check Status: <strong>${formData.physicalCheck}</strong></li>
                     </ul>
                     <p>This may require a follow-up with the supplier. The delivery note number is ${formData.deliveryNoteId}.</p>
                 `;
