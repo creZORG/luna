@@ -60,6 +60,9 @@ const formSchema = z.object({
   ingredients: z.string().min(10, 'Ingredients are too short'),
   directions: z.string().min(10, 'Directions are too short'),
   cautions: z.string().min(10, 'Cautions are too short'),
+  wholesaleMoq: z.coerce.number().int().min(1, 'MOQ must be at least 1').optional(),
+  deliveryFee: z.coerce.number().min(0, 'Delivery fee cannot be negative').optional(),
+  platformFee: z.coerce.number().min(0, 'Platform fee cannot be negative').optional(),
   imageUrl: z.any().optional(),
   galleryImageUrls: z.array(z.any()).optional(),
   sizes: z.array(z.object({
@@ -101,6 +104,9 @@ export function ProductForm({ product }: ProductFormProps) {
             cautions: '',
             imageUrl: undefined,
             galleryImageUrls: [],
+            wholesaleMoq: 120,
+            deliveryFee: 0,
+            platformFee: 0,
         },
     });
 
@@ -247,7 +253,7 @@ export function ProductForm({ product }: ProductFormProps) {
                 <CardHeader>
                   <CardTitle>Product Details</CardTitle>
                   <CardDescription>
-                    Fill in the details of the product. Pricing will be set by an administrator later.
+                    Fill in the details of the product.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -317,48 +323,89 @@ export function ProductForm({ product }: ProductFormProps) {
               
               <Card>
                 <CardHeader>
-                    <CardTitle>Sizing</CardTitle>
+                    <CardTitle>Pricing & Fees</CardTitle>
                     <CardDescription>
-                      Add the different sizes available for this product.
+                      Add the different sizes available for this product. RRP and wholesale prices are managed by an Admin.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                <div>
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="grid grid-cols-[1fr_auto] gap-4 items-end mb-4">
-                      <FormField
-                        control={form.control}
-                        name={`sizes.${index}.size`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Size</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g. 500ml" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
+                    <div>
+                    {fields.map((field, index) => (
+                        <div key={field.id} className="grid grid-cols-[1fr_auto] gap-4 items-end mb-4">
+                        <FormField
+                            control={form.control}
+                            name={`sizes.${index}.size`}
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Size</FormLabel>
+                                <FormControl>
+                                <Input placeholder="e.g. 500ml" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => remove(index)}
+                            disabled={fields.length <= 1}
+                        >
+                            <Trash className="h-4 w-4" />
+                        </Button>
+                        </div>
+                    ))}
+                    <Button
                         type="button"
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => remove(index)}
-                        disabled={fields.length <= 1}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
+                        variant="outline"
+                        size="sm"
+                        onClick={() => append({ size: "" })}
+                    >
+                        <Plus className="mr-2 h-4 w-4" /> Add Size
+                    </Button>
                     </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => append({ size: "" })}
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Add Size
-                  </Button>
-                </div>
+                     <div className="grid md:grid-cols-3 gap-4 mt-6 pt-6 border-t">
+                        <FormField
+                            control={form.control}
+                            name="wholesaleMoq"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Wholesale MOQ</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="120" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="deliveryFee"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Delivery Fee</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="500" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="platformFee"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Platform Fee</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="50" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
                 </CardContent>
              </Card>
 

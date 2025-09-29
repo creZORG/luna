@@ -61,6 +61,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from "@/components/ui/label";
+import { productService } from '@/services/product.service';
+import { Product } from '@/lib/data';
 
 const deliveryFormSchema = z.object({
   fullName: z.string().min(3, 'Full name is required'),
@@ -114,12 +116,44 @@ function isWithinNairobi(coords: GeolocationCoordinates) {
 
 function OrderSummary() {
   const { cartItems } = useCart();
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    async function fetchProducts() {
+        if (cartItems.length > 0) {
+            const fetchedProducts = await Promise.all(
+                cartItems.map(item => productService.getProductById(item.productId))
+            );
+            setProducts(fetchedProducts.filter(p => p !== null) as Product[]);
+        }
+    }
+    fetchProducts();
+  }, [cartItems]);
+  
+
   const subtotal = useMemo(() => {
     return cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   }, [cartItems]);
 
-  const deliveryFee = 500; // Placeholder
-  const total = subtotal + deliveryFee;
+  const totalDeliveryFee = useMemo(() => {
+      // Use a Set to only count delivery fee once per unique product
+      const uniqueProductIds = new Set(cartItems.map(item => item.productId));
+      return Array.from(uniqueProductIds).reduce((acc, productId) => {
+          const product = products.find(p => p.id === productId);
+          return acc + (product?.deliveryFee || 0);
+      }, 0);
+  }, [cartItems, products]);
+
+  const totalPlatformFee = useMemo(() => {
+       // Use a Set to only count platform fee once per unique product
+      const uniqueProductIds = new Set(cartItems.map(item => item.productId));
+      return Array.from(uniqueProductIds).reduce((acc, productId) => {
+          const product = products.find(p => p.id === productId);
+          return acc + (product?.platformFee || 0);
+      }, 0);
+  }, [cartItems, products]);
+
+  const total = subtotal + totalDeliveryFee + totalPlatformFee;
 
   return (
     <Card>
@@ -159,9 +193,13 @@ function OrderSummary() {
               <span className="text-muted-foreground">Subtotal</span>
               <span>Ksh {subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
+             <div className="flex justify-between">
               <span className="text-muted-foreground">Delivery Fee</span>
-              <span>Ksh {deliveryFee.toFixed(2)}</span>
+              <span>Ksh {totalDeliveryFee.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Platform Fee</span>
+              <span>Ksh {totalPlatformFee.toFixed(2)}</span>
             </div>
             <Separator />
             <div className="flex justify-between text-base font-bold">

@@ -22,6 +22,8 @@ export type Product = {
   shortDescription: string;
   wholesaleDiscountPercentage?: number;
   wholesaleMoq?: number;
+  deliveryFee?: number;
+  platformFee?: number;
   rating: number;
   reviewCount: number;
 };
