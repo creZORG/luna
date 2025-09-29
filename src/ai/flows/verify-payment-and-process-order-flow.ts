@@ -22,7 +22,7 @@ const CustomerInfoSchema = z.object({
   fullName: z.string(),
   email: z.string().email(),
   phone: z.string(),
-  constituency: z.string(),
+  county: z.string(),
   address: z.string(),
   deliveryNotes: z.string().optional(),
 });

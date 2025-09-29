@@ -108,7 +108,7 @@ const processFieldSaleFlow = ai.defineFlow(
                 phone: input.customerPhone,
                 email: `pos-customer-${Date.now()}@luna.co.ke`, // Dummy email for POS
                 address: `In-person sale by ${input.salespersonName}`,
-                constituency: 'Field Sale',
+                county: 'Field Sale',
             },
             paystackReference: chargeData.reference,
             userId: input.salespersonId, 

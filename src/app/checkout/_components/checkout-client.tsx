@@ -64,13 +64,12 @@ import { cn } from '@/lib/utils';
 import { Label } from "@/components/ui/label";
 import { productService } from '@/services/product.service';
 import { Product } from '@/lib/data';
-import { reverseGeocode } from '@/ai/flows/reverse-geocode-flow';
-import { getCompanySettings } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { verifyPaymentAndProcessOrder } from '@/ai/flows/verify-payment-and-process-order-flow';
 import { orderService } from '@/services/order.service';
 import { pickupLocationService, PickupLocation } from '@/services/pickup-location.service';
+import { KENYAN_COUNTIES } from '@/lib/locations';
 
 
 const deliveryFormSchema = z.object({
@@ -81,17 +80,17 @@ const deliveryFormSchema = z.object({
     .string()
     .min(10, 'Phone number must be at least 10 digits')
     .regex(/^(\+254|0)?\d{9}$/, 'Invalid Kenyan phone number format'),
-  constituency: z.string().optional(),
+  county: z.string().optional(),
   address: z.string().optional(),
   pickupLocationId: z.string().optional(),
   deliveryNotes: z.string().optional(),
 }).refine(data => {
     if (data.deliveryMethod === 'door-to-door') {
-        return !!data.constituency && !!data.address && data.address.length >= 10;
+        return !!data.county && !!data.address && data.address.length >= 10;
     }
     return true;
 }, {
-    message: 'Constituency and a detailed address are required for door delivery.',
+    message: 'County and a detailed address are required for door delivery.',
     path: ['address'],
 }).refine(data => {
     if (data.deliveryMethod === 'pickup') {
@@ -106,57 +105,6 @@ const deliveryFormSchema = z.object({
 
 type DeliveryFormData = z.infer<typeof deliveryFormSchema>;
 
-const NAIROBI_CONSTITUENCIES = [
-  'Westlands',
-  'Dagoretti North',
-  'Dagoretti South',
-  'Langata',
-  'Kibra',
-  'Roysambu',
-  'Kasarani',
-  'Ruaraka',
-  'Embakasi South',
-  'Embakasi North',
-  'Embakasi Central',
-  'Embakasi East',
-  'Embakasi West',
-  'Makadara',
-  'Kamukunji',
-  'Starehe',
-  'Mathare',
-];
-
-const NAIROBI_BOUNDS = {
-  minLat: -1.38,
-  maxLat: -1.18,
-  minLng: 36.7,
-  maxLng: 37.0,
-};
-
-// Haversine formula to calculate distance between two lat/lon points
-function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-    const R = 6371e3; // metres
-    const φ1 = lat1 * Math.PI/180;
-    const φ2 = lat2 * Math.PI/180;
-    const Δφ = (lat2-lat1) * Math.PI/180;
-    const Δλ = (lon2-lon1) * Math.PI/180;
-
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-    return R * c; // in metres
-}
-
-function isWithinNairobi(coords: GeolocationCoordinates) {
-  return (
-    coords.latitude >= NAIROBI_BOUNDS.minLat &&
-    coords.latitude <= NAIROBI_BOUNDS.maxLat &&
-    coords.longitude >= NAIROBI_BOUNDS.minLng &&
-    coords.longitude <= NAIROBI_BOUNDS.maxLng
-  );
-}
 
 function OrderSummary() {
   const { cartItems } = useCart();
@@ -264,12 +212,6 @@ export default function CheckoutClient() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const [locationState, setLocationState] = useState<
-    'idle' | 'loading' | 'in_nairobi' | 'outside_nairobi' | 'error'
-  >('idle');
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [identifiedLocation, setIdentifiedLocation] = useState<string | null>(null);
-  const [distance, setDistance] = useState<number | null>(null);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
 
@@ -294,14 +236,14 @@ export default function CheckoutClient() {
         if (user) {
             const lastOrder = await orderService.getLastOrderByUserId(user.uid);
             if (lastOrder) {
-                const [address, constituency] = lastOrder.shippingAddress.split(',').map(s => s.trim());
+                const [address, county] = lastOrder.shippingAddress.split(',').map(s => s.trim());
                 form.reset({
                     deliveryMethod: 'door-to-door',
                     fullName: lastOrder.customerName,
                     email: lastOrder.customerEmail,
                     phone: lastOrder.customerPhone,
                     address: address || '',
-                    constituency: NAIROBI_CONSTITUENCIES.includes(constituency) ? constituency : '',
+                    county: KENYAN_COUNTIES.includes(county) ? county : '',
                     deliveryNotes: '', // Don't pre-fill notes
                 });
             } else if (userProfile) {
@@ -312,7 +254,7 @@ export default function CheckoutClient() {
                     email: userProfile.email || '',
                     phone: '',
                     address: '',
-                    constituency: '',
+                    county: '',
                     deliveryNotes: '',
                 });
             }
@@ -327,56 +269,6 @@ export default function CheckoutClient() {
     prefillForm();
     fetchPickupLocations();
   }, [user, userProfile, form]);
-
-
- const handleCheckLocation = () => {
-    setLocationState('loading');
-    setIdentifiedLocation(null);
-    setLocationError(null);
-    setDistance(null);
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const settings = await getCompanySettings();
-        const dist = getDistance(
-            position.coords.latitude, 
-            position.coords.longitude,
-            settings.COMPANY_LOCATION.latitude,
-            settings.COMPANY_LOCATION.longitude
-        );
-        setDistance(dist);
-
-        if (isWithinNairobi(position.coords)) {
-          setLocationState('in_nairobi');
-        } else {
-          try {
-            const geocodeResult = await reverseGeocode({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            });
-            if (geocodeResult && geocodeResult.city) {
-              setIdentifiedLocation(geocodeResult.city);
-            } else {
-              setIdentifiedLocation(null);
-            }
-            setLocationState('outside_nairobi');
-          } catch (e) {
-            console.error("Reverse geocode failed:", e);
-            setLocationError("Could not determine your city from your coordinates. Please enter your address manually.");
-            setLocationState('error');
-          }
-        }
-      },
-      (err) => {
-        setLocationState('error');
-        let message = 'Could not get your location. Please enable location services in your browser.';
-        if (err.code === err.PERMISSION_DENIED) {
-          message = "Location access was denied. You can still enter your address manually.";
-        }
-        setLocationError(message);
-      }
-    );
-  };
   
   const handlePaymentAndOrderProcessing = async (data: DeliveryFormData) => {
     setIsProcessingOrder(true);
@@ -417,7 +309,7 @@ export default function CheckoutClient() {
                     const location = pickupLocations.find(l => l.id === data.pickupLocationId);
                     shippingAddress = `Pickup at: ${location?.name}, ${location?.address}`;
                 } else {
-                    shippingAddress = `${data.address}, ${data.constituency}`;
+                    shippingAddress = `${data.address}, ${data.county}`;
                 }
 
                 const orderId = await verifyPaymentAndProcessOrder({
@@ -425,6 +317,7 @@ export default function CheckoutClient() {
                     cartItems: cartItems,
                     customer: {
                         ...data,
+                        county: data.county || '', // ensure county is not undefined
                         address: shippingAddress // We send the combined address string
                     },
                     userId: user?.uid, // Pass user ID if they are logged in
@@ -458,7 +351,6 @@ export default function CheckoutClient() {
     });
   }
   
-  const distanceInKm = distance ? (distance / 1000).toFixed(0) : 0;
   const isSubmitting = form.formState.isSubmitting || isProcessingOrder;
 
   return (
@@ -578,67 +470,20 @@ export default function CheckoutClient() {
                 {deliveryMethod === 'door-to-door' && (
                     <div className="space-y-4 animate-in fade-in-0 duration-500">
                         <h3 className="text-lg font-medium">Delivery Address</h3>
-                        <p className="text-sm text-muted-foreground">We currently only deliver within Nairobi.</p>
-                        
-                        <Alert className='flex items-center justify-between'>
-                        <div>
-                            <AlertTitle>Confirm Nairobi Delivery</AlertTitle>
-                            <AlertDescription>
-                                Use your location to quickly confirm you're in our delivery zone.
-                            </AlertDescription>
-                        </div>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleCheckLocation}
-                            disabled={locationState === 'loading'}
-                        >
-                            {locationState === 'loading' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />} 
-                            Check Location
-                        </Button>
-                        </Alert>
-
-                        {locationState === 'outside_nairobi' && (
-                            <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Outside Nairobi Delivery Area</AlertTitle>
-                                <AlertDescription>
-                                    {identifiedLocation
-                                        ? `It looks like you're in ${identifiedLocation} (approx. ${distanceInKm}km away), which is outside our standard delivery zone.`
-                                        : `It looks like you're outside our standard delivery zone (approx. ${distanceInKm}km away).`
-                                    }
-                                    {' '}For special arrangements, please contact our support team.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-                        {locationState === 'error' && (
-                            <Alert variant="destructive">
-                                <AlertTitle>Location Error</AlertTitle>
-                                <AlertDescription>{locationError}</AlertDescription>
-                            </Alert>
-                        )}
-                        {locationState === 'in_nairobi' && <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-                            <Home className="h-4 w-4 !text-green-600" />
-                            <AlertTitle className="text-green-800 dark:text-green-300">You're in Nairobi!</AlertTitle>
-                            <AlertDescription className="text-green-700 dark:text-green-400">
-                                Great! We deliver to your area (approx. {distanceInKm}km from our office). Please fill out the address details below.
-                            </AlertDescription>
-                        </Alert>}
-                        
                         <FormField
                             control={form.control}
-                            name="constituency"
+                            name="county"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Constituency</FormLabel>
+                                    <FormLabel>County</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select your constituency" />
+                                            <SelectValue placeholder="Select your county" />
                                         </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {NAIROBI_CONSTITUENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                            {KENYAN_COUNTIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />

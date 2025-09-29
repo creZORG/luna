@@ -1,4 +1,5 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
 import { CartItem } from './cart.service';
@@ -22,7 +23,7 @@ export interface CustomerInfo {
     email: string;
     phone: string;
     address: string;
-    constituency: string;
+    county: string;
     deliveryNotes?: string;
 }
 

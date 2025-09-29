@@ -29,7 +29,7 @@ const CustomerInfoSchema = z.object({
   fullName: z.string(),
   email: z.string().email(),
   phone: z.string(),
-  constituency: z.string(),
+  county: z.string(),
   address: z.string(),
   deliveryNotes: z.string().optional(),
 });
@@ -117,7 +117,7 @@ const processOrderFlow = ai.defineFlow(
                 </tr>
             </table>
             <br>
-            <p><strong>Shipping to:</strong><br>${input.customer.fullName}<br>${input.customer.address}, ${input.customer.constituency}</p>
+            <p><strong>Shipping to:</strong><br>${input.customer.fullName}<br>${input.customer.address}</p>
         `;
         const customerEmailHtml = createEmailTemplate(customerSubject, customerBody);
         
@@ -144,7 +144,7 @@ const processOrderFlow = ai.defineFlow(
                     <li><strong>Name:</strong> ${input.customer.fullName}</li>
                     <li><strong>Email:</strong> ${input.customer.email}</li>
                     <li><strong>Phone:</strong> ${input.customer.phone}</li>
-                    <li><strong>Delivery Address:</strong> ${input.customer.address}, ${input.customer.constituency}</li>
+                    <li><strong>Delivery Address:</strong> ${input.customer.address}</li>
                     ${input.customer.deliveryNotes ? `<li><strong>Notes:</strong> ${input.customer.deliveryNotes}</li>` : ''}
                 </ul>
 
