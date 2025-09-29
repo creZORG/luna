@@ -1,13 +1,16 @@
 
 import SalesDashboardClient from './_components/sales-dashboard-client';
 import type { StockInfo } from './_components/sales-dashboard-client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { storeItemService } from '@/services/store-item.service';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import FieldSalesClient from './_components/field-sales-client';
 
 async function getInitialStockData(): Promise<StockInfo[]> {
     const allStoreItems = await storeItemService.getStoreItems();
     const finishedGoods = allStoreItems.filter(item => item.category === 'Finished Goods');
     
+    // In a real app, this would be filtered by stock assigned to the specific salesperson
     return finishedGoods.map(item => ({
         productId: (item as any).productId,
         productName: item.name.replace(`(${(item as any).size})`, '').trim(),
@@ -38,12 +41,24 @@ export default async function SalesDashboard() {
     }
 
     return (
-        <div>
-            <div className="mb-6">
+        <div className="grid gap-6">
+             <div className="mb-2">
                  <h1 className="text-3xl font-bold">Sales Portal</h1>
-                 <p className="text-muted-foreground">Log your daily sales and track your stock.</p>
+                 <p className="text-muted-foreground">Log your daily sales and process in-person transactions.</p>
             </div>
-            <SalesDashboardClient initialStock={stockData} />
+            
+            <Tabs defaultValue="daily-log">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="daily-log">Daily Log</TabsTrigger>
+                    <TabsTrigger value="field-sale">Field Sale (POS)</TabsTrigger>
+                </TabsList>
+                <TabsContent value="daily-log">
+                    <SalesDashboardClient initialStock={stockData} />
+                </TabsContent>
+                <TabsContent value="field-sale">
+                    <FieldSalesClient initialStock={stockData} />
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
