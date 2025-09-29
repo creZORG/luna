@@ -35,13 +35,27 @@ export async function processFieldSale(input: ProcessFieldSaleInput) {
 
 // Helper to format phone number to 254... format
 const formatPhoneNumber = (phone: string): string => {
-    if (phone.startsWith('+254')) {
-        return phone.substring(1);
+    // Remove any non-digit characters
+    const digitsOnly = phone.replace(/\D/g, '');
+
+    // Case 1: Starts with '254' and has 12 digits (e.g., 254712345678)
+    if (digitsOnly.startsWith('254') && digitsOnly.length === 12) {
+        return digitsOnly;
     }
-    if (phone.startsWith('0')) {
-        return '254' + phone.substring(1);
+
+    // Case 2: Starts with '0' and has 10 digits (e.g., 0712345678)
+    if (digitsOnly.startsWith('0') && digitsOnly.length === 10) {
+        return '254' + digitsOnly.substring(1);
     }
-    return phone; // Assume it's already in the correct format if it doesn't match above
+    
+    // Case 3: Starts with '7' and has 9 digits (e.g., 712345678)
+     if (digitsOnly.length === 9) {
+        return '254' + digitsOnly;
+    }
+
+    // If it doesn't match a known valid format, return the original input
+    // to let the payment gateway handle the error.
+    return phone;
 }
 
 const processFieldSaleFlow = ai.defineFlow(
