@@ -181,7 +181,6 @@ export default function CheckoutClient() {
     'idle' | 'loading' | 'in_nairobi' | 'outside_nairobi' | 'error'
   >('idle');
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [showAddressForm, setShowAddressForm] = useState(false);
 
   const form = useForm<DeliveryFormData>({
     resolver: zodResolver(deliveryFormSchema),
@@ -208,12 +207,10 @@ export default function CheckoutClient() {
 
   const handleCheckLocation = () => {
     setLocationState('loading');
-    setShowAddressForm(false);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (isWithinNairobi(position.coords)) {
           setLocationState('in_nairobi');
-          setShowAddressForm(true);
         } else {
           setLocationState('outside_nairobi');
         }
@@ -221,10 +218,8 @@ export default function CheckoutClient() {
       (err) => {
         setLocationState('error');
         setLocationError(
-          'Could not get your location. Please enable location services or fill in your address manually if you are in Nairobi.'
+          'Could not get your location. Please enable location services in your browser.'
         );
-        // Still allow manual entry if location fails
-        setShowAddressForm(true); 
       }
     );
   };
@@ -329,103 +324,97 @@ export default function CheckoutClient() {
                 <Separator className="my-6" />
                  <h3 className="text-lg font-medium">Delivery Address</h3>
                  <p className="text-sm text-muted-foreground">We currently only deliver within Nairobi.</p>
-
-                {locationState === 'idle' && (
-                  <Alert className='flex items-center justify-between'>
+                 
+                <div className="space-y-4 animate-in fade-in-0 duration-500">
+                    <Alert className='flex items-center justify-between'>
                       <div>
-                          <AlertTitle>Confirm Nairobi Delivery</AlertTitle>
+                          <AlertTitle>Confirm Nairobi Delivery Area</AlertTitle>
                           <AlertDescription>
-                              Use your location to quickly confirm you're in our delivery zone.
+                              You can use your location to quickly check if you're in our delivery zone.
                           </AlertDescription>
                       </div>
                       <Button
                         type="button"
                         variant="outline"
                         onClick={handleCheckLocation}
+                        disabled={locationState === 'loading'}
                       >
-                        <MapPin className="mr-2 h-4 w-4" /> Check Location
+                        {locationState === 'loading' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />} 
+                        Check My Location
                       </Button>
-                  </Alert>
-                )}
-
-                 {locationState === 'loading' && <Skeleton className='h-10 w-full' />}
-                 
-                 {locationState === 'outside_nairobi' && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Outside Nairobi Delivery Area</AlertTitle>
-                        <AlertDescription>
-                            It looks like you're outside our standard delivery zone. For special arrangements, please contact our support team.
-                        </AlertDescription>
                     </Alert>
-                 )}
-                 {locationState === 'error' && (
-                     <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Location Error</AlertTitle>
-                        <AlertDescription>{locationError}</AlertDescription>
-                    </Alert>
-                 )}
 
-
-                {(locationState === 'in_nairobi' || locationState === 'error') && (
-                    <div className="space-y-4 animate-in fade-in-0 duration-500">
-                        {locationState === 'in_nairobi' && <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-                            <Home className="h-4 w-4 !text-green-600" />
-                            <AlertTitle className="text-green-800 dark:text-green-300">You're in Nairobi!</AlertTitle>
-                             <AlertDescription className="text-green-700 dark:text-green-400">
-                                Great! We deliver to your area. Please fill out the address details below.
+                     {locationState === 'outside_nairobi' && (
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Outside Nairobi Delivery Area</AlertTitle>
+                            <AlertDescription>
+                                It looks like you're outside our standard delivery zone. For special arrangements, please contact our support team.
                             </AlertDescription>
-                        </Alert>}
-                        
-                         <FormField
-                            control={form.control}
-                            name="constituency"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Constituency</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select your constituency" />
-                                        </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {NAIROBI_CONSTITUENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="address"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Street Address, Building & House No.</FormLabel>
-                                <FormControl>
-                                    <Textarea placeholder="e.g., Maple Street, Crystal Apartments, Apt B4" {...field} />
-                                </FormControl>
+                        </Alert>
+                     )}
+                     {locationState === 'error' && (
+                         <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Location Error</AlertTitle>
+                            <AlertDescription>{locationError}</AlertDescription>
+                        </Alert>
+                     )}
+                     {locationState === 'in_nairobi' && <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                        <Home className="h-4 w-4 !text-green-600" />
+                        <AlertTitle className="text-green-800 dark:text-green-300">You're in Nairobi!</AlertTitle>
+                         <AlertDescription className="text-green-700 dark:text-green-400">
+                            Great! We deliver to your area. Please fill out the address details below.
+                        </AlertDescription>
+                    </Alert>}
+                    
+                     <FormField
+                        control={form.control}
+                        name="constituency"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Constituency</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select your constituency" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {NAIROBI_CONSTITUENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="deliveryNotes"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Delivery Notes (Optional)</FormLabel>
-                                <FormControl>
-                                    <Textarea placeholder="e.g., Leave at the reception with the security guard" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                )}
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="address"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Street Address, Building & House No.</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="e.g., Maple Street, Crystal Apartments, Apt B4" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="deliveryNotes"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Delivery Notes (Optional)</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="e.g., Leave at the reception with the security guard" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
 
                 <Button type="submit" size="lg" className="w-full" disabled={!form.formState.isValid || form.formState.isSubmitting}>
@@ -443,4 +432,3 @@ export default function CheckoutClient() {
     </>
   );
 }
-
