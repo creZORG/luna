@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https' as const,
+        protocol: "https" as const,
         hostname: 'i.pravatar.cc',
         port: '',
         pathname: '/**',
