@@ -107,13 +107,12 @@ class ProductService {
         });
         
         const products: Product[] = [];
-        productsSnapshot.forEach((doc) => {
-            let data = doc.data();
-            const stats = productStats.get(doc.id) || { orderCount: 0, totalRevenue: 0 };
+        productsSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const stats = productStats.get(docSnap.id) || { orderCount: 0, totalRevenue: 0 };
             
             products.push({ 
-                id: doc.id,
-                ...data,
+                id: docSnap.id,
                 slug: data.slug,
                 name: data.name,
                 category: data.category,
