@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const withPWA = require('next-pwa')({
@@ -37,7 +38,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https' as const,
         hostname: 'i.pravatar.cc',
         port: '',
         pathname: '/**',
@@ -51,6 +52,17 @@ const nextConfig: NextConfig = {
         hostname: "res.cloudinary.com",
       }
     ],
+  },
+  webpack: (config, { isServer }) => {
+    // This is the fix for the 'electron' module not found error.
+    // It tells webpack to not try to resolve this module, which is not needed
+    // in a web environment.
+    config.resolve.fallback = {
+      ...(config.resolve.fallback || {}),
+      electron: false,
+    };
+
+    return config;
   },
 };
 
