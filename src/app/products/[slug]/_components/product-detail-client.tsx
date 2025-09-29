@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Product } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Check, Send, ShoppingCart, MessageSquare } from 'lucide-react';
+import { Check, Send, ShoppingCart, MessageSquare, Plus, Minus } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
@@ -24,6 +24,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
   const [selectedImage, setSelectedImage] = useState<string | undefined>(allImages[0]);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   
   return (
     <>
@@ -98,6 +99,22 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     {product.sizes.length > 1 && (
                         <p className='text-sm text-muted-foreground mt-2'>Other sizes available.</p>
                     )}
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center border rounded-md">
+                        <Button variant="ghost" size="icon" className='h-12 w-12' onClick={() => setQuantity(q => Math.max(1, q - 1))}>
+                            <Minus className="h-5 w-5" />
+                        </Button>
+                        <span className="w-12 text-center text-lg font-bold">{quantity}</span>
+                         <Button variant="ghost" size="icon" className='h-12 w-12' onClick={() => setQuantity(q => q + 1)}>
+                            <Plus className="h-5 w-5" />
+                        </Button>
+                    </div>
+                    <Button size="lg" className="flex-grow">
+                        <ShoppingCart className="mr-2 h-5 w-5"/>
+                        Add to Cart
+                    </Button>
                 </div>
 
                 <Card className="bg-accent/50 border-accent">
