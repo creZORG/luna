@@ -33,26 +33,6 @@ const processPaymentFlow = ai.defineFlow(
     outputSchema: ProcessPaymentOutputSchema,
   },
   async ({ reference }) => {
-    try {
-      // 1. Verify the transaction with Paystack by calling the server-side service
-      const verifiedTransaction = await paystackService.verifyTransaction(reference);
-
-      // 2. If successful, create the order in our database
-      const orderId = await orderService.createOrder(verifiedTransaction);
-      
-      // 3. Return a success response
-      return {
-        success: true,
-        orderId,
-        message: 'Payment successful and order created!',
-      };
-
-    } catch (error: any) {
-      console.error(`[Payment Flow Error] Ref: ${reference} | Error: ${error.message}`);
-      return {
-        success: false,
-        message: error.message || 'An unknown error occurred during payment processing.',
-      };
-    }
+    return await paystackService.processTransaction(reference);
   }
 );

@@ -3,6 +3,7 @@ import Paystack from 'paystack-node';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
+import { orderService } from './order.service';
 
 const paystack = new Paystack(process.env.PAYSTACK_SECRET_KEY!);
 
@@ -66,6 +67,30 @@ class PaystackService {
         } catch (error: any) {
             console.error('Paystack verification error:', error.response?.data || error.message);
             throw new Error('Could not verify the payment.');
+        }
+    }
+
+    async processTransaction(reference: string) {
+        try {
+            // 1. Verify the transaction with Paystack
+            const verifiedTransaction = await this.verifyTransaction(reference);
+
+            // 2. If successful, create the order in our database
+            const orderId = await orderService.createOrder(verifiedTransaction);
+            
+            // 3. Return a success response
+            return {
+                success: true,
+                orderId,
+                message: 'Payment successful and order created!',
+            };
+
+        } catch (error: any) {
+            console.error(`[Payment Flow Error] Ref: ${reference} | Error: ${error.message}`);
+            return {
+                success: false,
+                message: error.message || 'An unknown error occurred during payment processing.',
+            };
         }
     }
 }
