@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A flow to process an in-person field sale via M-Pesa STK push.
@@ -35,9 +34,9 @@ export async function processFieldSale(input: ProcessFieldSaleInput) {
 
 // Helper to format phone number to 0... format reliably
 const formatPhoneNumber = (phone: string): string => {
-    const cleaned = phone.replace(/\D/g, ''); // Remove all non-digit characters
-    const last9 = cleaned.slice(-9); // Get the last 9 digits
-    return `0${last9}`; // Prepend 0
+    const cleaned = phone.replace(/[^0-9]/g, '');
+    const last9 = cleaned.slice(-9);
+    return `0${last9}`;
 };
 
 

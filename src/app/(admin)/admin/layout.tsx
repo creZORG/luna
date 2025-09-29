@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart, Package2, Users, FileText, Moon, Warehouse, PieChart, Menu } from 'lucide-react';
+import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart, Package2, Users, FileText, Moon, Warehouse, PieChart, Menu, LocateFixed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -104,6 +104,7 @@ const getNavLinks = (userProfile: UserProfile | null) => {
             { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview', roles: ['admin'] },
             { href: '/admin/users', icon: Users, label: 'Staff Management', roles: ['admin'] },
             { href: '/admin/activities', icon: Activity, label: 'Recent Activities', roles: ['admin'] },
+            { href: '/admin/field-sale-logs', icon: LocateFixed, label: 'Field Sale Logs', roles: ['admin'] },
           ],
         },
     ];

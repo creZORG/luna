@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -11,17 +10,26 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { processFieldSale } from '@/ai/flows/process-field-sale-flow';
-import { Loader } from 'lucide-react';
+import { Loader, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { verifyPaymentAndProcessOrder } from '@/ai/flows/verify-payment-and-process-order-flow';
+import { fieldSaleLogService } from '@/services/field-sale-log.service';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface FieldSalesClientProps {
     initialStock: StockInfo[];
 }
 
+interface Location {
+    latitude: number;
+    longitude: number;
+}
+
 export default function FieldSalesClient({ initialStock }: FieldSalesClientProps) {
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [location, setLocation] = useState<Location | null>(null);
+    const [locationError, setLocationError] = useState<string | null>(null);
     const { user, userProfile } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
@@ -40,45 +48,107 @@ export default function FieldSalesClient({ initialStock }: FieldSalesClientProps
             return [...prevCart, { ...item, productId: item.productId, quantity: 1 }];
         });
     };
+    
+    const getLocation = () => {
+        setLocationError(null);
+        setIsProcessing(true); // Show loading state
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setLocation({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+                setIsProcessing(false);
+            },
+            (error) => {
+                setLocationError('Could not get location. Please enable location services and try again.');
+                setIsProcessing(false);
+            }
+        );
+    }
 
-    const handleProcessSale = async (customerName: string, customerPhone: string) => {
+
+    const handleProcessSale = async (customerName: string, customerPhone: string, customerEmail: string) => {
         if (!user || !userProfile) {
             toast({ variant: 'destructive', title: 'Authentication Error' });
             return;
         }
+        if (!location) {
+            toast({ variant: 'destructive', title: 'Location Required', description: 'Please capture your location before proceeding.' });
+            return;
+        }
 
         setIsProcessing(true);
-        toast({
-            title: 'Processing Sale...',
-            description: 'STK push sent to customer. Please ask them to confirm payment on their phone.'
+
+        const PaystackPop = (await import('@paystack/inline-js')).default;
+        const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        const paystack = new PaystackPop();
+        paystack.newTransaction({
+            key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
+            email: customerEmail,
+            amount: totalAmount * 100, // Amount in kobo
+            metadata: {
+                custom_fields: [
+                    { display_name: "Salesperson", variable_name: "salesperson_name", value: userProfile.displayName },
+                    { display_name: "Customer", variable_name: "customer_name", value: customerName },
+                ],
+                "send_receipt": false, // Disable Paystack receipt
+            },
+            onSuccess: async (transaction) => {
+                try {
+                    const orderId = await verifyPaymentAndProcessOrder({
+                        reference: transaction.reference,
+                        cartItems: cart,
+                        customer: {
+                           fullName: customerName,
+                           phone: customerPhone,
+                           email: customerEmail,
+                           address: `In-person sale by ${userProfile.displayName}`,
+                           county: 'Field Sale',
+                           deliveryMethod: 'door-to-door',
+                        },
+                        userId: user.uid,
+                    });
+                    
+                    // Log the field sale location
+                    await fieldSaleLogService.logSale({
+                        salespersonId: user.uid,
+                        salespersonName: userProfile.displayName,
+                        orderId,
+                        customerName,
+                        customerPhone,
+                        latitude: location.latitude,
+                        longitude: location.longitude,
+                    });
+
+                    toast({
+                        title: 'Sale Successful!',
+                        description: `Order #${orderId.substring(0,6).toUpperCase()} has been created.`
+                    });
+                    setCart([]); // Clear cart
+                    setLocation(null); // Reset location
+                    router.refresh();
+
+                } catch (error: any) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Order Processing Failed',
+                        description: error.message || 'Payment was successful but we failed to create the order. Contact support.'
+                    });
+                } finally {
+                     setIsProcessing(false);
+                }
+            },
+            onCancel: () => {
+                toast({
+                    variant: 'destructive',
+                    title: 'Payment Cancelled',
+                    description: 'The payment process was cancelled.'
+                });
+                setIsProcessing(false);
+            },
         });
-
-        try {
-            const orderId = await processFieldSale({
-                items: cart,
-                customerName,
-                customerPhone,
-                salespersonId: user.uid,
-                salespersonName: userProfile.displayName,
-            });
-
-            toast({
-                title: 'Sale Successful!',
-                description: `Order #${orderId.substring(0,6).toUpperCase()} has been created and confirmed.`
-            });
-            setCart([]); // Clear cart on success
-            router.refresh();
-
-        } catch (error: any) {
-            console.error("Field sale failed:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Sale Failed',
-                description: error.message || 'The transaction could not be completed.'
-            });
-        } finally {
-            setIsProcessing(false);
-        }
     };
     
     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -137,7 +207,25 @@ export default function FieldSalesClient({ initialStock }: FieldSalesClientProps
                                     <p>Ksh {subtotal.toFixed(2)}</p>
                                 </div>
                                 <Separator />
-                                <FieldSalesForm onProcessSale={handleProcessSale} isProcessing={isProcessing} />
+                                {locationError && <Alert variant="destructive"><AlertTitle>Location Error</AlertTitle><AlertDescription>{locationError}</AlertDescription></Alert>}
+
+                                {!location ? (
+                                     <Button onClick={getLocation} disabled={isProcessing} className="w-full">
+                                        {isProcessing ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />}
+                                        Capture Current Location
+                                    </Button>
+                                ) : (
+                                    <>
+                                        <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                                            <MapPin className="h-4 w-4 !text-green-600" />
+                                            <AlertTitle className="text-green-800 dark:text-green-300">Location Captured</AlertTitle>
+                                            <AlertDescription className="text-green-700 dark:text-green-400">
+                                               You can now enter customer details to proceed.
+                                            </AlertDescription>
+                                        </Alert>
+                                        <FieldSalesForm onProcessSale={handleProcessSale} isProcessing={isProcessing} />
+                                    </>
+                                )}
                             </div>
                         ) : (
                             <div className="text-center py-10 text-muted-foreground">
