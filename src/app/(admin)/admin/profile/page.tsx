@@ -145,8 +145,11 @@ export default function ProfilePage() {
                                     />
                                 </div>
                                 <div className="text-center w-full">
-                                    <form.register name="displayName" />
-                                    <Input {...form.register('displayName')} className="text-2xl font-bold text-center border-none focus-visible:ring-1" />
+                                    <Controller
+                                        name="displayName"
+                                        control={form.control}
+                                        render={({ field }) => <Input {...field} className="text-2xl font-bold text-center border-none focus-visible:ring-1" />}
+                                    />
                                     <FormMessage>{form.formState.errors.displayName?.message}</FormMessage>
 
                                     <div className="flex items-center justify-center gap-2 mt-2 text-muted-foreground">
@@ -212,7 +215,11 @@ export default function ProfilePage() {
                                                     />
                                                 </div>
                                                 <div className="w-2/3">
-                                                    <Input {...form.register(`socialLinks.${index}.url`)} placeholder="https://..." />
+                                                    <Controller
+                                                        name={`socialLinks.${index}.url`}
+                                                        control={form.control}
+                                                        render={({ field }) => <Input {...field} placeholder="https://..." />}
+                                                    />
                                                     <FormMessage>{form.formState.errors.socialLinks?.[index]?.url?.message}</FormMessage>
                                                 </div>
                                             </div>
@@ -247,7 +254,5 @@ export default function ProfilePage() {
 }
 
 // Dummy Form and FormMessage components for type-checking, since they are not exported from form.tsx
-const Form = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
+const Form = ({ children, ...props }: { children: React.ReactNode, [key: string]: any }) => <div {...props}>{children}</div>;
 const FormMessage = ({ children }: { children: React.ReactNode }) => <p className="text-sm font-medium text-destructive mt-1">{children}</p>;
-
-    
