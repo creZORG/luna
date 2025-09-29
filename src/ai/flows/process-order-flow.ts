@@ -11,6 +11,9 @@ import { orderService, CustomerInfo } from '@/services/order.service';
 import { CartItem, cartService } from '@/services/cart.service';
 import { productService } from '@/services/product.service';
 import { increment } from 'firebase/firestore';
+import { sendEmail } from './send-email-flow';
+import { createEmailTemplate } from '@/lib/email-template';
+import { userService } from '@/services/user.service';
 
 
 const CartItemSchema = z.object({
@@ -84,6 +87,101 @@ const processOrderFlow = ai.defineFlow(
         input.paystackReference,
         input.userId // Pass userId to createOrder
     );
+
+    // After successful order creation, send emails.
+    if (orderId) {
+        // 1. Send confirmation email to the customer
+        const customerSubject = `Your Luna Essentials Order #${orderId.substring(0,6).toUpperCase()} is Confirmed!`;
+        const customerBody = `
+            <p>Hi ${input.customer.fullName},</p>
+            <p>Thank you for your purchase! We've received your order and are getting it ready for you. We'll notify you once it has been shipped.</p>
+            <h3>Order Summary</h3>
+            <table border="0" cellpadding="10" cellspacing="0" style="width:100%;">
+                ${input.cartItems.map(item => `
+                    <tr>
+                        <td>${item.productName} (${item.size}) x ${item.quantity}</td>
+                        <td style="text-align: right;">Ksh ${(item.price * item.quantity).toFixed(2)}</td>
+                    </tr>
+                `).join('')}
+                 <tr>
+                    <td>Delivery Fee</td>
+                    <td style="text-align: right;">Ksh ${totalDeliveryFee.toFixed(2)}</td>
+                </tr>
+                 <tr>
+                    <td>Platform Fee</td>
+                    <td style="text-align: right;">Ksh ${totalPlatformFee.toFixed(2)}</td>
+                </tr>
+                <tr style="border-top: 1px solid #e2e8f0;">
+                    <td style="font-weight: bold;">Total</td>
+                    <td style="text-align: right; font-weight: bold;">Ksh ${totalAmount.toFixed(2)}</td>
+                </tr>
+            </table>
+            <br>
+            <p><strong>Shipping to:</strong><br>${input.customer.fullName}<br>${input.customer.address}, ${input.customer.constituency}</p>
+        `;
+        const customerEmailHtml = createEmailTemplate(customerSubject, customerBody);
+        
+        await sendEmail({
+            to: { address: input.customer.email, name: input.customer.fullName },
+            from: { address: 'sales@luna.co.ke', name: 'Luna Essentials Sales' },
+            subject: customerSubject,
+            htmlbody: customerEmailHtml
+        });
+
+        // 2. Send notification email to admins and sales people
+        const allUsers = await userService.getUsers();
+        const notificationRecipients = allUsers.filter(u => u.roles.includes('admin') || u.roles.includes('sales'));
+
+        if (notificationRecipients.length > 0) {
+            const internalSubject = `New Order Received: #${orderId.substring(0,6).toUpperCase()}`;
+            const internalBody = `
+                <p>A new order has been placed and paid for.</p>
+                <h3>Order Details (ID: #${orderId.substring(0,6).toUpperCase()})</h3>
+                <p><strong>Total Amount:</strong> Ksh ${totalAmount.toFixed(2)}</p>
+                
+                <h3>Customer Information</h3>
+                <ul>
+                    <li><strong>Name:</strong> ${input.customer.fullName}</li>
+                    <li><strong>Email:</strong> ${input.customer.email}</li>
+                    <li><strong>Phone:</strong> ${input.customer.phone}</li>
+                    <li><strong>Delivery Address:</strong> ${input.customer.address}, ${input.customer.constituency}</li>
+                    ${input.customer.deliveryNotes ? `<li><strong>Notes:</strong> ${input.customer.deliveryNotes}</li>` : ''}
+                </ul>
+
+                <h3>Items Ordered</h3>
+                <table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Product</th>
+                            <th style="text-align: left;">Size</th>
+                            <th style="text-align: right;">Qty</th>
+                            <th style="text-align: right;">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${input.cartItems.map(item => `
+                            <tr>
+                                <td>${item.productName}</td>
+                                <td>${item.size}</td>
+                                <td style="text-align: right;">${item.quantity}</td>
+                                <td style="text-align: right;">Ksh ${item.price.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            const internalEmailHtml = createEmailTemplate(internalSubject, internalBody);
+
+            for(const user of notificationRecipients) {
+                 await sendEmail({
+                    to: { address: user.email, name: user.displayName },
+                    from: { address: 'noreply@luna.co.ke', name: 'Luna System' },
+                    subject: internalSubject,
+                    htmlbody: internalEmailHtml
+                });
+            }
+        }
+    }
 
     return orderId;
   }
