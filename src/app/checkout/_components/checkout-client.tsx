@@ -63,6 +63,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from "@/components/ui/label";
 import { productService } from '@/services/product.service';
 import { Product } from '@/lib/data';
+import { reverseGeocode } from '@/ai/flows/reverse-geocode-flow';
 
 const deliveryFormSchema = z.object({
   fullName: z.string().min(3, 'Full name is required'),
@@ -219,6 +220,7 @@ export default function CheckoutClient() {
     'idle' | 'loading' | 'in_nairobi' | 'outside_nairobi' | 'error'
   >('idle');
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [identifiedLocation, setIdentifiedLocation] = useState<string | null>(null);
 
   const form = useForm<DeliveryFormData>({
     resolver: zodResolver(deliveryFormSchema),
@@ -243,21 +245,37 @@ export default function CheckoutClient() {
     }
   }, [userProfile, form]);
 
-  const handleCheckLocation = () => {
+ const handleCheckLocation = () => {
     setLocationState('loading');
+    setIdentifiedLocation(null);
+    setLocationError(null);
+
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         if (isWithinNairobi(position.coords)) {
           setLocationState('in_nairobi');
         } else {
-          setLocationState('outside_nairobi');
+          try {
+            const geocodeResult = await reverseGeocode({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            });
+            setIdentifiedLocation(geocodeResult.city);
+            setLocationState('outside_nairobi');
+          } catch (e) {
+            console.error("Reverse geocode failed:", e);
+            // Fallback to generic message if AI call fails
+            setLocationState('outside_nairobi');
+          }
         }
       },
       (err) => {
         setLocationState('error');
-        setLocationError(
-          'Could not get your location. Please enable location services in your browser.'
-        );
+        let message = 'Could not get your location. Please enable location services in your browser.';
+        if (err.code === err.PERMISSION_DENIED) {
+          message = "Location access was denied. You can still enter your address manually.";
+        }
+        setLocationError(message);
       }
     );
   };
@@ -366,9 +384,9 @@ export default function CheckoutClient() {
                 <div className="space-y-4 animate-in fade-in-0 duration-500">
                     <Alert className='flex items-center justify-between'>
                       <div>
-                          <AlertTitle>Confirm Nairobi Delivery Area</AlertTitle>
+                          <AlertTitle>Confirm Nairobi Delivery</AlertTitle>
                           <AlertDescription>
-                              You can use your location to quickly check if you're in our delivery zone.
+                              Use your location to quickly confirm you're in our delivery zone.
                           </AlertDescription>
                       </div>
                       <Button
@@ -378,7 +396,7 @@ export default function CheckoutClient() {
                         disabled={locationState === 'loading'}
                       >
                         {locationState === 'loading' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />} 
-                        Check My Location
+                        Check Location
                       </Button>
                     </Alert>
 
@@ -387,7 +405,11 @@ export default function CheckoutClient() {
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Outside Nairobi Delivery Area</AlertTitle>
                             <AlertDescription>
-                                It looks like you're outside our standard delivery zone. For special arrangements, please contact our support team.
+                                {identifiedLocation 
+                                    ? `It looks like you're in ${identifiedLocation}, which is outside our standard delivery zone.`
+                                    : "It looks like you're outside our standard delivery zone."
+                                }
+                                {' '}For special arrangements, please contact our support team.
                             </AlertDescription>
                         </Alert>
                      )}
