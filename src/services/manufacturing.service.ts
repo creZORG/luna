@@ -1,16 +1,22 @@
 
 
 import { db } from '@/lib/firebase';
-import { runTransaction, doc, collection, addDoc, serverTimestamp, query, orderBy, getDocs } from 'firebase/firestore';
+import { runTransaction, doc, collection, addDoc, serverTimestamp, query, orderBy, getDocs, Transaction } from 'firebase/firestore';
 import { activityService } from './activity.service';
-import { rawMaterialService } from './raw-material.service';
 import { storeItemService } from './store-item.service';
+
+export interface ConsumedMaterial {
+    rawMaterialId: string;
+    rawMaterialName: string;
+    quantityConsumed: number;
+}
 
 export interface ProductionRun {
     id: string;
     finishedGoodItemId: string;
     productName: string;
     quantityProduced: number;
+    consumedMaterials: ConsumedMaterial[];
     userId: string;
     userName: string;
     createdAt: any; // Firebase Timestamp
@@ -27,14 +33,20 @@ class ManufacturingService {
         const productionRunRef = doc(collection(db, 'productionRuns'));
 
         try {
-            await runTransaction(db, async (transaction) => {
+            await runTransaction(db, async (transaction: Transaction) => {
                 
-                // 1. Consume Raw Materials based on a recipe
-                await rawMaterialService.consumeRawMaterialsForProduction(
-                    transaction,
-                    data.productName,
-                    data.quantityProduced
-                );
+                // 1. Consume Raw Materials based on user input
+                for (const material of data.consumedMaterials) {
+                    const inventoryRef = doc(db, 'inventory', material.rawMaterialId);
+                    const inventoryDoc = await transaction.get(inventoryRef);
+                    const currentQuantity = inventoryDoc.exists() ? inventoryDoc.data().quantity : 0;
+                    
+                    if (currentQuantity < material.quantityConsumed) {
+                         throw new Error(`Not enough stock of "${material.rawMaterialName}". Required: ${material.quantityConsumed}, Available: ${currentQuantity}`);
+                    }
+                    
+                    transaction.update(inventoryRef, { quantity: currentQuantity - material.quantityConsumed });
+                }
 
                 // 2. Increase the inventory of the finished good
                 await storeItemService.incrementItemInventory(

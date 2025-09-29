@@ -1,14 +1,17 @@
 
+
 import { storeItemService } from "@/services/store-item.service";
 import ProductionRunClient from "./_components/production-run-client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductionHistoryClient from "./_components/history-client";
 import { manufacturingService } from "@/services/manufacturing.service";
+import { rawMaterialService } from "@/services/raw-material.service";
 
 
 export default async function ProductionRunsPage() {
     const allStoreItems = await storeItemService.getStoreItems();
     const finishedGoods = allStoreItems.filter(item => item.category === 'Finished Goods');
+    const rawMaterials = await rawMaterialService.getRawMaterials();
 
     const productionHistory = await manufacturingService.getProductionRuns();
 
@@ -26,7 +29,7 @@ export default async function ProductionRunsPage() {
                     <TabsTrigger value="history">Production History</TabsTrigger>
                 </TabsList>
                 <TabsContent value="new-run">
-                    <ProductionRunClient finishedGoods={finishedGoods} />
+                    <ProductionRunClient finishedGoods={finishedGoods} rawMaterials={rawMaterials} />
                 </TabsContent>
                 <TabsContent value="history">
                    <ProductionHistoryClient initialRuns={productionHistory} />
