@@ -3,7 +3,7 @@
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import type { SalesByCategoryData, SalesOverTimeData } from '@/services/analytics.service';
 import { useTheme } from 'next-themes';
 
