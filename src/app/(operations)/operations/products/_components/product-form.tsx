@@ -40,6 +40,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -592,3 +593,5 @@ export function ProductForm({ product }: ProductFormProps) {
     </Form>
   );
 }
+
+    
