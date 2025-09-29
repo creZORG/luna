@@ -27,11 +27,12 @@ export default function SalesLayout({
         return null;
     }
 
-    if (!userProfile?.roles?.includes('sales') && !userProfile?.roles?.includes('admin')) {
+    const hasAccess = userProfile?.roles?.includes('sales') || userProfile?.roles?.includes('admin');
+
+    if (!hasAccess) {
         router.push('/access-denied');
         return null;
     }
 
-    // A sales person should get the admin layout as it's the main shell
     return <AdminLayout>{children}</AdminLayout>;
 }

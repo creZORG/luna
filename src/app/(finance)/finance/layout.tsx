@@ -27,7 +27,9 @@ export default function FinanceLayout({
         return null;
     }
 
-    if (!userProfile?.roles?.includes('finance') && !userProfile?.roles?.includes('admin')) {
+    const hasAccess = userProfile?.roles?.includes('finance') || userProfile?.roles?.includes('admin');
+
+    if (!hasAccess) {
         router.push('/access-denied');
         return null;
     }

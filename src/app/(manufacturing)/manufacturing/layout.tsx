@@ -27,7 +27,9 @@ export default function ManufacturingLayout({
         return null;
     }
 
-    if (!userProfile?.roles?.includes('manufacturing') && !userProfile?.roles?.includes('admin')) {
+    const hasAccess = userProfile?.roles?.includes('manufacturing') || userProfile?.roles?.includes('admin');
+    
+    if (!hasAccess) {
         router.push('/access-denied');
         return null;
     }

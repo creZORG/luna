@@ -65,7 +65,9 @@ export default function OperationsLayout({
         return null;
     }
 
-    if (!userProfile?.roles?.includes('operations') && !userProfile?.roles?.includes('admin')) {
+    const hasAccess = userProfile?.roles?.includes('operations') || userProfile?.roles?.includes('admin');
+
+    if (!hasAccess) {
         router.push('/access-denied');
         return null;
     }

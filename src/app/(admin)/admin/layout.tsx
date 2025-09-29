@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -51,98 +50,76 @@ const getNavLinks = (userProfile: UserProfile | null) => {
     const hasRole = (role: UserProfile['roles'][number]) => userProfile.roles.includes(role);
     const hasAnyRole = (roles: UserProfile['roles']) => roles.some(role => hasRole(role));
 
+    // Admin sees all links, so we define the full structure first.
     const allLinks = [
-        { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing', 'influencer'] },
+        { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', roles: ['admin'] },
         { href: '/campaigns', icon: Megaphone, label: 'Campaigns', roles: ['digital-marketing', 'influencer'] },
-        { href: '/admin/analytics', icon: PieChart, label: 'Analytics', roles: ['admin'] },
-        { href: '/admin/orders', icon: Package2, label: 'Orders', roles: ['admin', 'sales', 'operations'] },
-        { href: '/admin/media', icon: ImageIcon, label: 'Media Library', roles: ['admin'] },
-        { separator: true, id: 'sep-store', roles: ['admin'] },
+        { href: '/sales', icon: Target, label: 'Sales Portal', roles: ['sales'] },
+        { href: '/operations', icon: Activity, label: 'Operations Portal', roles: ['operations'] },
+        { href: '/manufacturing', icon: Factory, label: 'Manufacturing Portal', roles: ['manufacturing'] },
+        { href: '/finance', icon: Briefcase, label: 'Finance Portal', roles: ['finance'] },
+        { separator: true, id: 'sep-admin', roles: ['admin'] },
         {
-          label: 'Store Management',
-          icon: Store,
+          label: 'Admin Tools',
+          icon: ShieldAlert,
           type: 'collapsible',
-          id: 'store-management',
+          id: 'admin-tools',
           roles: ['admin'],
           subLinks: [
+            { href: '/admin/analytics', icon: PieChart, label: 'Analytics', roles: ['admin'] },
+            { href: '/admin/orders', icon: Package2, label: 'Orders', roles: ['admin'] },
+            { href: '/admin/media', icon: ImageIcon, label: 'Media Library', roles: ['admin'] },
             { href: '/operations/products', icon: Briefcase, label: 'Product Catalog', roles:['admin'] },
             { href: '/admin/products', icon: Factory, label: 'Product Pricing', roles:['admin'] },
             { href: '/admin/store-items', icon: Warehouse, label: 'Inventory', roles:['admin'] },
-          ],
-        },
-        {
-          label: 'Procurement',
-          icon: ShoppingCart,
-          type: 'collapsible',
-          id: 'procurement',
-          roles: ['admin', 'operations'],
-          subLinks: [
             { href: '/admin/raw-materials/orders', icon: FileText, label: 'Purchase Orders', roles: ['admin'] },
-            { href: '/operations/raw-materials/manage', icon: Factory, label: 'Manage Materials', roles: ['admin', 'operations'] },
-          ]
-        },
-        {
-          label: 'Staff Portals',
-          icon: ShieldAlert,
-          type: 'collapsible',
-          id: 'staff-portals',
-          roles: ['admin'],
-          subLinks: [
-            { href: '/sales', icon: Target, label: 'Sales', roles:['admin'] },
-            { href: '/operations', icon: Activity, label: 'Operations', roles:['admin'] },
-            { href: '/manufacturing', icon: Factory, label: 'Manufacturing', roles:['admin'] },
-            { href: '/finance', icon: Briefcase, label: 'Finance', roles:['admin'] },
-            { href: '/campaigns', icon: Megaphone, label: 'Campaigns', roles:['admin'] },
+            { href: '/operations/raw-materials/manage', icon: Factory, label: 'Manage Materials', roles: ['admin'] },
+            { href: '/admin/users', icon: Users, label: 'Staff Management', roles: ['admin'] },
+            { href: '/admin/activities', icon: Activity, label: 'Recent Activities', roles: ['admin'] },
+            { href: '/admin/field-sale-logs', icon: LocateFixed, label: 'Field Sale Logs', roles: ['admin'] },
+             { href: '/admin/settings', icon: Settings, label: 'Company Settings', roles: ['admin'] },
           ],
         },
-         {
-          label: 'Human Resources',
+        {
+          label: 'My Corner',
           icon: UserCog,
           type: 'collapsible',
           id: 'hr',
+          // All staff roles get this section
           roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing', 'influencer'],
           subLinks: [
             { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing', 'influencer'] },
             { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview', roles: ['admin'] },
             { href: '/operations/stock-reconciliation', icon: CheckCheck, label: 'Stock Reconciliation', roles: ['admin', 'operations'] },
-            { href: '/admin/users', icon: Users, label: 'Staff Management', roles: ['admin'] },
-            { href: '/admin/activities', icon: Activity, label: 'Recent Activities', roles: ['admin'] },
-            { href: '/admin/field-sale-logs', icon: LocateFixed, label: 'Field Sale Logs', roles: ['admin'] },
           ],
         },
     ];
 
     // Filter links based on user roles
     return allLinks.map(link => {
-        if (!link) return null;
+        if (!link.roles) return null; // Should not happen but for type safety
 
-        // Admins see everything
-        if (hasRole('admin')) {
-             if (link.type === 'collapsible') {
-                const subLinksWithAccess = (link.subLinks || []).filter(sublink => hasAnyRole(sublink.roles as any));
-                if (subLinksWithAccess.length > 0) {
-                  return { ...link, subLinks: subLinksWithAccess };
-                }
-                return null;
-            }
-            return link;
+        // Check if user has any of the required roles for this link/section
+        if (!hasAnyRole(link.roles as any[])) {
+            return null;
         }
 
-        // Non-admins see a filtered list
+        // If it's a collapsible section, filter its sub-links as well
         if (link.type === 'collapsible') {
-            const visibleSubLinks = (link.subLinks || []).filter(sublink => hasAnyRole(sublink.roles as any));
+            const visibleSubLinks = (link.subLinks || []).filter(sublink =>
+                hasAnyRole(sublink.roles as any[])
+            );
+            // Only show the section if it has visible sub-links
             if (visibleSubLinks.length > 0) {
               return { ...link, subLinks: visibleSubLinks };
             }
             return null;
         }
 
-        if (hasAnyRole(link.roles as any)) {
-            return link;
-        }
-        
-        return null;
-    }).filter(Boolean);
+        // It's a direct link, and the user has access
+        return link;
+
+    }).filter(Boolean); // Remove null entries
 }
 
 
