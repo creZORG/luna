@@ -214,4 +214,3 @@ class RawMaterialService {
 }
 
 export const rawMaterialService = new RawMaterialService();
-export maina seed

@@ -5,16 +5,31 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Product } from '@/lib/data';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { PlaceHolderImages, ImagePlaceholder } from '@/lib/placeholder-images';
+import { cn } from '@/lib/utils';
 import { Check, Send, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PurchaseModal } from './purchase-modal';
 
 export default function ProductDetailClient({ product }: { product: Product }) {
-  const productImage = PlaceHolderImages.find(img => img.id === product.imageId);
+  const primaryImage = PlaceHolderImages.find(img => img.id === product.imageId);
+  const galleryImages = useMemo(() => {
+    return (product.galleryImageIds || [])
+      .map(id => PlaceHolderImages.find(img => img.id === id))
+      .filter((img): img is ImagePlaceholder => !!img);
+  }, [product.galleryImageIds]);
+  
+  const allImages = primaryImage ? [primaryImage, ...galleryImages] : galleryImages;
+
+  const [selectedImage, setSelectedImage] = useState<ImagePlaceholder | undefined>(allImages[0]);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  
+  // Set the primary image as selected initially
+  useState(() => {
+    setSelectedImage(primaryImage);
+  });
 
   return (
     <>
@@ -34,22 +49,49 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               <span className='text-foreground'>{product.name}</span>
           </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16">
-          <div className="aspect-square w-full bg-card rounded-lg overflow-hidden shadow-lg">
-            {productImage && (
-              <Image
-                src={productImage.imageUrl}
-                alt={product.name}
-                width={800}
-                height={800}
-                className="object-cover w-full h-full"
-                data-ai-hint={productImage.imageHint}
-              />
-            )}
+          
+          <div className="flex flex-col gap-4">
+              <div className="aspect-square w-full bg-card rounded-lg overflow-hidden shadow-lg border">
+                {selectedImage && (
+                  <Image
+                    src={selectedImage.imageUrl}
+                    alt={selectedImage.description}
+                    width={800}
+                    height={800}
+                    className="object-cover w-full h-full"
+                    data-ai-hint={selectedImage.imageHint}
+                    priority
+                  />
+                )}
+              </div>
+              
+              {allImages.length > 1 && (
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                    {allImages.map((image, idx) => (
+                        <button 
+                            key={image.id + idx}
+                            onClick={() => setSelectedImage(image)}
+                            className={cn(
+                                "aspect-square rounded-md overflow-hidden border-2 transition",
+                                selectedImage?.id === image.id ? "border-primary ring-2 ring-primary" : "border-transparent hover:border-primary/50"
+                            )}
+                        >
+                            <Image 
+                                src={image.imageUrl}
+                                alt={image.description}
+                                width={150}
+                                height={150}
+                                className="object-cover w-full h-full"
+                            />
+                        </button>
+                    ))}
+                </div>
+              )}
           </div>
 
           <div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold">{product.name}</h1>
-            <p className="mt-4 text-lg text-muted-foreground">{product.description}</p>
+            <p className="mt-4 text-lg text-muted-foreground">{product.shortDescription}</p>
             
             <div className="mt-6">
               <p className="text-muted-foreground">Available in: {product.sizes.map(s => `${s.size} (Ksh ${s.price})`).join(', ')}</p>
@@ -82,16 +124,6 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               </ul>
             </div>
 
-            <div className="mt-8">
-              <h3 className="font-headline text-xl font-semibold mb-2">Key Features</h3>
-              <div className="flex flex-wrap gap-2">
-                  {product.features.map(feature => (
-                      <Badge key={feature} variant="secondary" className="text-sm">
-                          {feature.charAt(0).toUpperCase() + feature.slice(1).replace(/-/g, ' ')}
-                      </Badge>
-                  ))}
-              </div>
-            </div>
           </div>
         </div>
         <div className="mt-16">

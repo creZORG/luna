@@ -31,7 +31,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { ALL_CATEGORIES } from '@/lib/data';
-import { Loader, Trash } from 'lucide-react';
+import { Loader, Trash, Plus } from 'lucide-react';
 import { productService, ProductUpdateData } from '@/services/product.service';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -48,6 +48,7 @@ const formSchema = z.object({
   directions: z.string().min(10, 'Directions are too short'),
   cautions: z.string().min(10, 'Cautions are too short'),
   imageId: z.string().min(2, 'Image ID is too short'),
+  galleryImageIds: z.array(z.object({ id: z.string().min(1, "ID cannot be empty") })).optional(),
   sizes: z.array(z.object({
     size: z.string().min(1, "Size cannot be empty"),
     price: z.coerce.number().optional(), // Price is now optional
@@ -70,6 +71,7 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
             ...product,
             keyBenefits: product.keyBenefits.join('\n'),
             ingredients: product.ingredients.join(', '),
+            galleryImageIds: product.galleryImageIds?.map(id => ({ id })) || [],
         } : {
             name: '',
             slug: '',
@@ -80,7 +82,8 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
             ingredients: '',
             directions: '',
             cautions: '',
-            imageId: ''
+            imageId: '',
+            galleryImageIds: [],
         },
     });
 
@@ -91,11 +94,20 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
     control: form.control,
     name: "sizes"
   });
+  
+  const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({
+      control: form.control,
+      name: "galleryImageIds"
+  });
+
 
   async function onSubmit(values: ProductFormData) {
     try {
        const productPayload: ProductUpdateData = {
         ...values,
+        keyBenefits: values.keyBenefits.split('\n').filter(b => b.trim() !== ''),
+        ingredients: values.ingredients.split(',').map(i => i.trim()).filter(i => i !== ''),
+        galleryImageIds: values.galleryImageIds?.map(item => item.id),
         sizes: values.sizes.map(s => ({
           size: s.size,
           price: role === 'admin' ? s.price || 0 : isEditMode ? (product.sizes.find(ps => ps.size === s.size)?.price || 0) : 0
@@ -109,7 +121,7 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
           description: `The product "${values.name}" has been updated successfully.`,
         });
       } else {
-        await productService.createProduct(productPayload);
+        await productService.createProduct(productPayload as Product);
         toast({
           title: 'Product Created!',
           description: `The product "${values.name}" has been created successfully.`,
@@ -133,7 +145,7 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
           <div className="md:col-span-2 space-y-8">
             
             {/* Show these cards only for Operations role */}
@@ -344,7 +356,7 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
             <div className="space-y-8">
               <Card>
                 <CardHeader>
-                  <CardTitle>Organization</CardTitle>
+                  <CardTitle>Organization & Images</CardTitle>
                 </CardHeader>
                 <CardContent className='space-y-6'>
                   <FormField
@@ -379,15 +391,42 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
                     name="imageId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Image ID</FormLabel>
+                        <FormLabel>Primary Image ID</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. product-juicy-mango" {...field} />
                         </FormControl>
-                        <FormDescription>This ID must match an entry in `placeholder-images.json`.</FormDescription>
+                        <FormDescription>The main image for the product. Must match an ID in `placeholder-images.json`.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  <div className="space-y-2">
+                    <FormLabel>Gallery Image IDs</FormLabel>
+                     {galleryFields.map((field, index) => (
+                        <div key={field.id} className="flex gap-2 items-center">
+                             <FormField
+                                control={form.control}
+                                name={`galleryImageIds.${index}.id`}
+                                render={({ field }) => (
+                                    <FormItem className="flex-grow">
+                                        <FormControl>
+                                            <Input placeholder="e.g. juicy-mango-model" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="button" variant="destructive" size="icon" onClick={() => removeGallery(index)}>
+                                <Trash className="h-4 w-4" />
+                            </Button>
+                        </div>
+                     ))}
+                     <Button type="button" variant="outline" size="sm" onClick={() => appendGallery({ id: '' })}>
+                        <Plus className="mr-2 h-4 w-4"/>
+                        Add Gallery Image
+                     </Button>
+                     <FormDescription>Additional images for the product page gallery.</FormDescription>
+                  </div>
                 </CardContent>
               </Card>
             </div>

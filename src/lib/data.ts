@@ -14,6 +14,7 @@ export type Product = {
   directions: string;
   cautions: string;
   imageId: string;
+  galleryImageIds?: string[];
   shortDescription: string;
 };
 

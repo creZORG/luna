@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
 
 // A leaner version of the form data for this service
@@ -15,6 +15,7 @@ export interface ProductData {
   directions: string;
   cautions: string;
   imageId: string;
+  galleryImageIds?: string[];
   sizes: {
     size: string;
     price?: number;
@@ -24,13 +25,11 @@ export interface ProductData {
 export interface ProductUpdateData extends Partial<ProductData> {};
 
 class ProductService {
-    async createProduct(productData: ProductData): Promise<string> {
+    async createProduct(productData: Product): Promise<string> {
         try {
             const productToSave = {
                 ...productData,
-                keyBenefits: productData.keyBenefits.split('\n').filter(b => b.trim() !== ''),
-                ingredients: productData.ingredients.split(',').map(i => i.trim()).filter(i => i !== ''),
-                sizes: productData.sizes.map(s => ({ size: s.size, price: s.price || 0 })),
+                galleryImageIds: productData.galleryImageIds || [],
             }
             
             const batch = writeBatch(db);
@@ -60,14 +59,17 @@ class ProductService {
             
             const dataToUpdate: any = { ...productData };
 
-            if (productData.keyBenefits) {
+            if (productData.keyBenefits && typeof productData.keyBenefits === 'string') {
                 dataToUpdate.keyBenefits = productData.keyBenefits.split('\n').filter(b => b.trim() !== '');
             }
-            if (productData.ingredients) {
+            if (productData.ingredients && typeof productData.ingredients === 'string') {
                 dataToUpdate.ingredients = productData.ingredients.split(',').map(i => i.trim()).filter(i => i !== '');
             }
             if (productData.sizes) {
                  dataToUpdate.sizes = productData.sizes.map(s => ({ size: s.size, price: s.price || 0 }));
+            }
+            if (productData.galleryImageIds) {
+                dataToUpdate.galleryImageIds = productData.galleryImageIds;
             }
             
             await updateDoc(productRef, dataToUpdate);
