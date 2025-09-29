@@ -96,17 +96,17 @@ export default async function Home() {
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 px-4">
           <h1 className="font-headline text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-            Quality Manufacturing for Your Brand
+            The Essence of Nature, Bottled.
           </h1>
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto">
-            Explore wholesale opportunities with Luna Essentials and stock your shelves with products your customers will love.
+            Discover beautifully crafted, sustainable, and natural personal care products, available for your brand through our wholesale program.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-              <Link href="/#wholesale">Become a Retailer</Link>
-            </Button>
              <Button asChild size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white hover:text-black">
                 <Link href="/products">Explore Our Products</Link>
+            </Button>
+            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <Link href="/#wholesale">Wholesale Inquiries</Link>
             </Button>
           </div>
         </div>
