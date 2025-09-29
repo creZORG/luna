@@ -60,6 +60,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from "@/components/ui/label";
 
 const deliveryFormSchema = z.object({
   fullName: z.string().min(3, 'Full name is required'),
@@ -420,3 +421,5 @@ export default function CheckoutClient() {
     </>
   );
 }
+
+    
