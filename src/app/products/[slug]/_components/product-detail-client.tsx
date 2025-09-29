@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Product } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Check, Send, ShoppingCart, MessageSquare, Plus, Minus } from 'lucide-react';
+import { Check, Send, ShoppingCart, MessageSquare, Plus, Minus, Star, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
@@ -18,7 +18,28 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/use-cart';
 import { WholesaleRedirectModal } from './wholesale-redirect-modal';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
+const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => {
+    return (
+        <div className="flex items-center gap-2">
+            <div className="flex items-center">
+                {[...Array(5)].map((_, i) => (
+                    <Star
+                        key={i}
+                        className={cn(
+                            'h-5 w-5',
+                            i < Math.floor(rating) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/50'
+                        )}
+                    />
+                ))}
+            </div>
+            <span className="text-sm text-muted-foreground">({reviewCount} reviews)</span>
+        </div>
+    );
+};
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const primaryImage = product.imageUrl;
@@ -132,6 +153,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           <div>
             <Badge variant="secondary" className='capitalize'>{product.category.replace(/-/g, ' ')}</Badge>
             <h1 className="font-headline text-3xl md:text-4xl font-bold mt-2">{product.name}</h1>
+            <div className="mt-4">
+              <StarRating rating={product.rating} reviewCount={product.reviewCount} />
+            </div>
             <p className="mt-4 text-lg text-muted-foreground">{product.shortDescription}</p>
             
              <Separator className="my-8" />
@@ -210,14 +234,15 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     </CardContent>
                 </Card>
             </div>
-            
-            <Separator className="my-8" />
-            
-            <div>
-                 <h3 className="font-headline text-xl font-semibold mb-4">Product Details</h3>
-                <div className="space-y-6 text-sm text-muted-foreground">
+          </div>
+        </div>
+         <Separator className="my-12" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-16">
+            <div className="md:col-span-2">
+                <h3 className="font-headline text-2xl font-semibold mb-6">Product Details</h3>
+                <div className="space-y-8 text-sm text-muted-foreground">
                     <div>
-                        <h4 className="font-semibold text-foreground mb-2">Key Benefits</h4>
+                        <h4 className="font-semibold text-foreground mb-2 text-base">Key Benefits</h4>
                         <ul className="space-y-2 list-disc pl-5">
                             {product.keyBenefits.map((benefit, i) => (
                             <li key={i} className="flex items-start gap-3">
@@ -228,21 +253,82 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                         </ul>
                     </div>
                      <div>
-                        <h4 className="font-semibold text-foreground mb-2">Ingredients</h4>
+                        <h4 className="font-semibold text-foreground mb-2 text-base">Ingredients</h4>
                         <p>{product.ingredients.join(', ')}.</p>
                     </div>
                     <div>
-                        <h4 className="font-semibold text-foreground mb-2">Directions for Use</h4>
+                        <h4 className="font-semibold text-foreground mb-2 text-base">Directions for Use</h4>
                         <p>{product.directions}</p>
                     </div>
                      <div>
-                        <h4 className="font-semibold text-foreground mb-2">Cautions</h4>
+                        <h4 className="font-semibold text-foreground mb-2 text-base">Cautions</h4>
                         <p>{product.cautions}</p>
                     </div>
                 </div>
             </div>
+            <div className="md:col-span-1">
+                 <h3 className="font-headline text-2xl font-semibold mb-6">Ratings & Reviews</h3>
+                 <Card>
+                     <CardHeader className="flex-row items-center gap-4">
+                        <p className="text-5xl font-bold">{product.rating.toFixed(1)}</p>
+                        <div>
+                             <StarRating rating={product.rating} reviewCount={product.reviewCount} />
+                            <p className="text-sm text-muted-foreground">Based on {product.reviewCount} reviews</p>
+                        </div>
+                     </CardHeader>
+                     <CardContent className="space-y-6">
+                        {/* Placeholder for reviews */}
+                        <div className="space-y-4">
+                            <div className="flex gap-3">
+                                <Avatar>
+                                    <AvatarImage src="https://i.pravatar.cc/40?u=a" alt="Reviewer" />
+                                    <AvatarFallback>JD</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h5 className="font-semibold text-sm">Jane D.</h5>
+                                        <div className="flex">
+                                             {[...Array(5)].map((_,i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400"/>)}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">Absolutely love the scent! It leaves my clothes feeling so soft and fresh for days. Highly recommend!</p>
+                                </div>
+                            </div>
+                             <div className="flex gap-3">
+                                <Avatar>
+                                    <AvatarImage src="https://i.pravatar.cc/40?u=b" alt="Reviewer" />
+                                    <AvatarFallback>MS</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h5 className="font-semibold text-sm">Mary S.</h5>
+                                        <div className="flex">
+                                             {[...Array(5)].map((_,i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400"/>)}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">Great product, and it's eco-friendly which is a huge plus for me. Will be buying again.</p>
+                                </div>
+                            </div>
+                        </div>
 
-          </div>
+                        <Separator />
+                        
+                        {/* Review Submission Form */}
+                        <div className="space-y-4">
+                            <h4 className="font-semibold">Leave a Review</h4>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">Your Rating:</span>
+                                <div className="flex">
+                                    {[...Array(5)].map((_,i) => <Star key={i} className="h-5 w-5 text-muted-foreground/50 cursor-pointer hover:text-yellow-400"/>)}
+                                </div>
+                            </div>
+                            <Textarea placeholder="Share your thoughts..." />
+                            <Button>Submit Review</Button>
+                        </div>
+
+                     </CardContent>
+                 </Card>
+            </div>
         </div>
       </div>
       <ChatModal 

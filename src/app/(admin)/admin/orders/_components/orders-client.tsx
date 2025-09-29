@@ -23,7 +23,7 @@ import {
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Loader, PackageCheck, Send, Truck } from 'lucide-react';
+import { Loader, PackageCheck, Send, Truck, Undo2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,6 +40,8 @@ const getStatusBadge = (status: Order['status']) => {
         'shipped': 'default',
         'delivered': 'default',
         'cancelled': 'destructive',
+        'return-pending': 'destructive',
+        'returned': 'destructive'
     };
     const colors = {
         'paid': 'bg-blue-500/80',
@@ -47,6 +49,7 @@ const getStatusBadge = (status: Order['status']) => {
         'ready-for-dispatch': 'bg-orange-500/80',
         'shipped': 'bg-purple-500/80',
         'delivered': 'bg-green-600/80',
+        'return-pending': 'bg-pink-600/80'
     }
 
     return (
@@ -83,7 +86,7 @@ function OrderList({ orders, onStatusUpdate }: { orders: Order[]; onStatusUpdate
     try {
         await orderService.updateOrderStatus(orderId, newStatus, user.uid, userProfile.displayName);
         onStatusUpdate(orderId, newStatus);
-        toast({ title: 'Order Status Updated!', description: `Order has been marked as ${newStatus}.`});
+        toast({ title: 'Order Status Updated!', description: `Order has been marked as ${newStatus.replace('-', ' ')}.`});
     } catch (error) {
         toast({variant: 'destructive', title: 'Update Failed', description: 'Could not update order status.'});
     } finally {
@@ -188,7 +191,15 @@ function OrderList({ orders, onStatusUpdate }: { orders: Order[]; onStatusUpdate
                                 {order.status === 'processing' && <Button onClick={() => handleUpdateStatus(order.id!, 'ready-for-dispatch')} disabled={isUpdating}>{isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <PackageCheck className="mr-2 h-4 w-4"/>}Mark as Ready for Dispatch</Button>}
                                 {order.status === 'ready-for-dispatch' && <Button onClick={() => handleUpdateStatus(order.id!, 'shipped')} disabled={isUpdating}>{isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Truck className="mr-2 h-4 w-4"/>}Mark as Shipped</Button>}
                                 {order.status === 'shipped' && <Button onClick={() => handleUpdateStatus(order.id!, 'delivered')} disabled={isUpdating}>{isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <PackageCheck className="mr-2 h-4 w-4"/>}Mark as Delivered</Button>}
-                                {order.status === 'delivered' && <p className="text-sm text-green-600 font-medium">Order completed.</p>}
+                                {order.status === 'delivered' && 
+                                    <div className='flex flex-col gap-2'>
+                                        <p className="text-sm text-green-600 font-medium">Order completed.</p>
+                                        <Button variant="destructive" onClick={() => handleUpdateStatus(order.id!, 'return-pending')} disabled={isUpdating}>{isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Undo2 className="mr-2 h-4 w-4"/>}Mark for Return</Button>
+                                    </div>
+                                }
+                                {order.status === 'return-pending' && <p className="text-sm text-pink-600 font-medium">Return initiated. Awaiting item reception.</p>}
+                                {order.status === 'returned' && <p className="text-sm text-destructive-foreground font-medium">Order returned.</p>}
+
                             </div>
                         </div>
                     </div>
@@ -221,16 +232,18 @@ export default function OrdersClient({ initialOrders }: OrdersClientProps) {
     }, {} as Record<OrderStatus, Order[]>);
   }, [orders]);
   
-  const TABS: OrderStatus[] = ['paid', 'processing', 'ready-for-dispatch', 'shipped', 'delivered'];
+  const TABS: OrderStatus[] = ['paid', 'processing', 'ready-for-dispatch', 'shipped', 'delivered', 'return-pending', 'returned'];
 
   return (
     <Tabs defaultValue="paid">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7">
             {TABS.map(tab => (
+                 (ordersByStatus[tab] && ordersByStatus[tab].length > 0) &&
                 <TabsTrigger key={tab} value={tab} className="capitalize">{tab.replace('-', ' ')}</TabsTrigger>
             ))}
         </TabsList>
         {TABS.map(tab => (
+             (ordersByStatus[tab] && ordersByStatus[tab].length > 0) &&
             <TabsContent key={tab} value={tab}>
                 <OrderList orders={ordersByStatus[tab] || []} onStatusUpdate={handleStatusUpdate} />
             </TabsContent>
