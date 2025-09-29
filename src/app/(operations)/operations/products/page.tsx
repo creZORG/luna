@@ -16,7 +16,7 @@ import {
     CardTitle,
   } from "@/components/ui/card"
   import { Button } from "@/components/ui/button"
-  import { PlusCircle } from "lucide-react"
+  import { Edit, PlusCircle } from "lucide-react"
   import Link from "next/link"
   import Image from "next/image"
   import { PlaceHolderImages } from "@/lib/placeholder-images"
@@ -58,7 +58,7 @@ import { Product } from "@/lib/data"
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="hidden md:table-cell">
-                  Price
+                  Sizes
                 </TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -86,10 +86,15 @@ import { Product } from "@/lib/data"
                             <Badge variant="outline">{product.category.replace(/-/g, ' ')}</Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                        {product.sizes[0].price > 0 ? `KShs ${product.sizes[0].price.toFixed(2)}` : 'Not Set'}
+                          {product.sizes.length}
                         </TableCell>
-                        <TableCell>
-                           {/* Add actions here, e.g., Edit, Delete */}
+                        <TableCell className="text-right">
+                           <Button asChild size="icon" variant="outline">
+                             <Link href={`/operations/products/${product.id}/edit`}>
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                              </Link>
+                           </Button>
                         </TableCell>
                     </TableRow>
                   )
@@ -107,5 +112,3 @@ import { Product } from "@/lib/data"
     )
   }
   
-
-    

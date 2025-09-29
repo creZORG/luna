@@ -30,12 +30,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
-import { ALL_CATEGORIES, ALL_FEATURES, ALL_SCENTS } from '@/lib/data';
-import { Checkbox } from '@/components/ui/checkbox';
+import { ALL_CATEGORIES } from '@/lib/data';
 import { Loader, Trash } from 'lucide-react';
-import { productService } from '@/services/product.service';
+import { productService, ProductUpdateData } from '@/services/product.service';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { Product } from '@/lib/data';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name is too short'),
@@ -43,8 +43,6 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description is too short'),
   shortDescription: z.string().min(10, 'Short description is too short'),
   category: z.enum(ALL_CATEGORIES as [string, ...string[]]),
-  scentProfile: z.array(z.string()).min(1, 'Select at least one scent'),
-  features: z.array(z.string()).min(1, 'Select at least one feature'),
   keyBenefits: z.string().min(10, 'Key benefits are too short'),
   ingredients: z.string().min(10, 'Ingredients are too short'),
   directions: z.string().min(10, 'Directions are too short'),
@@ -58,24 +56,34 @@ const formSchema = z.object({
 
 export type ProductFormData = z.infer<typeof formSchema>;
 
-export function ProductForm({ role = "operations" }: { role?: "admin" | "operations" }) {
-  const form = useForm<ProductFormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      slug: '',
-      description: '',
-      shortDescription: '',
-      scentProfile: [],
-      features: [],
-      sizes: [{ size: '', price: 0 }],
-      keyBenefits: '',
-      ingredients: '',
-      directions: '',
-      cautions: '',
-      imageId: ''
-    },
-  });
+interface ProductFormProps {
+    role?: "admin" | "operations";
+    product?: Product; // For editing
+}
+
+
+export function ProductForm({ role = "operations", product }: ProductFormProps) {
+    const isEditMode = !!product;
+    const form = useForm<ProductFormData>({
+        resolver: zodResolver(formSchema),
+        defaultValues: isEditMode ? {
+            ...product,
+            keyBenefits: product.keyBenefits.join('\n'),
+            ingredients: product.ingredients.join(', '),
+        } : {
+            name: '',
+            slug: '',
+            description: '',
+            shortDescription: '',
+            sizes: [{ size: '', price: 0 }],
+            keyBenefits: '',
+            ingredients: '',
+            directions: '',
+            cautions: '',
+            imageId: ''
+        },
+    });
+
   const { toast } = useToast();
   const router = useRouter();
 
@@ -86,22 +94,31 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
 
   async function onSubmit(values: ProductFormData) {
     try {
-      const productData = {
+       const productPayload: ProductUpdateData = {
         ...values,
         sizes: values.sizes.map(s => ({
           size: s.size,
-          price: role === 'admin' ? s.price || 0 : 0 // Set price to 0 if not admin
+          price: role === 'admin' ? s.price || 0 : isEditMode ? (product.sizes.find(ps => ps.size === s.size)?.price || 0) : 0
         }))
       };
 
-      await productService.createProduct(productData);
-      toast({
-        title: 'Product Saved!',
-        description: `The product "${values.name}" has been created successfully.`,
-      });
+      if (isEditMode) {
+        await productService.updateProduct(product.id, productPayload);
+        toast({
+          title: 'Product Updated!',
+          description: `The product "${values.name}" has been updated successfully.`,
+        });
+      } else {
+        await productService.createProduct(productPayload);
+        toast({
+          title: 'Product Created!',
+          description: `The product "${values.name}" has been created successfully.`,
+        });
+      }
       router.push('/operations/products');
+      router.refresh();
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("Error saving product:", error);
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -140,8 +157,10 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
                             <Input placeholder="e.g. Juicy Mango Shower Gel" {...field} 
                               onChange={(e) => {
                                 field.onChange(e);
-                                const newSlug = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                                form.setValue('slug', newSlug);
+                                if (!isEditMode) { // Only auto-update slug on create
+                                    const newSlug = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                                    form.setValue('slug', newSlug);
+                                }
                               }}
                             />
                           </FormControl>
@@ -156,9 +175,9 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
                         <FormItem>
                           <FormLabel>Slug</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g. juicy-mango-shower-gel" {...field} />
+                            <Input placeholder="e.g. juicy-mango-shower-gel" {...field} disabled={isEditMode} />
                           </FormControl>
-                          <FormDescription>This is the URL-friendly version of the name.</FormDescription>
+                          <FormDescription>This is the URL-friendly version of the name. It cannot be changed after creation.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -371,91 +390,6 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
                   />
                 </CardContent>
               </Card>
-            
-              <Card>
-                <CardHeader>
-                  <CardTitle>Features</CardTitle>
-                  <CardDescription>Select the features that apply to this product.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {ALL_FEATURES.map((item) => (
-                    <FormField
-                      key={item}
-                      control={form.control}
-                      name="features"
-                      render={({ field }) => {
-                        return (
-                          <FormItem
-                            key={item}
-                            className="flex flex-row items-start space-x-3 space-y-0"
-                          >
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(item)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...field.value, item])
-                                    : field.onChange(
-                                        field.value?.filter(
-                                          (value) => value !== item
-                                        )
-                                      );
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              {item.charAt(0).toUpperCase() + item.slice(1).replace(/-/g, ' ')}
-                            </FormLabel>
-                          </FormItem>
-                        );
-                      }}
-                    />
-                  ))}
-                  <FormMessage />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Scent Profile</CardTitle>
-                  <CardDescription>Select the scents that best describe this product.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {ALL_SCENTS.map((item) => (
-                    <FormField
-                      key={item}
-                      control={form.control}
-                      name="scentProfile"
-                      render={({ field }) => {
-                        return (
-                          <FormItem
-                            key={item}
-                            className="flex flex-row items-start space-x-3 space-y-0"
-                          >
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(item)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...field.value, item])
-                                    : field.onChange(
-                                        field.value?.filter(
-                                          (value) => value !== item
-                                        )
-                                      );
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              {item.charAt(0).toUpperCase() + item.slice(1).replace(/-/g, ' ')}
-                            </FormLabel>
-                          </FormItem>
-                        );
-                      }}
-                    />
-                  ))}
-                  <FormMessage />
-                </CardContent>
-              </Card>
             </div>
           )}
         </div>
@@ -463,12 +397,10 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-            Save {isAdminView ? 'Prices' : 'Product'}
+            {isEditMode ? 'Save Changes' : 'Create Product'}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
-
-    

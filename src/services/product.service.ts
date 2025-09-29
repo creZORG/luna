@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
 
 // A leaner version of the form data for this service
@@ -10,8 +10,6 @@ export interface ProductData {
   description: string;
   shortDescription: string;
   category: string;
-  scentProfile: string[];
-  features: string[];
   keyBenefits: string;
   ingredients: string;
   directions: string;
@@ -22,6 +20,8 @@ export interface ProductData {
     price?: number;
   }[];
 }
+
+export interface ProductUpdateData extends Partial<ProductData> {};
 
 class ProductService {
     async createProduct(productData: ProductData): Promise<string> {
@@ -53,6 +53,31 @@ class ProductService {
             throw new Error("Could not create product");
         }
     }
+    
+    async updateProduct(id: string, productData: ProductUpdateData): Promise<void> {
+        try {
+            const productRef = doc(db, "products", id);
+            
+            const dataToUpdate: any = { ...productData };
+
+            if (productData.keyBenefits) {
+                dataToUpdate.keyBenefits = productData.keyBenefits.split('\n').filter(b => b.trim() !== '');
+            }
+            if (productData.ingredients) {
+                dataToUpdate.ingredients = productData.ingredients.split(',').map(i => i.trim()).filter(i => i !== '');
+            }
+            if (productData.sizes) {
+                 dataToUpdate.sizes = productData.sizes.map(s => ({ size: s.size, price: s.price || 0 }));
+            }
+            
+            await updateDoc(productRef, dataToUpdate);
+
+        } catch (e) {
+            console.error("Error updating document: ", e);
+            throw new Error("Could not update product");
+        }
+    }
+
 
     async getProducts(): Promise<Product[]> {
         const querySnapshot = await getDocs(collection(db, "products"));
@@ -69,8 +94,17 @@ class ProductService {
         if (querySnapshot.empty) {
             return null;
         }
-        const doc = querySnapshot.docs[0];
-        return { id: doc.id, ...doc.data() } as Product;
+        const docSnap = querySnapshot.docs[0];
+        return { id: docSnap.id, ...docSnap.data() } as Product;
+    }
+
+     async getProductById(id: string): Promise<Product | null> {
+        const docRef = doc(db, 'products', id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as Product;
+        }
+        return null;
     }
 }
 

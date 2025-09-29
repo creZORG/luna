@@ -7,8 +7,6 @@ export type Product = {
   slug: string;
   name: string;
   category: ProductCategory;
-  scentProfile: ScentProfile[];
-  features: ProductFeature[];
   sizes: { size: string; price: number }[];
   description: string;
   keyBenefits: string[];
@@ -24,6 +22,4 @@ export const products: Product[] = [
 ];
 
 export const ALL_CATEGORIES: ProductCategory[] = ['shower-gel', 'fabric-softener', 'dish-wash'];
-export const ALL_FEATURES: ProductFeature[] = ['vegan', 'paraben-free', 'microplastic-free', 'natural-fragrance', 'recycled-packaging'];
-export const ALL_SCENTS: ScentProfile[] = ['citrus', 'floral', 'fruity', 'minty', 'warm-earthy'];
 export const ALL_SIZES = Array.from(new Set(products.flatMap(p => p.sizes.map(s => s.size))));
