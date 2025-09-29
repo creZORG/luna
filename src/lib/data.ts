@@ -26,6 +26,10 @@ export type Product = {
   platformFee?: number;
   rating: number;
   reviewCount: number;
+  // Analytics fields
+  orderCount?: number;
+  totalRevenue?: number;
+  viewCount?: number;
 };
 
 export const products: Product[] = [

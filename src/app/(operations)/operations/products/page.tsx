@@ -16,7 +16,7 @@ import {
     CardTitle,
   } from "@/components/ui/card"
   import { Button } from "@/components/ui/button"
-  import { Edit, PlusCircle } from "lucide-react"
+  import { Edit, Eye, Package, PlusCircle, TrendingUp } from "lucide-react"
   import Link from "next/link"
   import Image from "next/image"
   import { Badge } from "@/components/ui/badge"
@@ -34,7 +34,7 @@ import { Product } from "@/lib/data"
             <div>
                 <CardTitle>Finished Goods</CardTitle>
                 <CardDescription>
-                Manage your finished products. Add new products and view existing ones.
+                Manage your finished products and view their performance metrics.
                 </CardDescription>
             </div>
             <Button asChild size="sm" className="gap-1">
@@ -55,10 +55,9 @@ import { Product } from "@/lib/data"
                   <span className="sr-only">Image</span>
                 </TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="hidden md:table-cell">
-                  Sizes
-                </TableHead>
+                <TableHead>Revenue</TableHead>
+                <TableHead className="hidden md:table-cell">Orders</TableHead>
+                <TableHead className="hidden md:table-cell">Views</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -78,13 +77,23 @@ import { Product } from "@/lib/data"
                         />}
                         </TableCell>
                         <TableCell className="font-medium">
-                        {product.name}
+                          {product.name}
+                          <div className="text-xs text-muted-foreground capitalize">{product.category.replace(/-/g, ' ')}</div>
                         </TableCell>
-                        <TableCell>
-                            <Badge variant="outline">{product.category.replace(/-/g, ' ')}</Badge>
+                         <TableCell>
+                          <div className="font-semibold">Ksh {product.totalRevenue?.toLocaleString() ?? 0}</div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {product.sizes.length}
+                           <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                            <span>{product.orderCount ?? 0}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                            <span>{product.viewCount?.toLocaleString() ?? 0}</span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                            <Button asChild size="icon" variant="outline">
@@ -109,4 +118,3 @@ import { Product } from "@/lib/data"
       </Card>
     )
   }
-  

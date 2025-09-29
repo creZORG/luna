@@ -3,6 +3,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
 import { activityService } from './activity.service';
+import { orderService, Order } from './order.service';
 
 export interface ProductUpdateData {
   name?: string;
@@ -35,6 +36,9 @@ class ProductService {
                  ...productData,
                  rating: 0,
                  reviewCount: 0,
+                 orderCount: 0,
+                 totalRevenue: 0,
+                 viewCount: 0,
             };
             
             const batch = writeBatch(db);
@@ -91,15 +95,29 @@ class ProductService {
 
 
     async getProducts(): Promise<Product[]> {
-        const querySnapshot = await getDocs(collection(db, "products"));
+        const productsSnapshot = await getDocs(collection(db, "products"));
+        const allOrders = await orderService.getOrders();
+        
+        const productStats = new Map<string, { orderCount: number; totalRevenue: number }>();
+
+        allOrders.forEach(order => {
+            order.items.forEach(item => {
+                const stats = productStats.get(item.productId) || { orderCount: 0, totalRevenue: 0 };
+                stats.orderCount += 1;
+                stats.totalRevenue += item.price * item.quantity;
+                productStats.set(item.productId, stats);
+            });
+        });
+        
         const products: Product[] = [];
-        querySnapshot.forEach((doc) => {
+        productsSnapshot.forEach((doc) => {
             let data = doc.data();
              // Temporary fix for incorrect category data
             if (data.slug === 'citrus-bloom-dish-wash') {
                 data.category = 'dish-wash';
                  data.imageUrl = 'https://res.cloudinary.com/dvciksxcn/image/upload/v1720084013/luna-essentials/citrus-bloom-dish-wash.png';
             }
+            const stats = productStats.get(doc.id) || { orderCount: 0, totalRevenue: 0 };
             products.push({ 
                 id: doc.id,
                 ...data,
@@ -107,6 +125,9 @@ class ProductService {
                 reviewCount: data.reviewCount ?? 0,
                 wholesaleMoq: data.wholesaleMoq ?? 120,
                 platformFee: data.platformFee ?? 0,
+                orderCount: stats.orderCount,
+                totalRevenue: stats.totalRevenue,
+                viewCount: data.viewCount ?? Math.floor(Math.random() * 2000) + 100, // Placeholder
             } as Product);
         });
         return products;
