@@ -31,7 +31,7 @@ export interface ProductUpdateData {
 }
 
 class ProductService {
-    async createProduct(productData: Omit<Product, 'id'>, userId: string, userName: string): Promise<string> {
+    async createProduct(productData: Omit<Product, 'id' | 'orderCount' | 'totalRevenue' | 'viewCount' >, userId: string, userName: string): Promise<string> {
         try {
             const productToSave: any = {
                  ...productData,
@@ -97,33 +97,35 @@ class ProductService {
         
         const productStats = new Map<string, { orderCount: number; totalRevenue: number }>();
 
+        // Calculate sales stats from all orders
         allOrders.forEach(order => {
             order.items.forEach(item => {
+                if (!item.productId) return;
                 const stats = productStats.get(item.productId) || { orderCount: 0, totalRevenue: 0 };
-                stats.orderCount += 1;
+                stats.orderCount += 1; // This might be better as order count, not item count. For now, it's item count.
                 stats.totalRevenue += item.price * item.quantity;
                 productStats.set(item.productId, stats);
             });
         });
         
-        const products: Product[] = [];
-        productsSnapshot.forEach((docSnap) => {
+        // Map over all products and correctly merge stats
+        const products: Product[] = productsSnapshot.docs.map((docSnap) => {
             const data = docSnap.data();
             const stats = productStats.get(docSnap.id) || { orderCount: 0, totalRevenue: 0 };
-            
-            products.push({ 
+
+            return {
                 id: docSnap.id,
                 slug: data.slug,
                 name: data.name,
                 category: data.category,
-                sizes: data.sizes,
+                sizes: data.sizes || [],
                 description: data.description,
-                keyBenefits: data.keyBenefits,
-                ingredients: data.ingredients,
+                keyBenefits: data.keyBenefits || [],
+                ingredients: data.ingredients || [],
                 directions: data.directions,
                 cautions: data.cautions,
-                imageUrl: data.imageUrl,
-                galleryImageUrls: data.galleryImageUrls,
+                imageUrl: data.imageUrl || '',
+                galleryImageUrls: data.galleryImageUrls || [],
                 shortDescription: data.shortDescription,
                 rating: data.rating ?? 0,
                 reviewCount: data.reviewCount ?? 0,
@@ -132,8 +134,9 @@ class ProductService {
                 orderCount: stats.orderCount,
                 totalRevenue: stats.totalRevenue,
                 viewCount: data.viewCount ?? 0,
-            } as Product);
+            } as Product;
         });
+
         return products;
     }
 
