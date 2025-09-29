@@ -7,46 +7,14 @@ import { activityService } from './activity.service';
 
 class StoreItemService {
     async getStoreItems(): Promise<StoreItem[]> {
-        const querySnapshot = await getDocs(query(collection(db, "storeItems")));
-        const productSnapshot = await getDocs(collection(db, "products"));
-
+        const querySnapshot = await getDocs(query(collection(db, "storeItems"), orderBy("name")));
+        
         const items: StoreItem[] = [];
         querySnapshot.forEach((doc) => {
             items.push({ id: doc.id, ...doc.data() } as StoreItem);
         });
 
-        productSnapshot.forEach((doc) => {
-            const product = doc.data();
-             product.sizes.forEach((size: { size: string, price: number}) => {
-                const compositeId = `${doc.id}-${size.size.replace(/\s/g, '')}`;
-
-                if (!items.some(i => i.id === compositeId)) {
-                    items.push({
-                        id: compositeId,
-                        name: `${product.name} (${size.size})`,
-                        category: 'Finished Goods',
-                        inventory: 0, 
-                        price: size.price,
-                        productId: doc.id,
-                        size: size.size,
-                        imageUrl: product.imageUrl, // Ensure imageUrl is passed here
-                    } as any);
-                }
-            });
-        });
-
-        const inventorySnapshot = await getDocs(collection(db, "inventory"));
-        const inventoryMap = new Map<string, number>();
-        inventorySnapshot.forEach(doc => {
-            inventoryMap.set(doc.id, doc.data().quantity);
-        });
-
-        const finalItems = items.map(item => ({
-            ...item,
-            inventory: inventoryMap.get(item.id) ?? item.inventory ?? 0,
-        }));
-        
-        return finalItems;
+        return items;
     }
     
     async createStoreItem(itemData: Omit<StoreItem, 'id' | 'inventory'>, adminId: string, adminName: string): Promise<StoreItem> {
