@@ -1,3 +1,4 @@
+
 export type ProductFeature = 'vegan' | 'paraben-free' | 'microplastic-free' | 'natural-fragrance' | 'recycled-packaging';
 export type ScentProfile = 'citrus' | 'floral' | 'fruity' | 'minty' | 'warm-earthy';
 export type ProductCategory = 'shower-gel' | 'fabric-softener' | 'dish-wash';
@@ -22,7 +23,6 @@ export type Product = {
   shortDescription: string;
   wholesaleDiscountPercentage?: number;
   wholesaleMoq?: number;
-  deliveryFee?: number;
   platformFee?: number;
   rating: number;
   reviewCount: number;

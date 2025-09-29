@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useCart } from '@/hooks/use-cart';
@@ -69,7 +68,8 @@ import { useRouter } from 'next/navigation';
 import { verifyPaymentAndProcessOrder } from '@/ai/flows/verify-payment-and-process-order-flow';
 import { orderService } from '@/services/order.service';
 import { pickupLocationService, PickupLocation } from '@/services/pickup-location.service';
-import { KENYAN_COUNTIES } from '@/lib/locations';
+import { KENYAN_COUNTIES, getDeliveryZone } from '@/lib/locations';
+import { settingsService, DeliveryZoneFees } from '@/services/settings.service';
 
 
 const deliveryFormSchema = z.object({
@@ -106,12 +106,13 @@ const deliveryFormSchema = z.object({
 type DeliveryFormData = z.infer<typeof deliveryFormSchema>;
 
 
-function OrderSummary() {
+function OrderSummary({ deliveryMethod, county } : { deliveryMethod: 'door-to-door' | 'pickup', county?: string }) {
   const { cartItems } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
+  const [deliveryFees, setDeliveryFees] = useState<DeliveryZoneFees | null>(null);
 
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchProductsAndFees() {
         if (cartItems.length > 0) {
             const productIds = Array.from(new Set(cartItems.map(item => item.productId)));
             const fetchedProducts = await Promise.all(
@@ -119,23 +120,19 @@ function OrderSummary() {
             );
             setProducts(fetchedProducts.filter(p => p !== null) as Product[]);
         }
+        const settings = await settingsService.getCompanySettings();
+        if (settings) {
+            setDeliveryFees(settings.deliveryFees);
+        }
     }
-    fetchProducts();
+    fetchProductsAndFees();
   }, [cartItems]);
   
 
   const subtotal = useMemo(() => {
     return cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   }, [cartItems]);
-
-  const totalDeliveryFee = useMemo(() => {
-      const uniqueProductIds = new Set(cartItems.map(item => item.productId));
-      return Array.from(uniqueProductIds).reduce((acc, productId) => {
-          const product = products.find(p => p.id === productId);
-          return acc + (product?.deliveryFee || 0);
-      }, 0);
-  }, [cartItems, products]);
-
+  
   const totalPlatformFee = useMemo(() => {
       const uniqueProductIds = new Set(cartItems.map(item => item.productId));
       return Array.from(uniqueProductIds).reduce((acc, productId) => {
@@ -144,7 +141,16 @@ function OrderSummary() {
       }, 0);
   }, [cartItems, products]);
 
-  const total = subtotal + totalDeliveryFee + totalPlatformFee;
+  const deliveryFee = useMemo(() => {
+    if (deliveryMethod === 'pickup' || !county || !deliveryFees) {
+        return 0;
+    }
+    const zone = getDeliveryZone(county);
+    return deliveryFees[zone];
+  }, [deliveryMethod, county, deliveryFees]);
+
+
+  const total = subtotal + deliveryFee + totalPlatformFee;
 
   if (cartItems.length === 0) return null;
 
@@ -188,7 +194,7 @@ function OrderSummary() {
             </div>
              <div className="flex justify-between">
               <span className="text-muted-foreground">Delivery Fee</span>
-              <span>Ksh {totalDeliveryFee.toFixed(2)}</span>
+              <span>Ksh {deliveryFee.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Platform Fee</span>
@@ -214,6 +220,7 @@ export default function CheckoutClient() {
 
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
+  const [deliveryFees, setDeliveryFees] = useState<DeliveryZoneFees | null>(null);
 
 
   const form = useForm<DeliveryFormData>({
@@ -229,6 +236,7 @@ export default function CheckoutClient() {
   });
   
   const deliveryMethod = form.watch('deliveryMethod');
+  const selectedCounty = form.watch('county');
 
   // Effect to pre-fill form with last order details & fetch pickup locations
   useEffect(() => {
@@ -260,38 +268,44 @@ export default function CheckoutClient() {
         }
     }
     
-    async function fetchPickupLocations() {
+    async function fetchStaticData() {
         const locations = await pickupLocationService.getPickupLocations();
         setPickupLocations(locations);
+        const settings = await settingsService.getCompanySettings();
+        if (settings) {
+            setDeliveryFees(settings.deliveryFees);
+        }
     }
 
     prefillForm();
-    fetchPickupLocations();
+    fetchStaticData();
   }, [user, userProfile, form]);
   
   const handlePaymentAndOrderProcessing = async (data: DeliveryFormData) => {
+    if (!deliveryFees) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Delivery fees are not configured. Please contact support.'});
+        return;
+    }
     setIsProcessingOrder(true);
 
     const PaystackPop = (await import('@paystack/inline-js')).default;
 
+    const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
     const products = await Promise.all(
         Array.from(new Set(cartItems.map(item => item.productId))).map(id => productService.getProductById(id))
     );
-    const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const totalDeliveryFee = Array.from(new Set(cartItems.map(item => item.productId))).reduce((acc, productId) => {
-        const product = products.find(p => p && p.id === productId);
-        return acc + (product?.deliveryFee || 0);
-    }, 0);
-    const totalPlatformFee = Array.from(new Set(cartItems.map(item => item.productId))).reduce((acc, productId) => {
+     const totalPlatformFee = Array.from(new Set(cartItems.map(item => item.productId))).reduce((acc, productId) => {
         const product = products.find(p => p && p.id === productId);
         return acc + (product?.platformFee || 0);
     }, 0);
     
-    // Delivery fee is waived for pickup
-    const finalTotal = data.deliveryMethod === 'pickup'
-        ? subtotal + totalPlatformFee
-        : subtotal + totalDeliveryFee + totalPlatformFee;
-
+    let finalTotal = subtotal + totalPlatformFee;
+    if (data.deliveryMethod === 'door-to-door' && data.county) {
+        const zone = getDeliveryZone(data.county);
+        finalTotal += deliveryFees[zone];
+    }
+    
     const paystack = new PaystackPop();
     paystack.newTransaction({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
@@ -555,7 +569,7 @@ export default function CheckoutClient() {
         </Card>
       </div>
       <div className="lg:sticky lg:top-24">
-        <OrderSummary />
+        <OrderSummary deliveryMethod={deliveryMethod} county={selectedCounty} />
       </div>
     </>
   );

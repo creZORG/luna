@@ -1,11 +1,10 @@
 
-
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit, updateDoc } from 'firebase/firestore';
 import { CartItem } from './cart.service';
 import { activityService } from './activity.service';
 
-export type OrderStatus = 'pending-payment' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending-payment' | 'paid' | 'processing' | 'ready-for-dispatch' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface Order {
     id?: string;

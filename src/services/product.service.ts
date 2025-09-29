@@ -1,5 +1,4 @@
 
-
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
@@ -24,8 +23,6 @@ export interface ProductUpdateData {
   }[];
   wholesaleDiscountPercentage?: number;
   wholesaleMoq?: number;
-
-  deliveryFee?: number;
   platformFee?: number;
   rating?: number;
   reviewCount?: number;
@@ -79,6 +76,10 @@ class ProductService {
                      wholesalePrice: s.wholesalePrice || 0
                 }));
             }
+            // Remove undefined fields to avoid overwriting with null
+            if (dataToUpdate.deliveryFee !== undefined) {
+                delete dataToUpdate.deliveryFee;
+            }
             
             await updateDoc(productRef, dataToUpdate);
 
@@ -105,7 +106,6 @@ class ProductService {
                 rating: data.rating ?? 0,
                 reviewCount: data.reviewCount ?? 0,
                 wholesaleMoq: data.wholesaleMoq ?? 120,
-                deliveryFee: data.deliveryFee ?? 0,
                 platformFee: data.platformFee ?? 0,
             } as Product);
         });
@@ -133,7 +133,6 @@ class ProductService {
             rating: data.rating ?? 5,
             reviewCount: data.reviewCount ?? Math.floor(Math.random() * 50) + 5,
             wholesaleMoq: data.wholesaleMoq ?? 120,
-            deliveryFee: data.deliveryFee ?? 0,
             platformFee: data.platformFee ?? 0,
         } as Product;
     }
@@ -154,7 +153,6 @@ class ProductService {
                 rating: data.rating ?? 0,
                 reviewCount: data.reviewCount ?? 0,
                 wholesaleMoq: data.wholesaleMoq ?? 120,
-                deliveryFee: data.deliveryFee ?? 0,
                 platformFee: data.platformFee ?? 0,
             } as Product;
         }

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -37,6 +36,7 @@ const getStatusBadge = (status: Order['status']) => {
         'pending-payment': 'secondary',
         'paid': 'default',
         'processing': 'default',
+        'ready-for-dispatch': 'default',
         'shipped': 'default',
         'delivered': 'default',
         'cancelled': 'destructive',
@@ -44,6 +44,7 @@ const getStatusBadge = (status: Order['status']) => {
     const colors = {
         'paid': 'bg-blue-500/80',
         'processing': 'bg-yellow-500/80 text-black',
+        'ready-for-dispatch': 'bg-orange-500/80',
         'shipped': 'bg-purple-500/80',
         'delivered': 'bg-green-600/80',
     }
@@ -53,7 +54,7 @@ const getStatusBadge = (status: Order['status']) => {
             variant={variants[status] as any}
             className={cn('capitalize', colors[status as keyof typeof colors])}
         >
-            {status}
+            {status.replace(/-/g, ' ')}
         </Badge>
     );
 };
@@ -184,7 +185,8 @@ function OrderList({ orders, onStatusUpdate }: { orders: Order[]; onStatusUpdate
                             <h4 className="font-semibold">Order Actions</h4>
                             <div className="flex flex-col gap-2">
                                 {order.status === 'paid' && <Button onClick={() => handleUpdateStatus(order.id!, 'processing')} disabled={isUpdating}>{isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}Start Processing</Button>}
-                                {order.status === 'processing' && <Button onClick={() => handleUpdateStatus(order.id!, 'shipped')} disabled={isUpdating}>{isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Truck className="mr-2 h-4 w-4"/>}Mark as Shipped</Button>}
+                                {order.status === 'processing' && <Button onClick={() => handleUpdateStatus(order.id!, 'ready-for-dispatch')} disabled={isUpdating}>{isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <PackageCheck className="mr-2 h-4 w-4"/>}Mark as Ready for Dispatch</Button>}
+                                {order.status === 'ready-for-dispatch' && <Button onClick={() => handleUpdateStatus(order.id!, 'shipped')} disabled={isUpdating}>{isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Truck className="mr-2 h-4 w-4"/>}Mark as Shipped</Button>}
                                 {order.status === 'shipped' && <Button onClick={() => handleUpdateStatus(order.id!, 'delivered')} disabled={isUpdating}>{isUpdating ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <PackageCheck className="mr-2 h-4 w-4"/>}Mark as Delivered</Button>}
                                 {order.status === 'delivered' && <p className="text-sm text-green-600 font-medium">Order completed.</p>}
                             </div>
@@ -219,13 +221,13 @@ export default function OrdersClient({ initialOrders }: OrdersClientProps) {
     }, {} as Record<OrderStatus, Order[]>);
   }, [orders]);
   
-  const TABS: OrderStatus[] = ['paid', 'processing', 'shipped', 'delivered'];
+  const TABS: OrderStatus[] = ['paid', 'processing', 'ready-for-dispatch', 'shipped', 'delivered'];
 
   return (
     <Tabs defaultValue="paid">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
             {TABS.map(tab => (
-                <TabsTrigger key={tab} value={tab} className="capitalize">{tab}</TabsTrigger>
+                <TabsTrigger key={tab} value={tab} className="capitalize">{tab.replace('-', ' ')}</TabsTrigger>
             ))}
         </TabsList>
         {TABS.map(tab => (

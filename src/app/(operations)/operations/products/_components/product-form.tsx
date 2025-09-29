@@ -62,7 +62,6 @@ const formSchema = z.object({
   directions: z.string().min(10, 'Directions are too short'),
   cautions: z.string().min(10, 'Cautions are too short'),
   wholesaleMoq: z.coerce.number().int().min(1, 'MOQ must be at least 1').optional(),
-  deliveryFee: z.coerce.number().min(0, 'Delivery fee cannot be negative').optional(),
   platformFee: z.coerce.number().min(0, 'Platform fee cannot be negative').optional(),
   imageUrl: z.any().optional(),
   galleryImageUrls: z.array(z.any()).optional(),
@@ -107,7 +106,6 @@ export function ProductForm({ product }: ProductFormProps) {
             imageUrl: undefined,
             galleryImageUrls: [],
             wholesaleMoq: 120,
-            deliveryFee: 0,
             platformFee: 0,
         },
     });
@@ -371,7 +369,7 @@ export function ProductForm({ product }: ProductFormProps) {
                         <Plus className="mr-2 h-4 w-4" /> Add Size
                     </Button>
                     </div>
-                     <div className="grid md:grid-cols-3 gap-4 mt-6 pt-6 border-t">
+                     <div className="grid md:grid-cols-2 gap-4 mt-6 pt-6 border-t">
                         <FormField
                             control={form.control}
                             name="wholesaleMoq"
@@ -380,19 +378,6 @@ export function ProductForm({ product }: ProductFormProps) {
                                 <FormLabel>Wholesale MOQ</FormLabel>
                                 <FormControl>
                                 <Input type="number" placeholder="120" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="deliveryFee"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Delivery Fee</FormLabel>
-                                <FormControl>
-                                <Input type="number" placeholder="500" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
