@@ -23,6 +23,7 @@ export interface ProductUpdateData {
   }[];
   wholesaleDiscountPercentage?: number;
   wholesaleMoq?: number;
+
   deliveryFee?: number;
   platformFee?: number;
   rating?: number;
