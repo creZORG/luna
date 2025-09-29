@@ -26,6 +26,7 @@ export interface Order {
     status: OrderStatus;
     orderDate: any; // Firebase Timestamp
     paystackReference?: string;
+    salespersonName?: string; // For finance dashboard
 }
 
 export interface CustomerInfo {
@@ -166,3 +167,5 @@ class OrderService {
 }
 
 export const orderService = new OrderService();
+
+    
