@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Button } from '@/components/ui/button';
@@ -41,7 +40,11 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const isPortalPage = userProfile && userProfile.roles.length > 0;
+  // Correctly identify if the user is a staff member who should not see the main nav
+  const isStaffUser = userProfile && userProfile.roles.some(role => 
+    ['admin', 'sales', 'operations', 'finance', 'manufacturing'].includes(role)
+  );
+
 
   return (
     <header
@@ -64,7 +67,7 @@ export function Header() {
           </Link>
 
           <div className="flex items-center gap-1">
-              { !isPortalPage && <nav className="hidden md:flex items-center gap-1">
+              { !isStaffUser && <nav className="hidden md:flex items-center gap-1">
                   {navLinks.map(({ href, label }) => (
                       <Button asChild variant="ghost" key={href} className={cn(
                           'text-sm font-medium rounded-full',
