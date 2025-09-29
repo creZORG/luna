@@ -65,6 +65,20 @@ class OrderService {
                 const orderRef = doc(collection(db, 'orders'));
                 transaction.set(orderRef, newOrder);
 
+                 // Decrement inventory for each item in the order
+                for (const item of items) {
+                    const inventoryId = `${item.productId}-${item.size.replace(/\s/g, '')}`;
+                    const inventoryRef = doc(db, 'inventory', inventoryId);
+                    const inventoryDoc = await transaction.get(inventoryRef);
+                    if (inventoryDoc.exists() && inventoryDoc.data().quantity >= item.quantity) {
+                        transaction.update(inventoryRef, { quantity: increment(-item.quantity) });
+                    } else {
+                        // Not enough stock, throw error to rollback transaction
+                        throw new Error(`Not enough stock for ${item.productName} (${item.size}).`);
+                    }
+                }
+
+
                 return orderRef.id;
             });
 
