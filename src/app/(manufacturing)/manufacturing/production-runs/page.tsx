@@ -1,5 +1,5 @@
 
-import { storeItemService } from "@/services/storeItem.service";
+import { storeItemService } from "@/services/store-item.service";
 import ProductionRunClient from "./_components/production-run-client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductionHistoryClient from "./_components/history-client";
