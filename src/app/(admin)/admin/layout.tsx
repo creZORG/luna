@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon } from 'lucide-react';
+import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -66,6 +66,16 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           ],
         },
         {
+          label: 'Procurement',
+          icon: ShoppingCart,
+          type: 'collapsible',
+          id: 'procurement',
+          roles: ['admin'],
+          subLinks: [
+            { href: '/admin/raw-materials/orders', icon: ShoppingCart, label: 'Raw Material Orders', roles: ['admin'] },
+          ]
+        },
+        {
           label: 'Staff Portals',
           icon: ShieldAlert,
           type: 'collapsible',
@@ -96,12 +106,20 @@ const getNavLinks = (userProfile: UserProfile | null) => {
 
     // Filter links based on user roles
     return allLinks.map(link => {
+        if (!link) return null;
+        if (!hasAnyRole(link.roles as any)) return null;
+
         if (link.type === 'collapsible') {
-            const visibleSubLinks = link.subLinks.filter(sublink => hasAnyRole(sublink.roles as any));
-            return visibleSubLinks.length > 0 ? { ...link, subLinks: visibleSubLinks } : null;
+            const visibleSubLinks = (link.subLinks || []).filter(sublink => hasAnyRole(sublink.roles as any));
+            if (visibleSubLinks.length > 0) {
+              return { ...link, subLinks: visibleSubLinks };
+            }
+            // If admin, but no visible sublinks for other roles, still might need to show for admin
+            if (hasRole('admin')) return { ...link, subLinks: link.subLinks.filter(sl => hasAnyRole(sl.roles as any))};
+            return null;
         }
-        return hasAnyRole(link.roles as any) ? link : null;
-    }).filter(Boolean); // Remove null entries
+        return link;
+    }).filter(Boolean);
 }
 
 
@@ -119,6 +137,9 @@ function NavContent({ isCollapsed, userProfile }: { isCollapsed: boolean, userPr
                             return <Separator key={index} className="my-2" />;
                          }
                          if (link.type === 'collapsible') {
+                            const subLinksWithAccess = link.subLinks.filter(sub => userProfile?.roles.some(r => sub.roles.includes(r)));
+                            if(subLinksWithAccess.length === 0) return null;
+
                             return (
                                 <Collapsible key={link.id} defaultOpen={(link.subLinks || []).some(sub => pathname.startsWith(sub.href))}>
                                      <CollapsibleTrigger asChild>
@@ -129,7 +150,9 @@ function NavContent({ isCollapsed, userProfile }: { isCollapsed: boolean, userPr
                                         </Button>
                                     </CollapsibleTrigger>
                                      <CollapsibleContent className="space-y-1">
-                                        {(link.subLinks || []).map(subLink => (
+                                        {(link.subLinks || []).map(subLink => {
+                                             if (!userProfile?.roles.some(r => subLink.roles.includes(r))) return null;
+                                             return (
                                              <Tooltip key={subLink.href} delayDuration={0}>
                                                 <TooltipTrigger asChild>
                                                      <Link
@@ -146,7 +169,7 @@ function NavContent({ isCollapsed, userProfile }: { isCollapsed: boolean, userPr
                                                 </TooltipTrigger>
                                                  {isCollapsed && <TooltipContent side="right"><p>{subLink.label}</p></TooltipContent>}
                                             </Tooltip>
-                                        ))}
+                                        )})}
                                     </CollapsibleContent>
                                 </Collapsible>
                             );
