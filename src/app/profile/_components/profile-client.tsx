@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -10,16 +11,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
 // Placeholder data for orders
-const mockOrders = [
-    { id: 'ORD-001', date: '2024-07-15', total: 450.00, status: 'Shipped' },
-    { id: 'ORD-002', date: '2024-07-18', total: 1200.50, status: 'Processing' },
-    { id: 'ORD-003', date: '2024-07-20', total: 290.00, status: 'Delivered' },
-];
+const mockOrders: { id: string, date: string, total: number, status: string }[] = [];
 
 
 export default function ProfileClient() {
