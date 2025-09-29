@@ -35,6 +35,7 @@ const ProcessOrderInputSchema = z.object({
   cartItems: z.array(CartItemSchema),
   customer: CustomerInfoSchema,
   paystackReference: z.string(),
+  userId: z.string().optional(), // Added userId
 });
 
 export type ProcessOrderInput = z.infer<typeof ProcessOrderInputSchema>;
@@ -80,7 +81,8 @@ const processOrderFlow = ai.defineFlow(
         input.customer,
         input.cartItems,
         totalAmount,
-        input.paystackReference
+        input.paystackReference,
+        input.userId // Pass userId to createOrder
     );
 
     return orderId;

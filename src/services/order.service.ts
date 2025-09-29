@@ -1,10 +1,13 @@
 
+'use server';
+
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
 import { CartItem } from './cart.service';
 
 export interface Order {
     id?: string;
+    userId?: string; // Added to associate order with a user
     customerName: string;
     customerEmail: string;
     customerPhone: string;
@@ -27,7 +30,7 @@ export interface CustomerInfo {
 
 
 class OrderService {
-    async createOrder(customer: CustomerInfo, items: CartItem[], totalAmount: number, paystackReference: string): Promise<string> {
+    async createOrder(customer: CustomerInfo, items: CartItem[], totalAmount: number, paystackReference: string, userId?: string): Promise<string> {
         
         const inventoryRefs = items.map(item => doc(db, 'inventory', `${item.productId}-${item.size.replace(/\s/g, '')}`));
 
@@ -61,6 +64,9 @@ class OrderService {
                     orderDate: serverTimestamp(),
                     paystackReference,
                 };
+                if (userId) {
+                    newOrder.userId = userId;
+                }
                 const orderRef = doc(collection(db, 'orders'));
                 transaction.set(orderRef, newOrder);
 
@@ -90,6 +96,21 @@ class OrderService {
             orders.push({ id: doc.id, ...doc.data() } as Order);
         });
         return orders;
+    }
+
+    async getLastOrderByUserId(userId: string): Promise<Order | null> {
+        const q = query(
+            collection(db, "orders"), 
+            where("userId", "==", userId),
+            orderBy("orderDate", "desc"),
+            limit(1)
+        );
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const doc = querySnapshot.docs[0];
+            return { id: doc.id, ...doc.data() } as Order;
+        }
+        return null;
     }
 }
 

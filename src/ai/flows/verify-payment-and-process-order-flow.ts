@@ -31,6 +31,7 @@ const VerifyPaymentInputSchema = z.object({
   reference: z.string(),
   cartItems: z.array(CartItemSchema),
   customer: CustomerInfoSchema,
+  userId: z.string().optional(), // Added userId
 });
 
 export type VerifyPaymentInput = z.infer<typeof VerifyPaymentInputSchema>;
@@ -74,6 +75,7 @@ const verifyPaymentAndProcessOrderFlow = ai.defineFlow(
             cartItems: input.cartItems,
             customer: input.customer,
             paystackReference: input.reference,
+            userId: input.userId, // Pass userId
         });
 
         return orderId;

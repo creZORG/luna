@@ -68,6 +68,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { verifyPaymentAndProcessOrder } from '@/ai/flows/verify-payment-and-process-order-flow';
 import PaystackPop from '@paystack/inline-js';
+import { orderService } from '@/services/order.service';
 
 
 const deliveryFormSchema = z.object({
@@ -261,18 +262,38 @@ export default function CheckoutClient() {
       deliveryNotes: '',
     },
   });
-
+  
+  // Effect to pre-fill form with last order details
   useEffect(() => {
-    if (userProfile) {
-      form.reset({
-        fullName: userProfile.displayName,
-        email: userProfile.email || '',
-        phone: '', 
-        address: '',
-        deliveryNotes: '',
-      });
+    async function prefillForm() {
+        if (user) {
+            const lastOrder = await orderService.getLastOrderByUserId(user.uid);
+            if (lastOrder) {
+                const [address, constituency] = lastOrder.shippingAddress.split(',').map(s => s.trim());
+                form.reset({
+                    fullName: lastOrder.customerName,
+                    email: lastOrder.customerEmail,
+                    phone: lastOrder.customerPhone,
+                    address: address || '',
+                    constituency: NAIROBI_CONSTITUENCIES.includes(constituency) ? constituency : '',
+                    deliveryNotes: '', // Don't pre-fill notes
+                });
+            } else if (userProfile) {
+                 // If no last order, use profile info
+                 form.reset({
+                    fullName: userProfile.displayName,
+                    email: userProfile.email || '',
+                    phone: '',
+                    address: '',
+                    constituency: '',
+                    deliveryNotes: '',
+                });
+            }
+        }
     }
-  }, [userProfile, form]);
+    prefillForm();
+  }, [user, userProfile, form]);
+
 
  const handleCheckLocation = () => {
     setLocationState('loading');
@@ -351,6 +372,7 @@ export default function CheckoutClient() {
                     reference: transaction.reference,
                     cartItems: cartItems,
                     customer: data,
+                    userId: user?.uid, // Pass user ID if they are logged in
                 });
 
                 toast({
@@ -514,7 +536,6 @@ export default function CheckoutClient() {
                      )}
                      {locationState === 'error' && (
                          <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Location Error</AlertTitle>
                             <AlertDescription>{locationError}</AlertDescription>
                         </Alert>
@@ -533,7 +554,7 @@ export default function CheckoutClient() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Constituency</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select your constituency" />
