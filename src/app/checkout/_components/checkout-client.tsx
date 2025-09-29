@@ -64,6 +64,7 @@ import { Label } from "@/components/ui/label";
 import { productService } from '@/services/product.service';
 import { Product } from '@/lib/data';
 import { reverseGeocode } from '@/ai/flows/reverse-geocode-flow';
+import { getCompanySettings } from '@/lib/config';
 
 const deliveryFormSchema = z.object({
   fullName: z.string().min(3, 'Full name is required'),
@@ -105,6 +106,22 @@ const NAIROBI_BOUNDS = {
   minLng: 36.7,
   maxLng: 37.0,
 };
+
+// Haversine formula to calculate distance between two lat/lon points
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // in metres
+}
 
 function isWithinNairobi(coords: GeolocationCoordinates) {
   return (
@@ -221,6 +238,7 @@ export default function CheckoutClient() {
   >('idle');
   const [locationError, setLocationError] = useState<string | null>(null);
   const [identifiedLocation, setIdentifiedLocation] = useState<string | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
 
   const form = useForm<DeliveryFormData>({
     resolver: zodResolver(deliveryFormSchema),
@@ -249,9 +267,19 @@ export default function CheckoutClient() {
     setLocationState('loading');
     setIdentifiedLocation(null);
     setLocationError(null);
+    setDistance(null);
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        const settings = await getCompanySettings();
+        const dist = getDistance(
+            position.coords.latitude, 
+            position.coords.longitude,
+            settings.COMPANY_LOCATION.latitude,
+            settings.COMPANY_LOCATION.longitude
+        );
+        setDistance(dist);
+
         if (isWithinNairobi(position.coords)) {
           setLocationState('in_nairobi');
         } else {
@@ -263,7 +291,6 @@ export default function CheckoutClient() {
             if (geocodeResult && geocodeResult.city) {
               setIdentifiedLocation(geocodeResult.city);
             } else {
-              // This is a fallback if the AI returns an empty or unexpected response
               setIdentifiedLocation("your current location");
             }
             setLocationState('outside_nairobi');
@@ -289,6 +316,8 @@ export default function CheckoutClient() {
       console.log('Submitting delivery data:', data);
       // TODO: Integrate with payment flow
   }
+  
+  const distanceInKm = distance ? (distance / 1000).toFixed(0) : 0;
 
   return (
     <>
@@ -411,7 +440,7 @@ export default function CheckoutClient() {
                             <AlertTitle>Outside Nairobi Delivery Area</AlertTitle>
                             <AlertDescription>
                                 {identifiedLocation 
-                                    ? `It looks like you're in ${identifiedLocation}, which is outside our standard delivery zone.`
+                                    ? `It looks like you're in ${identifiedLocation} (approx. ${distanceInKm}km from our office), which is outside our standard delivery zone.`
                                     : "It looks like you're outside our standard delivery zone."
                                 }
                                 {' '}For special arrangements, please contact our support team.
