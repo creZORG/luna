@@ -11,21 +11,21 @@ export default function PartnersPage() {
             title: "Brand Influencers",
             description: "Passionate about natural products? Join our influencer program to get exclusive promo codes, earn commissions, and share the products you love with your audience.",
             cta: "Become an Influencer",
-            href: "#contact"
+            href: "/login"
         },
         {
             icon: Bike,
             title: "Delivery Partners",
             description: "Become a crucial part of our logistics network. We're looking for reliable and efficient delivery partners to help us get our products into the hands of customers across the region.",
             cta: "Join Our Fleet",
-            href: "#contact"
+            href: "/login"
         },
         {
             icon: Warehouse,
             title: "Pickup Locations",
             description: "Have a convenient and accessible business location? Partner with us by becoming an official Luna Essentials pickup station and drive more foot traffic to your store.",
             cta: "Become a Host",
-            href: "#contact"
+            href: "/login"
         },
     ];
 
@@ -78,4 +78,3 @@ export default function PartnersPage() {
     </div>
   );
 }
-
