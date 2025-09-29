@@ -11,10 +11,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { settingsService, CompanySettings } from '@/services/settings.service';
-import { Loader, Save, Truck } from 'lucide-react';
+import { Loader, Save, Truck, UploadCloud } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { Separator } from '@/components/ui/separator';
+import { websiteImageService, WebsiteImage } from '@/services/website-images.service';
+import Image from 'next/image';
+import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
+import { useRouter } from 'next/navigation';
 
 const settingsFormSchema = z.object({
   latitude: z.coerce.number().min(-90, 'Invalid latitude').max(90, 'Invalid latitude'),
@@ -28,6 +32,113 @@ const settingsFormSchema = z.object({
 });
 
 type SettingsFormData = z.infer<typeof settingsFormSchema>;
+
+function WebsiteImageUploader() {
+    const [images, setImages] = useState<WebsiteImage[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [previews, setPreviews] = useState<Record<string, string>>({});
+    const [isSaving, setIsSaving] = useState<Record<string, boolean>>({});
+    const { toast } = useToast();
+    const router = useRouter();
+
+    useEffect(() => {
+        websiteImageService.getWebsiteImages()
+            .then(setImages)
+            .finally(() => setLoading(false));
+    }, []);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, imageId: string) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviews(prev => ({...prev, [imageId]: reader.result as string }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSaveImage = async (imageId: string, imageHint: string) => {
+        const dataUri = previews[imageId];
+        if (!dataUri) return;
+
+        setIsSaving(prev => ({ ...prev, [imageId]: true }));
+        try {
+            const newUrl = await uploadImageFlow({ imageDataUri: dataUri, folder: 'website-assets' });
+            await websiteImageService.updateWebsiteImage(imageId, newUrl);
+            toast({ title: 'Image Updated!', description: `${imageHint} has been successfully updated.` });
+            setPreviews(prev => {
+                const newPreviews = { ...prev };
+                delete newPreviews[imageId];
+                return newPreviews;
+            });
+            // Refresh data on page to show new image from server
+            const updatedImages = await websiteImageService.getWebsiteImages();
+            setImages(updatedImages);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not update the image.' });
+        } finally {
+            setIsSaving(prev => ({ ...prev, [imageId]: false }));
+        }
+    };
+
+    if (loading) {
+        return (
+             <Card>
+                <CardHeader><CardTitle>Website Images</CardTitle></CardHeader>
+                <CardContent className="grid md:grid-cols-2 gap-6">
+                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Website Images</CardTitle>
+                <CardDescription>
+                    Manage the main marketing images shown on your homepage and other public pages.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-6">
+                {images.map((image) => (
+                    <div key={image.id} className="space-y-2">
+                        <Label>{image.description}</Label>
+                        <div className="relative w-full h-48 border-2 border-dashed rounded-lg flex justify-center items-center text-muted-foreground overflow-hidden">
+                             <Image 
+                                src={previews[image.id] || image.imageUrl} 
+                                alt={image.description}
+                                layout="fill"
+                                objectFit="cover"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center opacity-0 hover:opacity-100 transition-opacity">
+                                <UploadCloud className="h-10 w-10 text-white" />
+                                <span className="text-white text-sm mt-2">Change Image</span>
+                                <Input
+                                    type="file"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    accept="image/*"
+                                    onChange={(e) => handleFileChange(e, image.id)}
+                                />
+                            </div>
+                        </div>
+                        {previews[image.id] && (
+                            <Button
+                                className="w-full"
+                                onClick={() => handleSaveImage(image.id, image.description)}
+                                disabled={isSaving[image.id]}
+                            >
+                                {isSaving[image.id] ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Save Changes
+                            </Button>
+                        )}
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -117,11 +228,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <div>
+    <div className='space-y-6'>
         <div className="mb-6">
             <h1 className="text-3xl font-bold">Company Settings</h1>
-            <p className="text-muted-foreground">Manage company-wide configurations for attendance and logistics.</p>
+            <p className="text-muted-foreground">Manage company-wide configurations for attendance, logistics and website content.</p>
         </div>
+        
+        <WebsiteImageUploader />
+        
         <form onSubmit={form.handleSubmit(onSubmit)}>
             <Card>
                 <CardHeader>

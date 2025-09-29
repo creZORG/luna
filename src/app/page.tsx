@@ -1,22 +1,26 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { CheckCircle, Leaf, Recycle } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { websiteImageService, WebsiteImage } from '@/services/website-images.service';
 
 export const metadata: Metadata = {
   title: 'Luna Essentials | High-Quality, Sustainable Manufacturing',
   description: 'Your trusted partner in wholesale and retail for natural, vegan, and eco-friendly personal care products. Explore our catalog for opportunities.',
 };
 
-export default function Home() {
-  const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-background');
-  const showerGelImage = PlaceHolderImages.find((img) => img.id === 'category-shower-gel');
-  const fabricSoftenerImage = PlaceHolderImages.find((img) => img.id === 'category-fabric-softener');
-  const dishWashImage = PlaceHolderImages.find((img) => img.id === 'category-dish-wash');
+export default async function Home() {
+  const websiteImages: WebsiteImage[] = await websiteImageService.getWebsiteImages();
+  
+  const getImage = (id: string) => websiteImages.find((img) => img.id === id);
+
+  const heroImage = getImage('hero-background');
+  const showerGelImage = getImage('category-shower-gel');
+  const fabricSoftenerImage = getImage('category-fabric-softener');
+  const dishWashImage = getImage('category-dish-wash');
 
   const pillars = [
     {
@@ -61,7 +65,7 @@ export default function Home() {
     <div className="flex flex-col">
       {/* Hero Section */}
       <section className="relative h-[70vh] md:h-[90vh] w-full flex items-center justify-center text-center text-white">
-        {heroImage && (
+        {heroImage?.imageUrl && (
           <Image
             src={heroImage.imageUrl}
             alt={heroImage.description}
@@ -98,7 +102,7 @@ export default function Home() {
                 {categories.map((category) => (
                 <Card key={category.title} className="overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-card">
                     <CardHeader className="p-0">
-                    {category.image && (
+                    {category.image?.imageUrl && (
                         <div className="aspect-w-3 aspect-h-2">
                         <Image
                             src={category.image.imageUrl}

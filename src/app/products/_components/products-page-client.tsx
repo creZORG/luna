@@ -2,19 +2,26 @@
 'use client';
 
 import type { Product } from '@/lib/data';
-import React, { useState, useMemo, Suspense } from 'react';
+import React, { useState, useMemo, Suspense, useEffect } from 'react';
 import ProductFilters from './product-filters';
 import ProductList from './product-list';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { websiteImageService, WebsiteImage } from '@/services/website-images.service';
 
 function ProductsPageClientContent({ products }: { products: Product[] }) {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category') || 'all';
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
-  
-  const heroImage = PlaceHolderImages.find((img) => img.id === 'products-hero');
+  const [heroImage, setHeroImage] = useState<WebsiteImage | null>(null);
+
+  useEffect(() => {
+    async function fetchImage() {
+        const image = await websiteImageService.getWebsiteImageById('products-hero');
+        setHeroImage(image);
+    }
+    fetchImage();
+  }, []);
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
