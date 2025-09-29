@@ -8,34 +8,49 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ProductForm } from '@/app/(operations)/operations/products/_components/product-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader, Percent, Save } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { productService } from '@/services/product.service';
+import { Product } from '@/lib/data';
+import { Skeleton } from '@/components/ui/skeleton';
+import PricingClient from './_components/pricing-client';
 
 export default function ProductsAdminPage() {
   const [discount, setDiscount] = useState(0);
   const [moq, setMoq] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // In a real app, you'd fetch these global settings from a database.
-  // For now, we manage them in local state.
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const fetchedProducts = await productService.getProducts();
+        setProducts(fetchedProducts);
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products.'});
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProducts();
+  }, [toast]);
+
 
   const handleSaveGlobalSettings = async () => {
     setIsSubmitting(true);
     try {
-      // This is a placeholder. In a real implementation, you'd save these to a global settings document.
-      // For now, we'll just show a success message.
+      // In a real app, you'd save these to a global settings document.
       await new Promise(resolve => setTimeout(resolve, 500)); 
       
       toast({
         title: 'Settings Updated',
-        description: `Wholesale discount set to ${discount}% and MOQ set to ${moq} units.`,
+        description: `Wholesale discount set to ${discount}% and MOQ set to ${moq} units. This will be applied to all newly calculated wholesale prices.`,
       });
     } catch (error) {
        toast({
@@ -61,7 +76,7 @@ export default function ProductsAdminPage() {
         <CardHeader>
           <CardTitle>Global Wholesale Settings</CardTitle>
           <CardDescription>
-            These settings apply to all products for wholesale purchases.
+            These settings apply to all products for wholesale purchases. The wholesale price is calculated from the RRP and this discount.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-3 gap-6 items-end">
@@ -100,7 +115,18 @@ export default function ProductsAdminPage() {
         </CardContent>
       </Card>
 
-      <ProductForm role="admin" wholesaleDiscount={discount} />
+      {loading ? (
+        <Card>
+            <CardHeader><Skeleton className='w-1/2 h-8' /></CardHeader>
+            <CardContent className='space-y-4'>
+                <Skeleton className='w-full h-12' />
+                <Skeleton className='w-full h-12' />
+                <Skeleton className='w-full h-12' />
+            </CardContent>
+        </Card>
+      ) : (
+        <PricingClient initialProducts={products} wholesaleDiscount={discount} />
+      )}
     </div>
   );
 }
