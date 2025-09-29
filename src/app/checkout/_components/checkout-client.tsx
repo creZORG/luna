@@ -266,6 +266,7 @@ export default function CheckoutClient() {
             console.error("Reverse geocode failed:", e);
             // Fallback to generic message if AI call fails
             setLocationState('outside_nairobi');
+            setIdentifiedLocation('your area');
           }
         }
       },
