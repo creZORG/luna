@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, runTransaction, doc, increment } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy } from 'firebase/firestore';
 import { CartItem } from './cart.service';
 
 export interface Order {
@@ -80,6 +80,16 @@ class OrderService {
             console.error("Error creating order and updating inventory:", error);
             throw new Error(`Failed to create order: ${error.message}`);
         }
+    }
+
+    async getOrders(): Promise<Order[]> {
+        const q = query(collection(db, "orders"), orderBy("orderDate", "desc"));
+        const querySnapshot = await getDocs(q);
+        const orders: Order[] = [];
+        querySnapshot.forEach(doc => {
+            orders.push({ id: doc.id, ...doc.data() } as Order);
+        });
+        return orders;
     }
 }
 

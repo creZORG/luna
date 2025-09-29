@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart } from 'lucide-react';
+import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart, Package2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -51,6 +51,7 @@ const getNavLinks = (userProfile: UserProfile | null) => {
 
     const allLinks = [
         { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
+        { href: '/admin/orders', icon: Package2, label: 'Orders', roles: ['admin', 'sales', 'operations'] },
         { href: '/admin/media', icon: ImageIcon, label: 'Media', roles: ['admin'] },
         { separator: true, id: 'sep1', roles: ['admin'] },
         {
@@ -338,5 +339,3 @@ export default function AdminLayout({
     </div>
   );
 }
-
-    
