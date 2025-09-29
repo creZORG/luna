@@ -107,18 +107,20 @@ const getNavLinks = (userProfile: UserProfile | null) => {
     // Filter links based on user roles
     return allLinks.map(link => {
         if (!link) return null;
-        if (!hasAnyRole(link.roles as any)) return null;
 
         if (link.type === 'collapsible') {
             const visibleSubLinks = (link.subLinks || []).filter(sublink => hasAnyRole(sublink.roles as any));
             if (visibleSubLinks.length > 0) {
               return { ...link, subLinks: visibleSubLinks };
             }
-            // If admin, but no visible sublinks for other roles, still might need to show for admin
-            if (hasRole('admin')) return { ...link, subLinks: link.subLinks.filter(sl => hasAnyRole(sl.roles as any))};
             return null;
         }
-        return link;
+
+        if (hasAnyRole(link.roles as any)) {
+            return link;
+        }
+        
+        return null;
     }).filter(Boolean);
 }
 
@@ -336,3 +338,5 @@ export default function AdminLayout({
     </div>
   );
 }
+
+    

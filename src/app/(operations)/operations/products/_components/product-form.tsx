@@ -111,90 +111,98 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
   }
 
   const isSubmitting = form.formState.isSubmitting;
+  const isAdminView = role === 'admin';
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Product Details</CardTitle>
-                <CardDescription>
-                  Fill in the details of the product.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Juicy Mango Shower Gel" {...field} 
-                          onChange={(e) => {
-                            field.onChange(e);
-                            const newSlug = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                            form.setValue('slug', newSlug);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Slug</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. juicy-mango-shower-gel" {...field} />
-                      </FormControl>
-                       <FormDescription>This is the URL-friendly version of the name.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="shortDescription"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Short Description</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="A one-liner that appears in product listings." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Description</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="A detailed description for the product page." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+            
+            {/* Show these cards only for Operations role */}
+            {!isAdminView && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Product Details</CardTitle>
+                    <CardDescription>
+                      Fill in the details of the product.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Juicy Mango Shower Gel" {...field} 
+                              onChange={(e) => {
+                                field.onChange(e);
+                                const newSlug = e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                                form.setValue('slug', newSlug);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="slug"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Slug</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. juicy-mango-shower-gel" {...field} />
+                          </FormControl>
+                          <FormDescription>This is the URL-friendly version of the name.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="shortDescription"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Short Description</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="A one-liner that appears in product listings." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Description</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="A detailed description for the product page." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
              <Card>
                 <CardHeader>
-                    <CardTitle>Sizing {role === 'admin' && '& Pricing'}</CardTitle>
-                    <CardDescription>Add the different sizes {role === 'admin' && 'and prices'} for this product.</CardDescription>
+                    <CardTitle>Sizing {isAdminView && '& Pricing'}</CardTitle>
+                    <CardDescription>Add the different sizes {isAdminView && 'and prices'} for this product.</CardDescription>
                 </CardHeader>
                 <CardContent>
                 <div>
                   {fields.map((field, index) => (
-                    <div key={field.id} className={`grid ${role === 'admin' ? 'grid-cols-3' : 'grid-cols-2'} gap-4 items-start mb-4`}>
+                    <div key={field.id} className={`grid ${isAdminView ? 'grid-cols-3' : 'grid-cols-2'} gap-4 items-start mb-4`}>
                       <FormField
                         control={form.control}
                         name={`sizes.${index}.size`}
@@ -208,7 +216,7 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
                           </FormItem>
                         )}
                       />
-                      {role === 'admin' && <FormField
+                      {isAdminView && <FormField
                         control={form.control}
                         name={`sizes.${index}.price`}
                         render={({ field }) => (
@@ -244,214 +252,223 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
                 </div>
                 </CardContent>
              </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Additional Information</CardTitle>
-                <CardDescription>Provide more details about the product's benefits, ingredients, and usage.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="keyBenefits"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Key Benefits</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="List key benefits..." {...field} />
-                      </FormControl>
-                      <FormDescription>Separate each benefit with a new line.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="ingredients"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ingredients</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="List ingredients..." {...field} />
-                      </FormControl>
-                       <FormDescription>Separate each ingredient with a comma.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="directions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Directions for Use</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="How to use the product" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="cautions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cautions</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Any cautions or warnings" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
+
+            {!isAdminView && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Additional Information</CardTitle>
+                    <CardDescription>Provide more details about the product's benefits, ingredients, and usage.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="keyBenefits"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Key Benefits</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="List key benefits..." {...field} />
+                          </FormControl>
+                          <FormDescription>Separate each benefit with a new line.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ingredients"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ingredients</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="List ingredients..." {...field} />
+                          </FormControl>
+                          <FormDescription>Separate each ingredient with a comma.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="directions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Directions for Use</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="How to use the product" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="cautions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cautions</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Any cautions or warnings" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
 
-          <div className="space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Organization</CardTitle>
-              </CardHeader>
-              <CardContent className='space-y-6'>
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Category</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+          {!isAdminView && (
+            <div className="space-y-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Organization</CardTitle>
+                </CardHeader>
+                <CardContent className='space-y-6'>
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                      <FormLabel>Category</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {ALL_CATEGORIES.map((cat) => (
+                              <SelectItem key={cat} value={cat}>
+                                {cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ')}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="imageId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Image ID</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
+                          <Input placeholder="e.g. product-juicy-mango" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {ALL_CATEGORIES.map((cat) => (
-                            <SelectItem key={cat} value={cat}>
-                              {cat.charAt(0).toUpperCase() + cat.slice(1).replace(/-/g, ' ')}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="imageId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Image ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. product-juicy-mango" {...field} />
-                      </FormControl>
-                      <FormDescription>This ID must match an entry in `placeholder-images.json`.</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-           
-            <Card>
-              <CardHeader>
-                <CardTitle>Features</CardTitle>
-                <CardDescription>Select the features that apply to this product.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {ALL_FEATURES.map((item) => (
-                  <FormField
-                    key={item}
-                    control={form.control}
-                    name="features"
-                    render={({ field }) => {
-                      return (
-                        <FormItem
-                          key={item}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...field.value, item])
-                                  : field.onChange(
-                                      field.value?.filter(
-                                        (value) => value !== item
-                                      )
-                                    );
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                             {item.charAt(0).toUpperCase() + item.slice(1).replace(/-/g, ' ')}
-                          </FormLabel>
-                        </FormItem>
-                      );
-                    }}
+                        <FormDescription>This ID must match an entry in `placeholder-images.json`.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                ))}
-                <FormMessage />
-              </CardContent>
-            </Card>
-             <Card>
-              <CardHeader>
-                <CardTitle>Scent Profile</CardTitle>
-                 <CardDescription>Select the scents that best describe this product.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {ALL_SCENTS.map((item) => (
-                  <FormField
-                    key={item}
-                    control={form.control}
-                    name="scentProfile"
-                    render={({ field }) => {
-                      return (
-                        <FormItem
-                          key={item}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...field.value, item])
-                                  : field.onChange(
-                                      field.value?.filter(
-                                        (value) => value !== item
-                                      )
-                                    );
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                             {item.charAt(0).toUpperCase() + item.slice(1).replace(/-/g, ' ')}
-                          </FormLabel>
-                        </FormItem>
-                      );
-                    }}
-                  />
-                ))}
-                 <FormMessage />
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            
+              <Card>
+                <CardHeader>
+                  <CardTitle>Features</CardTitle>
+                  <CardDescription>Select the features that apply to this product.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {ALL_FEATURES.map((item) => (
+                    <FormField
+                      key={item}
+                      control={form.control}
+                      name="features"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={item}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, item])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== item
+                                        )
+                                      );
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {item.charAt(0).toUpperCase() + item.slice(1).replace(/-/g, ' ')}
+                            </FormLabel>
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  ))}
+                  <FormMessage />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Scent Profile</CardTitle>
+                  <CardDescription>Select the scents that best describe this product.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {ALL_SCENTS.map((item) => (
+                    <FormField
+                      key={item}
+                      control={form.control}
+                      name="scentProfile"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={item}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, item])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== item
+                                        )
+                                      );
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {item.charAt(0).toUpperCase() + item.slice(1).replace(/-/g, ' ')}
+                            </FormLabel>
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  ))}
+                  <FormMessage />
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-            Save Product
+            Save {isAdminView ? 'Prices' : 'Product'}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
+
+    
