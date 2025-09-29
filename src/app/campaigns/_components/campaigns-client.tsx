@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -79,7 +79,7 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
         // In a real app, you might only refetch the specific campaign that was updated.
         // For simplicity, we'll refetch all of them.
         if (!user) return;
-        const updatedCampaigns = user.uid === 'admin' 
+        const updatedCampaigns = userProfile?.roles.includes('admin')
             ? await campaignService.getCampaigns()
             : await campaignService.getCampaignsByMarketer(user.uid);
 
@@ -89,6 +89,14 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
         }));
         setCampaigns(campaignsWithLinks);
     }
+    
+    const visibleCampaigns = useMemo(() => {
+        if (!user || !userProfile) return [];
+        if (userProfile.roles.includes('admin')) {
+            return campaigns;
+        }
+        return campaigns.filter(c => c.marketerId === user.uid);
+    }, [campaigns, user, userProfile]);
 
     return (
         <div className="grid md:grid-cols-3 gap-6 items-start">
@@ -137,7 +145,7 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
                     </CardHeader>
                     <CardContent>
                          <Accordion type="multiple" className="w-full space-y-4">
-                             {campaigns.map(campaign => (
+                             {visibleCampaigns.map(campaign => (
                                  <AccordionItem key={campaign.id} value={campaign.id} className="border bg-card rounded-lg overflow-hidden">
                                      <AccordionTrigger className="p-4 hover:no-underline data-[state=open]:border-b">
                                         <div className="flex items-center gap-4">
@@ -190,7 +198,7 @@ export default function CampaignsClient({ initialCampaigns, topLinks }: Campaign
                                  </AccordionItem>
                              ))}
                          </Accordion>
-                         {campaigns.length === 0 && <p className="text-center text-muted-foreground py-8">You haven't been assigned any campaigns yet. Contact an administrator.</p>}
+                         {visibleCampaigns.length === 0 && <p className="text-center text-muted-foreground py-8">You haven't been assigned any campaigns yet. Contact an administrator.</p>}
                     </CardContent>
                 </Card>
             </div>
