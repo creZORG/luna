@@ -19,13 +19,13 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <div className="group relative">
       <Link href={`/products/${product.slug}`} className="block">
-        <div className="relative aspect-square w-full bg-muted rounded-lg overflow-hidden border transition-all group-hover:shadow-xl">
+        <div className="relative w-full bg-muted rounded-lg overflow-hidden border transition-all group-hover:shadow-xl">
           <Image
             src={imageUrl}
             alt={product.name || "Product Image"}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            width={500}
+            height={500}
+            className="object-cover w-full h-auto transition-transform duration-300 group-hover:scale-105"
           />
           <Badge variant="secondary" className={cn(
             "absolute top-3 right-3 capitalize transition-opacity duration-300",
