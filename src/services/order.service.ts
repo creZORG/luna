@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, runTransaction, doc, increment } from 'firebase/firestore';
 import { CartItem } from './cart.service';
 
 export interface Order {
@@ -27,7 +27,7 @@ export interface CustomerInfo {
 
 
 class OrderService {
-    async createOrder(customer: CustomerInfo, items: CartItem[], totalAmount: number): Promise<string> {
+    async createOrder(customer: CustomerInfo, items: CartItem[], totalAmount: number, paystackReference: string): Promise<string> {
         
         const inventoryRefs = items.map(item => doc(db, 'inventory', `${item.productId}-${item.size.replace(/\s/g, '')}`));
 
@@ -57,9 +57,9 @@ class OrderService {
                     shippingAddress: `${customer.address}, ${customer.constituency}`,
                     items: items,
                     totalAmount: totalAmount,
-                    status: 'paid', // Simulating successful payment
+                    status: 'paid',
                     orderDate: serverTimestamp(),
-                    paystackReference: `sim_${Date.now()}` // Simulated reference
+                    paystackReference,
                 };
                 const orderRef = doc(collection(db, 'orders'));
                 transaction.set(orderRef, newOrder);
@@ -84,5 +84,3 @@ class OrderService {
 }
 
 export const orderService = new OrderService();
-
-    

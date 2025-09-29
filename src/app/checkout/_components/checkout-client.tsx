@@ -66,7 +66,9 @@ import { reverseGeocode } from '@/ai/flows/reverse-geocode-flow';
 import { getCompanySettings } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { processOrder } from '@/ai/flows/process-order-flow';
+import { verifyPaymentAndProcessOrder } from '@/ai/flows/verify-payment-and-process-order-flow';
+import { PaystackPop } from '@paystack/inline-js';
+
 
 const deliveryFormSchema = z.object({
   fullName: z.string().min(3, 'Full name is required'),
@@ -246,6 +248,8 @@ export default function CheckoutClient() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [identifiedLocation, setIdentifiedLocation] = useState<string | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+
 
   const form = useForm<DeliveryFormData>({
     resolver: zodResolver(deliveryFormSchema),
@@ -298,8 +302,7 @@ export default function CheckoutClient() {
             if (geocodeResult && geocodeResult.city) {
               setIdentifiedLocation(geocodeResult.city);
             } else {
-              // This is a fallback if the AI fails to identify a city
-              setIdentifiedLocation("your current area");
+              setIdentifiedLocation(null);
             }
             setLocationState('outside_nairobi');
           } catch (e) {
@@ -320,31 +323,66 @@ export default function CheckoutClient() {
     );
   };
   
-  const onSubmit = async (data: DeliveryFormData) => {
-      try {
-        const orderId = await processOrder({
-            cartItems: cartItems,
-            customer: data,
-        });
+  const handlePaymentAndOrderProcessing = async (data: DeliveryFormData) => {
+    setIsProcessingOrder(true);
+    const products = await Promise.all(
+        Array.from(new Set(cartItems.map(item => item.productId))).map(id => productService.getProductById(id))
+    );
+    const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const totalDeliveryFee = Array.from(new Set(cartItems.map(item => item.productId))).reduce((acc, productId) => {
+        const product = products.find(p => p && p.id === productId);
+        return acc + (product?.deliveryFee || 0);
+    }, 0);
+    const totalPlatformFee = Array.from(new Set(cartItems.map(item => item.productId))).reduce((acc, productId) => {
+        const product = products.find(p => p && p.id === productId);
+        return acc + (product?.platformFee || 0);
+    }, 0);
+    
+    const totalAmount = subtotal + totalDeliveryFee + totalPlatformFee;
 
-        toast({
-            title: "Order Placed!",
-            description: `Your order #${orderId.substring(0,6).toUpperCase()} has been successfully placed.`,
-        });
-        
-        clearCart();
-        router.push(`/order/success?orderId=${orderId}`);
+    const paystack = new PaystackPop();
+    paystack.newTransaction({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
+        email: data.email,
+        amount: totalAmount * 100, // Amount in kobo
+        onSuccess: async (transaction) => {
+            try {
+                const orderId = await verifyPaymentAndProcessOrder({
+                    reference: transaction.reference,
+                    cartItems: cartItems,
+                    customer: data,
+                });
 
-      } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: "Order Failed",
-            description: error.message || "There was an error processing your order. Please try again.",
-        });
-      }
+                toast({
+                    title: "Payment Successful & Order Placed!",
+                    description: `Your order #${orderId.substring(0,6).toUpperCase()} is being processed.`,
+                });
+                
+                clearCart();
+                router.push(`/order/success?orderId=${orderId}`);
+
+            } catch (error: any) {
+                toast({
+                    variant: 'destructive',
+                    title: "Order Processing Failed",
+                    description: error.message || "There was an error verifying your payment and creating the order. Please contact support.",
+                });
+                setIsProcessingOrder(false);
+            }
+        },
+        onCancel: () => {
+            toast({
+                variant: 'destructive',
+                title: "Payment Cancelled",
+                description: "You have cancelled the payment process.",
+            });
+            setIsProcessingOrder(false);
+        },
+    });
   }
   
   const distanceInKm = distance ? (distance / 1000).toFixed(0) : 0;
+  const isSubmitting = form.formState.isSubmitting || isProcessingOrder;
 
   return (
     <>
@@ -372,7 +410,7 @@ export default function CheckoutClient() {
             )}
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(handlePaymentAndOrderProcessing)} className="space-y-4">
                  <RadioGroup defaultValue="door-to-door" className="grid grid-cols-2 gap-4">
                     <div>
                         <RadioGroupItem value="door-to-door" id="door-to-door" className="peer sr-only" />
@@ -466,7 +504,7 @@ export default function CheckoutClient() {
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Outside Nairobi Delivery Area</AlertTitle>
                             <AlertDescription>
-                                {identifiedLocation && identifiedLocation !== "your current area"
+                                {identifiedLocation
                                     ? `It looks like you're in ${identifiedLocation} (approx. ${distanceInKm}km away), which is outside our standard delivery zone.`
                                     : `It looks like you're outside our standard delivery zone (approx. ${distanceInKm}km away).`
                                 }
@@ -537,8 +575,8 @@ export default function CheckoutClient() {
                     />
                 </div>
 
-                <Button type="submit" size="lg" className="w-full" disabled={!form.formState.isValid || form.formState.isSubmitting || cartItems.length === 0}>
-                    {form.formState.isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" size="lg" className="w-full" disabled={!form.formState.isValid || isSubmitting || cartItems.length === 0}>
+                    {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                     Proceed to Payment
                 </Button>
               </form>
@@ -552,5 +590,3 @@ export default function CheckoutClient() {
     </>
   );
 }
-
-    

@@ -10,6 +10,8 @@ import { z } from 'zod';
 import { orderService, CustomerInfo } from '@/services/order.service';
 import { CartItem, cartService } from '@/services/cart.service';
 import { productService } from '@/services/product.service';
+import { increment } from 'firebase/firestore';
+
 
 const CartItemSchema = z.object({
     productId: z.string(),
@@ -32,6 +34,7 @@ const CustomerInfoSchema = z.object({
 const ProcessOrderInputSchema = z.object({
   cartItems: z.array(CartItemSchema),
   customer: CustomerInfoSchema,
+  paystackReference: z.string(),
 });
 
 export type ProcessOrderInput = z.infer<typeof ProcessOrderInputSchema>;
@@ -49,14 +52,6 @@ const processOrderFlow = ai.defineFlow(
     outputSchema: z.string(), // Returns the order ID
   },
   async (input) => {
-    // In a real app, this is where you would call the Paystack API
-    // and wait for a successful payment response.
-    // We will simulate that response here.
-    
-    console.log("Simulating payment processing...");
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-    console.log("Payment successful (simulated).");
-
     // Recalculate total on the backend to prevent tampering
     let subtotal = 0;
     let totalDeliveryFee = 0;
@@ -84,11 +79,10 @@ const processOrderFlow = ai.defineFlow(
     const orderId = await orderService.createOrder(
         input.customer,
         input.cartItems,
-        totalAmount
+        totalAmount,
+        input.paystackReference
     );
 
     return orderId;
   }
 );
-
-    
