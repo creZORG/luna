@@ -1,4 +1,6 @@
 
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Product } from '@/lib/data';
@@ -8,8 +10,7 @@ import { Star } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 
 function AddToCartButton({ product }: { product: Product }) {
-    'use client';
-    const { addItem, isCartOpen, setIsCartOpen } = useCart();
+    const { addItem, setIsCartOpen } = useCart();
 
     const handleAddToCart = () => {
         if (product.sizes.length > 0) {
