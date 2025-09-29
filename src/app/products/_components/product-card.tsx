@@ -13,6 +13,8 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
+  console.log(`[ProductCard] Rendering card for "${product.name}". Image URL:`, product.imageUrl);
+
   // Use the provided fallback URL if imageUrl is missing.
   const imageUrl = product.imageUrl || `https://placehold.co/400x600/EEE/31343C`;
 
