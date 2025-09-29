@@ -260,13 +260,17 @@ export default function CheckoutClient() {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
             });
-            setIdentifiedLocation(geocodeResult.city);
+            if (geocodeResult && geocodeResult.city) {
+              setIdentifiedLocation(geocodeResult.city);
+            } else {
+              // This is a fallback if the AI returns an empty or unexpected response
+              setIdentifiedLocation("your current location");
+            }
             setLocationState('outside_nairobi');
           } catch (e) {
             console.error("Reverse geocode failed:", e);
-            // Fallback to generic message if AI call fails
-            setLocationState('outside_nairobi');
-            setIdentifiedLocation('your area');
+            setLocationError("Could not determine your city from your coordinates. Please enter your address manually.");
+            setLocationState('error');
           }
         }
       },
