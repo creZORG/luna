@@ -33,6 +33,16 @@ export async function processFieldSale(input: ProcessFieldSaleInput) {
     return await processFieldSaleFlow(input);
 }
 
+// Helper to format phone number to 254... format
+const formatPhoneNumber = (phone: string): string => {
+    if (phone.startsWith('+254')) {
+        return phone.substring(1);
+    }
+    if (phone.startsWith('0')) {
+        return '254' + phone.substring(1);
+    }
+    return phone; // Assume it's already in the correct format if it doesn't match above
+}
 
 const processFieldSaleFlow = ai.defineFlow(
   {
@@ -51,6 +61,8 @@ const processFieldSaleFlow = ai.defineFlow(
         throw new Error("Paystack secret key is not configured.");
     }
     
+    const formattedPhone = formatPhoneNumber(input.customerPhone);
+
     try {
         const transactionRef = `luna-field-${Date.now()}`;
         
@@ -68,7 +80,7 @@ const processFieldSaleFlow = ai.defineFlow(
                     "send_receipt": false, // Disable Paystack receipt
                 },
                 mobile_money: {
-                    phone: input.customerPhone,
+                    phone: formattedPhone,
                     provider: 'mpesa'
                 },
                 reference: transactionRef
@@ -109,6 +121,7 @@ const processFieldSaleFlow = ai.defineFlow(
                 email: `pos-customer-${Date.now()}@luna.co.ke`, // Dummy email for POS
                 address: `In-person sale by ${input.salespersonName}`,
                 county: 'Field Sale',
+                deliveryMethod: 'door-to-door', // Field sales are a form of direct delivery
             },
             paystackReference: chargeData.reference,
             userId: input.salespersonId, 

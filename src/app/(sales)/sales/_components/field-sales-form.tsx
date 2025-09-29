@@ -20,7 +20,7 @@ export default function FieldSalesForm({ onProcessSale, isProcessing }: FieldSal
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const phoneRegex = /^(\+254|0)?\d{9}$/;
+        const phoneRegex = /^(?:254|\+254|0)?(7\d{8})$/;
         if (!customerName || !customerPhone) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please enter customer name and phone number.' });
             return;
