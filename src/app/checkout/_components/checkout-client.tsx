@@ -236,14 +236,13 @@ export default function CheckoutClient() {
         if (user) {
             const lastOrder = await orderService.getLastOrderByUserId(user.uid);
             if (lastOrder) {
-                const [address, county] = lastOrder.shippingAddress.split(',').map(s => s.trim());
                 form.reset({
-                    deliveryMethod: 'door-to-door',
+                    deliveryMethod: lastOrder.deliveryMethod || 'door-to-door',
                     fullName: lastOrder.customerName,
                     email: lastOrder.customerEmail,
                     phone: lastOrder.customerPhone,
-                    address: address || '',
-                    county: KENYAN_COUNTIES.includes(county) ? county : '',
+                    address: lastOrder.shippingAddress || '',
+                    county: lastOrder.county || (KENYAN_COUNTIES.includes(lastOrder.shippingAddress.split(',').pop()?.trim() || '') ? lastOrder.shippingAddress.split(',').pop()?.trim() : ''),
                     deliveryNotes: '', // Don't pre-fill notes
                 });
             } else if (userProfile) {
@@ -317,7 +316,6 @@ export default function CheckoutClient() {
                     cartItems: cartItems,
                     customer: {
                         ...data,
-                        county: data.county || '', // ensure county is not undefined
                         address: shippingAddress // We send the combined address string
                     },
                     userId: user?.uid, // Pass user ID if they are logged in

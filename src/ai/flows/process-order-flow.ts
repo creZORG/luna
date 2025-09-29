@@ -32,6 +32,7 @@ const CustomerInfoSchema = z.object({
   county: z.string(),
   address: z.string(),
   deliveryNotes: z.string().optional(),
+  deliveryMethod: z.enum(['door-to-door', 'pickup']),
 });
 
 const ProcessOrderInputSchema = z.object({
@@ -77,7 +78,9 @@ const processOrderFlow = ai.defineFlow(
         }
     });
 
-    const totalAmount = subtotal + totalDeliveryFee + totalPlatformFee;
+    const totalAmount = input.customer.deliveryMethod === 'pickup'
+        ? subtotal + totalPlatformFee
+        : subtotal + totalDeliveryFee + totalPlatformFee;
 
     // Now that payment is "verified", create the order in the database.
     const orderId = await orderService.createOrder(
@@ -105,7 +108,7 @@ const processOrderFlow = ai.defineFlow(
                 `).join('')}
                  <tr>
                     <td>Delivery Fee</td>
-                    <td style="text-align: right;">Ksh ${totalDeliveryFee.toFixed(2)}</td>
+                    <td style="text-align: right;">Ksh ${input.customer.deliveryMethod === 'pickup' ? '0.00' : totalDeliveryFee.toFixed(2)}</td>
                 </tr>
                  <tr>
                     <td>Platform Fee</td>
@@ -144,6 +147,7 @@ const processOrderFlow = ai.defineFlow(
                     <li><strong>Name:</strong> ${input.customer.fullName}</li>
                     <li><strong>Email:</strong> ${input.customer.email}</li>
                     <li><strong>Phone:</strong> ${input.customer.phone}</li>
+                    <li><strong>Delivery Method:</strong> ${input.customer.deliveryMethod.replace('-', ' ')}</li>
                     <li><strong>Delivery Address:</strong> ${input.customer.address}</li>
                     ${input.customer.deliveryNotes ? `<li><strong>Notes:</strong> ${input.customer.deliveryNotes}</li>` : ''}
                 </ul>

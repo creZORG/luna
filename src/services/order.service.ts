@@ -1,8 +1,11 @@
 
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit, updateDoc } from 'firebase/firestore';
 import { CartItem } from './cart.service';
+import { activityService } from './activity.service';
+
+export type OrderStatus = 'pending-payment' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface Order {
     id?: string;
@@ -11,9 +14,12 @@ export interface Order {
     customerEmail: string;
     customerPhone: string;
     shippingAddress: string;
+    deliveryMethod: 'door-to-door' | 'pickup';
+    deliveryNotes?: string;
+    county?: string;
     items: CartItem[];
     totalAmount: number; // Final amount including all fees
-    status: 'pending-payment' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    status: OrderStatus;
     orderDate: any; // Firebase Timestamp
     paystackReference?: string;
 }
@@ -25,39 +31,25 @@ export interface CustomerInfo {
     address: string;
     county: string;
     deliveryNotes?: string;
+    deliveryMethod: 'door-to-door' | 'pickup';
 }
 
 
 class OrderService {
     async createOrder(customer: CustomerInfo, items: CartItem[], totalAmount: number, paystackReference: string, userId?: string): Promise<string> {
         
-        const inventoryRefs = items.map(item => doc(db, 'inventory', `${item.productId}-${item.size.replace(/\s/g, '')}`));
-
         try {
             const orderId = await runTransaction(db, async (transaction) => {
-                // Not needed for now as inventory is not tracked this way
-                // const inventoryDocs = await Promise.all(inventoryRefs.map(ref => transaction.get(ref)));
-
-                // for (let i = 0; i < items.length; i++) {
-                //     const inventoryDoc = inventoryDocs[i];
-                //     const item = items[i];
-
-                //     if (!inventoryDoc.exists()) {
-                //         throw new Error(`Inventory for ${item.productName} (${item.size}) not found.`);
-                //     }
-
-                //     const currentStock = inventoryDoc.data().quantity;
-                //     if (currentStock < item.quantity) {
-                //         throw new Error(`Not enough stock for ${item.productName} (${item.size}). Only ${currentStock} left.`);
-                //     }
-                // }
-
+               
                 // Create the new order
                 const newOrder: Omit<Order, 'id'> = {
                     customerName: customer.fullName,
                     customerEmail: customer.email,
                     customerPhone: customer.phone,
-                    shippingAddress: customer.address, // Address is now pre-formatted in client
+                    shippingAddress: customer.address,
+                    deliveryMethod: customer.deliveryMethod,
+                    deliveryNotes: customer.deliveryNotes || '',
+                    county: customer.county || '',
                     items: items,
                     totalAmount: totalAmount,
                     status: 'paid',
@@ -69,13 +61,6 @@ class OrderService {
                 }
                 const orderRef = doc(collection(db, 'orders'));
                 transaction.set(orderRef, newOrder);
-
-                // Decrement inventory for each item - NOT NEEDED FOR NOW
-                // for (let i = 0; i < items.length; i++) {
-                //     const inventoryRef = inventoryRefs[i];
-                //     const item = items[i];
-                //     transaction.update(inventoryRef, { quantity: increment(-item.quantity) });
-                // }
 
                 return orderRef.id;
             });
@@ -125,6 +110,18 @@ class OrderService {
             return { id: doc.id, ...doc.data() } as Order;
         }
         return null;
+    }
+
+    async updateOrderStatus(orderId: string, status: OrderStatus, userId: string, userName: string): Promise<void> {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { status });
+
+        // Log the activity
+        await activityService.logActivity(
+            `Updated order #${orderId.substring(0,6).toUpperCase()} to status: ${status}`,
+            userId,
+            userName
+        );
     }
 }
 

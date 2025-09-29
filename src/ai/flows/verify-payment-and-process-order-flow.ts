@@ -25,6 +25,7 @@ const CustomerInfoSchema = z.object({
   county: z.string(),
   address: z.string(),
   deliveryNotes: z.string().optional(),
+  deliveryMethod: z.enum(['door-to-door', 'pickup']),
 });
 
 const VerifyPaymentInputSchema = z.object({
