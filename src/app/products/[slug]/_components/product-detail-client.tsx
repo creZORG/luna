@@ -6,23 +6,23 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Product } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Check, Send, ShoppingCart, MessageSquare, Plus, Minus, Star, User } from 'lucide-react';
+import { Check, Send, ShoppingCart, MessageSquare, Plus, Minus, Star, User, Loader } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChatModal } from './chat-modal';
 import { useAuth } from '@/hooks/use-auth';
-import { cartService } from '@/services/cart.service';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/use-cart';
 import { WholesaleRedirectModal } from './wholesale-redirect-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+import { Review, reviewService } from '@/services/review.service';
+import { formatDistanceToNow } from 'date-fns';
 
-const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => {
+const StarRatingDisplay = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => {
     return (
         <div className="flex items-center gap-2">
             <div className="flex items-center">
@@ -36,10 +36,11 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
                     />
                 ))}
             </div>
-            <span className="text-sm text-muted-foreground">({reviewCount} reviews)</span>
+            {reviewCount > 0 && <span className="text-sm text-muted-foreground">({reviewCount} reviews)</span>}
         </div>
     );
 };
+
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const primaryImage = product.imageUrl;
@@ -54,9 +55,31 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isRedirectModalOpen, setIsRedirectModalOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
   const { toast } = useToast();
   const router = useRouter();
+  const { user, userProfile } = useAuth();
   const { addItem, setIsCartOpen } = useCart();
+  
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const fetchedReviews = await reviewService.getReviews(product.id);
+        setReviews(fetchedReviews);
+      } catch (error) {
+        toast({ variant: 'destructive', title: "Error", description: "Could not load product reviews." });
+      } finally {
+        setIsLoadingReviews(false);
+      }
+    };
+    fetchReviews();
+  }, [product.id, toast]);
+
 
   const handleAddToCart = () => {
      if (quantity >= (product.wholesaleMoq || Infinity)) {
@@ -94,6 +117,37 @@ export default function ProductDetailClient({ product }: { product: Product }) {
     router.push('/checkout');
   };
   
+  const handleReviewSubmit = async () => {
+    if (!user || !userProfile) {
+        toast({ variant: 'destructive', title: "Not Logged In", description: "You must be logged in to leave a review." });
+        return;
+    }
+    if (reviewRating === 0 || reviewComment.trim() === '') {
+        toast({ variant: 'destructive', title: "Missing Information", description: "Please provide a rating and a comment." });
+        return;
+    }
+    setIsSubmittingReview(true);
+    try {
+        const newReview = await reviewService.addReview({
+            productId: product.id,
+            userId: user.uid,
+            userName: userProfile.displayName,
+            userPhotoUrl: userProfile.photoURL || '',
+            rating: reviewRating,
+            comment: reviewComment,
+        });
+        setReviews(prev => [newReview, ...prev]);
+        setReviewRating(0);
+        setReviewComment('');
+        toast({ title: "Review Submitted!", description: "Thank you for your feedback." });
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Submission Failed", description: "Could not submit your review." });
+    } finally {
+        setIsSubmittingReview(false);
+    }
+  };
+
+
   return (
     <>
       <div className="container mx-auto px-4 py-12 md:py-20">
@@ -154,7 +208,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             <Badge variant="secondary" className='capitalize'>{product.category.replace(/-/g, ' ')}</Badge>
             <h1 className="font-headline text-3xl md:text-4xl font-bold mt-2">{product.name}</h1>
             <div className="mt-4">
-              <StarRating rating={product.rating} reviewCount={product.reviewCount} />
+              <StarRatingDisplay rating={product.rating} reviewCount={product.reviewCount} />
             </div>
             <p className="mt-4 text-lg text-muted-foreground">{product.shortDescription}</p>
             
@@ -272,43 +326,36 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                      <CardHeader className="flex-row items-center gap-4">
                         <p className="text-5xl font-bold">{product.rating.toFixed(1)}</p>
                         <div>
-                             <StarRating rating={product.rating} reviewCount={product.reviewCount} />
+                             <StarRatingDisplay rating={product.rating} reviewCount={product.reviewCount} />
                             <p className="text-sm text-muted-foreground">Based on {product.reviewCount} reviews</p>
                         </div>
                      </CardHeader>
                      <CardContent className="space-y-6">
-                        {/* Placeholder for reviews */}
-                        <div className="space-y-4">
-                            <div className="flex gap-3">
-                                <Avatar>
-                                    <AvatarImage src="https://i.pravatar.cc/40?u=a" alt="Reviewer" />
-                                    <AvatarFallback>JD</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h5 className="font-semibold text-sm">Jane D.</h5>
-                                        <div className="flex">
-                                             {[...Array(5)].map((_,i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400"/>)}
-                                        </div>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">Absolutely love the scent! It leaves my clothes feeling so soft and fresh for days. Highly recommend!</p>
-                                </div>
-                            </div>
-                             <div className="flex gap-3">
-                                <Avatar>
-                                    <AvatarImage src="https://i.pravatar.cc/40?u=b" alt="Reviewer" />
-                                    <AvatarFallback>MS</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h5 className="font-semibold text-sm">Mary S.</h5>
-                                        <div className="flex">
-                                             {[...Array(5)].map((_,i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400"/>)}
-                                        </div>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">Great product, and it's eco-friendly which is a huge plus for me. Will be buying again.</p>
-                                </div>
-                            </div>
+                        <div className="space-y-6">
+                          {isLoadingReviews ? (
+                            <div className="flex justify-center"><Loader className="animate-spin" /></div>
+                          ) : reviews.length > 0 ? (
+                            reviews.map(review => (
+                              <div key={review.id} className="flex gap-3">
+                                  <Avatar>
+                                      <AvatarImage src={review.userPhotoUrl || `https://i.pravatar.cc/40?u=${review.userId}`} alt={review.userName} />
+                                      <AvatarFallback>{review.userName.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                      <div className="flex items-center gap-2">
+                                          <h5 className="font-semibold text-sm">{review.userName}</h5>
+                                           <div className="flex">
+                                             {[...Array(5)].map((_,i) => <Star key={i} className={cn("h-4 w-4", i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30')}/>)}
+                                          </div>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mb-1">{formatDistanceToNow(review.createdAt.toDate(), { addSuffix: true })}</p>
+                                      <p className="text-sm text-muted-foreground">{review.comment}</p>
+                                  </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">No reviews yet. Be the first to share your thoughts!</p>
+                          )}
                         </div>
 
                         <Separator />
@@ -316,14 +363,35 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                         {/* Review Submission Form */}
                         <div className="space-y-4">
                             <h4 className="font-semibold">Leave a Review</h4>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">Your Rating:</span>
-                                <div className="flex">
-                                    {[...Array(5)].map((_,i) => <Star key={i} className="h-5 w-5 text-muted-foreground/50 cursor-pointer hover:text-yellow-400"/>)}
+                            {user ? (
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-muted-foreground">Your Rating:</span>
+                                    <div className="flex">
+                                        {[...Array(5)].map((_,i) => 
+                                          <Star 
+                                            key={i} 
+                                            className={cn("h-5 w-5 cursor-pointer", i < reviewRating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/50 hover:text-yellow-400')}
+                                            onClick={() => setReviewRating(i + 1)}
+                                          />
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                            <Textarea placeholder="Share your thoughts..." />
-                            <Button>Submit Review</Button>
+                                <Textarea 
+                                  placeholder="Share your thoughts..." 
+                                  value={reviewComment}
+                                  onChange={(e) => setReviewComment(e.target.value)}
+                                />
+                                <Button onClick={handleReviewSubmit} disabled={isSubmittingReview}>
+                                  {isSubmittingReview && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                  Submit Review
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-center text-muted-foreground p-4 border rounded-md">
+                                <p><Link href="/login" className="underline font-semibold text-primary">Log in</Link> to leave a review.</p>
+                              </div>
+                            )}
                         </div>
 
                      </CardContent>
