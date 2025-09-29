@@ -1,7 +1,7 @@
 
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc, Transaction, increment } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc, Transaction, increment, orderBy } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
 import { activityService } from './activity.service';
 
