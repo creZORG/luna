@@ -31,13 +31,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { ALL_CATEGORIES } from '@/lib/data';
-import { Loader, Trash, Plus, UploadCloud, X } from 'lucide-react';
-import { productService, ProductUpdateData } from '@/services/product.service';
+import { Loader, Trash, Plus, UploadCloud, X, Save, Eraser } from 'lucide-react';
+import { productService } from '@/services/product.service';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Product } from '@/lib/data';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 
@@ -59,8 +59,8 @@ const formSchema = z.object({
   ingredients: z.string().min(10, 'Ingredients are too short'),
   directions: z.string().min(10, 'Directions are too short'),
   cautions: z.string().min(10, 'Cautions are too short'),
-  image: z.any(),
-  galleryImages: z.array(z.any()).optional(),
+  imageUrl: z.any().optional(),
+  galleryImageUrls: z.array(z.any()).optional(),
   sizes: z.array(z.object({
     size: z.string().min(1, "Size cannot be empty"),
     price: z.coerce.number().optional(), // Price is optional for ops manager
@@ -80,6 +80,7 @@ export function ProductForm({ product }: ProductFormProps) {
 
     const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
     const [galleryPreviews, setGalleryPreviews] = useState<string[]>(product?.galleryImageUrls || []);
+    const [draftStatus, setDraftStatus] = useState<'unsaved' | 'saving' | 'saved'>('unsaved');
 
     const form = useForm<ProductFormData>({
         resolver: zodResolver(formSchema),
@@ -87,8 +88,6 @@ export function ProductForm({ product }: ProductFormProps) {
             ...product,
             keyBenefits: product.keyBenefits.join('\n'),
             ingredients: product.ingredients.join(', '),
-            image: product.imageUrl,
-            galleryImages: product.galleryImageUrls,
         } : {
             name: '',
             slug: '',
@@ -99,10 +98,63 @@ export function ProductForm({ product }: ProductFormProps) {
             ingredients: '',
             directions: '',
             cautions: '',
-            image: undefined,
-            galleryImages: [],
+            imageUrl: undefined,
+            galleryImageUrls: [],
         },
     });
+
+    const getDraftKey = () => `product-draft-${product?.id || 'new'}`;
+
+    // Load draft from local storage on mount
+    useEffect(() => {
+        const draftKey = getDraftKey();
+        const savedDraft = localStorage.getItem(draftKey);
+        if (savedDraft) {
+            try {
+                const draftData = JSON.parse(savedDraft);
+                form.reset(draftData);
+                 if (draftData.imageUrl) setImagePreview(draftData.imageUrl);
+                 if (draftData.galleryImageUrls) setGalleryPreviews(draftData.galleryImageUrls);
+                toast({ title: "Draft Loaded", description: "Your previous work has been restored." });
+            } catch (e) {
+                console.error("Failed to parse draft:", e);
+            }
+        }
+    }, [form, product?.id, toast]);
+
+
+    // Auto-save to local storage on change
+    useEffect(() => {
+        const subscription = form.watch((value) => {
+            setDraftStatus('saving');
+            const draftKey = getDraftKey();
+            const draftData = {
+                ...value,
+                imageUrl: imagePreview,
+                galleryImageUrls: galleryPreviews,
+            };
+            localStorage.setItem(draftKey, JSON.stringify(draftData));
+            setTimeout(() => setDraftStatus('saved'), 500); // Simulate save delay
+        });
+        return () => subscription.unsubscribe();
+    }, [form.watch, imagePreview, galleryPreviews, product?.id]);
+    
+    const handleClearDraft = () => {
+        const draftKey = getDraftKey();
+        localStorage.removeItem(draftKey);
+        form.reset(isEditMode ? {
+            ...product,
+            keyBenefits: product.keyBenefits.join('\n'),
+            ingredients: product.ingredients.join(', '),
+        } : {
+            name: '', slug: '', description: '', shortDescription: '',
+            sizes: [{ size: '', price: 0 }], keyBenefits: '', ingredients: '',
+            directions: '', cautions: '', imageUrl: undefined, galleryImageUrls: [],
+        });
+        setImagePreview(product?.imageUrl || null);
+        setGalleryPreviews(product?.galleryImageUrls || []);
+        toast({ title: "Draft Cleared", description: "The form has been reset." });
+    };
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -111,7 +163,7 @@ export function ProductForm({ product }: ProductFormProps) {
   
   const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({
       control: form.control,
-      name: "galleryImages"
+      name: "galleryImageUrls"
   });
 
   const toDataUri = (file: File): Promise<string> => {
@@ -125,27 +177,34 @@ export function ProductForm({ product }: ProductFormProps) {
 
   async function onSubmit(values: ProductFormData) {
     try {
-        const imageAsDataUri = values.image instanceof File ? await toDataUri(values.image) : (isEditMode ? product.imageUrl : undefined);
-        const galleryAsDataUris = values.galleryImages ? await Promise.all(
-            values.galleryImages.map(img => img instanceof File ? toDataUri(img) : Promise.resolve(img))
-        ) : [];
-
-       const productPayload: ProductUpdateData = {
+        const finalImageUrl = imagePreview && imagePreview.startsWith('data:') 
+          ? await uploadImageFlow({ imageDataUri: imagePreview, folder: 'products' })
+          : imagePreview;
+        
+        const finalGalleryUrls = await Promise.all(
+            (galleryPreviews || []).map(async (img) => {
+                if (img && img.startsWith('data:')) {
+                    return await uploadImageFlow({ imageDataUri: img, folder: 'products' });
+                }
+                return img;
+            })
+        );
+      
+       const productPayload = {
         ...values,
         keyBenefits: values.keyBenefits.split('\n').filter(b => b.trim() !== ''),
         ingredients: values.ingredients.split(',').map(i => i.trim()).filter(i => i !== ''),
-        imageUrl: imageAsDataUri,
-        galleryImageUrls: galleryAsDataUris,
+        imageUrl: finalImageUrl,
+        galleryImageUrls: finalGalleryUrls.filter(url => url),
         sizes: values.sizes.map(s => {
           return {
             size: s.size,
-            // Ops manager doesn't set price, so we use existing price on edit or 0 on create
             price: isEditMode ? (product.sizes.find(ps => ps.size === s.size)?.price || 0) : 0,
             wholesalePrice: isEditMode ? (product.sizes.find(ps => ps.size === s.size)?.wholesalePrice || 0) : 0,
           };
         }),
       };
-
+      
       if (isEditMode) {
         await productService.updateProduct(product.id, productPayload);
         toast({
@@ -159,6 +218,10 @@ export function ProductForm({ product }: ProductFormProps) {
           description: `The product "${values.name}" has been created successfully.`,
         });
       }
+      
+      // Clear draft on successful submission
+      localStorage.removeItem(getDraftKey());
+
       router.push('/operations/products');
       router.refresh();
     } catch (error) {
@@ -292,7 +355,7 @@ export function ProductForm({ product }: ProductFormProps) {
                     size="sm"
                     onClick={() => append({ size: "" })}
                   >
-                    Add Size
+                    <Plus className="mr-2 h-4 w-4" /> Add Size
                   </Button>
                 </div>
                 </CardContent>
@@ -362,7 +425,7 @@ export function ProductForm({ product }: ProductFormProps) {
               </Card>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-8 sticky top-24">
             <Card>
               <CardHeader>
                 <CardTitle>Organization & Images</CardTitle>
@@ -397,7 +460,7 @@ export function ProductForm({ product }: ProductFormProps) {
                 />
                   <FormField
                       control={form.control}
-                      name="image"
+                      name="imageUrl"
                       render={({ field: { onChange, value, ...rest } }) => (
                           <FormItem>
                           <FormLabel>Primary Image</FormLabel>
@@ -406,7 +469,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                   {imagePreview ? (
                                       <>
                                           <Image src={imagePreview} alt="Primary image preview" layout="fill" objectFit="contain" className="rounded-lg p-2" />
-                                          <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => { onChange(null); setImagePreview(null); }}>
+                                          <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => { setImagePreview(null); }}>
                                               <X className="h-4 w-4" />
                                           </Button>
                                       </>
@@ -423,8 +486,11 @@ export function ProductForm({ product }: ProductFormProps) {
                                       onChange={(e) => {
                                           const file = e.target.files?.[0];
                                           if (file) {
-                                              onChange(file);
-                                              setImagePreview(URL.createObjectURL(file));
+                                              const reader = new FileReader();
+                                              reader.onloadend = () => {
+                                                  setImagePreview(reader.result as string);
+                                              };
+                                              reader.readAsDataURL(file);
                                           }
                                       }}
                                       {...rest}
@@ -438,7 +504,7 @@ export function ProductForm({ product }: ProductFormProps) {
                   
                   <FormField
                       control={form.control}
-                      name="galleryImages"
+                      name="galleryImageUrls"
                       render={({ field: { onChange, value } }) => (
                           <FormItem>
                           <FormLabel>Gallery Images</FormLabel>
@@ -452,9 +518,6 @@ export function ProductForm({ product }: ProductFormProps) {
                                           size="icon"
                                           className="absolute top-1 right-1 h-6 w-6"
                                           onClick={() => {
-                                              const newValue = [...(value || [])];
-                                              newValue.splice(index, 1);
-                                              onChange(newValue);
                                               setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
                                           }}
                                       >
@@ -474,11 +537,17 @@ export function ProductForm({ product }: ProductFormProps) {
                                           accept={ACCEPTED_IMAGE_TYPES.join(",")}
                                           onChange={(e) => {
                                               const files = Array.from(e.target.files || []);
-                                              const currentFiles = value || [];
-                                              onChange([...currentFiles, ...files]);
-                                              
-                                              const newPreviews = files.map(file => URL.createObjectURL(file));
-                                              setGalleryPreviews(prev => [...prev, ...newPreviews]);
+                                              const newPreviews: string[] = [];
+                                              files.forEach(file => {
+                                                  const reader = new FileReader();
+                                                  reader.onloadend = () => {
+                                                      newPreviews.push(reader.result as string);
+                                                      if (newPreviews.length === files.length) {
+                                                          setGalleryPreviews(prev => [...prev, ...newPreviews]);
+                                                      }
+                                                  };
+                                                  reader.readAsDataURL(file);
+                                              });
                                           }}
                                       />
                                   </div>
@@ -490,14 +559,34 @@ export function ProductForm({ product }: ProductFormProps) {
                   />
               </CardContent>
             </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="flex justify-between items-center text-sm text-muted-foreground">
+                        <span>Draft Status:</span>
+                        <span className="font-medium flex items-center gap-2">
+                           {draftStatus === 'saving' && <Loader className="h-4 w-4 animate-spin" />}
+                           {draftStatus === 'saved' && <Save className="h-4 w-4 text-green-500" />}
+                           {draftStatus === 'saved' ? 'Saved' : 'Saving...'}
+                        </span>
+                    </div>
+                    <Button type="button" variant="outline" className="w-full" onClick={handleClearDraft}>
+                        <Eraser className="mr-2 h-4 w-4"/>
+                        Clear Draft
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting} className="w-full">
+                        {isSubmitting ? (
+                            <Loader className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Save className="mr-2 h-4 w-4" />
+                        )}
+                        {isEditMode ? 'Save Changes' : 'Create Product'}
+                    </Button>
+                </CardContent>
+            </Card>
           </div>
-        </div>
-
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-            {isEditMode ? 'Save Changes' : 'Create Product'}
-          </Button>
         </div>
       </form>
     </Form>

@@ -10,12 +10,12 @@ export interface ProductUpdateData {
   description?: string;
   shortDescription?: string;
   category?: string;
-  keyBenefits?: string | string[];
-  ingredients?: string | string[];
+  keyBenefits?: string[];
+  ingredients?: string[];
   directions?: string;
   cautions?: string;
-  imageUrl?: string; // Can be a data URI for new uploads or existing URL
-  galleryImageUrls?: (string | undefined)[]; // Can contain data URIs or existing URLs
+  imageUrl?: string;
+  galleryImageUrls?: string[];
   sizes?: {
     size: string;
     price?: number;
@@ -28,34 +28,8 @@ export interface ProductUpdateData {
 class ProductService {
     async createProduct(productData: Omit<Product, 'id'>): Promise<string> {
         try {
-            // Handle image uploads first
-            let finalImageUrl = productData.imageUrl;
-            if (productData.imageUrl && productData.imageUrl.startsWith('data:')) {
-                finalImageUrl = await uploadImageFlow({ imageDataUri: productData.imageUrl, folder: 'products' });
-            }
-
-            let finalGalleryUrls: string[] = [];
-            if (productData.galleryImageUrls) {
-                finalGalleryUrls = await Promise.all(
-                    productData.galleryImageUrls.map(async (img) => {
-                        if (img && img.startsWith('data:')) {
-                            return await uploadImageFlow({ imageDataUri: img, folder: 'products' });
-                        }
-                        return img || ''; // Keep existing URLs
-                    })
-                );
-            }
+            const productToSave: any = { ...productData };
             
-            const productToSave: any = {
-                ...productData,
-                imageUrl: finalImageUrl,
-                galleryImageUrls: finalGalleryUrls.filter(url => url), // Filter out any empty strings
-            };
-            
-            // **FIX:** Remove the file objects before sending to Firestore
-            delete productToSave.image;
-            delete productToSave.galleryImages;
-
             const batch = writeBatch(db);
             const productRef = doc(collection(db, "products"));
             
@@ -81,31 +55,7 @@ class ProductService {
             const productRef = doc(db, "products", id);
             
             const dataToUpdate: any = { ...productData };
-
-            // Handle image uploads
-            if (dataToUpdate.imageUrl && dataToUpdate.imageUrl.startsWith('data:')) {
-                dataToUpdate.imageUrl = await uploadImageFlow({ imageDataUri: dataToUpdate.imageUrl, folder: 'products' });
-            }
-
-            if (dataToUpdate.galleryImageUrls) {
-                dataToUpdate.galleryImageUrls = await Promise.all(
-                    dataToUpdate.galleryImageUrls.map(async (img: string) => {
-                        if (img && img.startsWith('data:')) {
-                            return await uploadImageFlow({ imageDataUri: img, folder: 'products' });
-                        }
-                        return img; // Keep existing URLs
-                    })
-                );
-                // Filter out any null/undefined from failed uploads if necessary, though flow throws error
-                dataToUpdate.galleryImageUrls = dataToUpdate.galleryImageUrls.filter((url: string | null) => url);
-            }
-
-            if (productData.keyBenefits && typeof productData.keyBenefits === 'string') {
-                dataToUpdate.keyBenefits = productData.keyBenefits.split('\n').filter(b => b.trim() !== '');
-            }
-            if (productData.ingredients && typeof productData.ingredients === 'string') {
-                dataToUpdate.ingredients = productData.ingredients.split(',').map(i => i.trim()).filter(i => i !== '');
-            }
+            
             if (productData.sizes) {
                  dataToUpdate.sizes = productData.sizes.map(s => ({
                      size: s.size,
@@ -113,10 +63,6 @@ class ProductService {
                      wholesalePrice: s.wholesalePrice || 0
                 }));
             }
-
-            // **FIX:** Remove the file objects before sending to Firestore
-            delete dataToUpdate.image;
-            delete dataToUpdate.galleryImages;
             
             await updateDoc(productRef, dataToUpdate);
 
