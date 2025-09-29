@@ -1,7 +1,7 @@
 
 import { financeService, FinanceData } from '@/services/finance.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, ShoppingCart, UserCheck } from 'lucide-react';
+import { DollarSign, ShoppingCart, UserCheck, Undo2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -14,6 +14,7 @@ import {
 import { Order } from '@/services/order.service';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 function StatCard({ title, value, icon: Icon, description }: { title: string; value: string; icon: React.ElementType; description: string; }) {
     return (
@@ -29,6 +30,39 @@ function StatCard({ title, value, icon: Icon, description }: { title: string; va
         </Card>
     );
 }
+
+function getStatusBadge(status: Order['status']) {
+    const variants = {
+        'pending-payment': 'secondary',
+        'paid': 'default',
+        'processing': 'default',
+        'ready-for-dispatch': 'default',
+        'shipped': 'default',
+        'delivered': 'default',
+        'cancelled': 'destructive',
+        'return-pending': 'destructive',
+        'returned': 'destructive'
+    };
+    const colors = {
+        'paid': 'bg-blue-500/80',
+        'processing': 'bg-yellow-500/80 text-black',
+        'ready-for-dispatch': 'bg-orange-500/80',
+        'shipped': 'bg-purple-500/80',
+        'delivered': 'bg-green-600/80',
+        'return-pending': 'bg-pink-600/80',
+        'returned': 'bg-red-700/80'
+    }
+
+    return (
+        <Badge
+            variant={variants[status] as any}
+            className={cn('capitalize', colors[status as keyof typeof colors])}
+        >
+            {status.replace(/-/g, ' ')}
+        </Badge>
+    );
+};
+
 
 function OrderTable({ orders, showSalesperson }: { orders: Order[], showSalesperson?: boolean }) {
     return (
@@ -57,7 +91,7 @@ function OrderTable({ orders, showSalesperson }: { orders: Order[], showSalesper
                         <TableCell>{order.customerName}</TableCell>
                         <TableCell>{format(order.orderDate.toDate(), 'PPP')}</TableCell>
                         {showSalesperson && <TableCell>{order.salespersonName || 'N/A'}</TableCell>}
-                        <TableCell><Badge variant={order.status === 'delivered' ? 'default' : 'secondary'} className={order.status === 'delivered' ? 'bg-green-600/80': ''}>{order.status}</Badge></TableCell>
+                        <TableCell>{getStatusBadge(order.status)}</TableCell>
                         <TableCell className="text-right font-medium">Ksh {order.totalAmount.toLocaleString()}</TableCell>
                     </TableRow>
                 ))}
@@ -73,10 +107,10 @@ export default async function FinanceDashboard() {
         <div className="grid gap-6">
              <div>
                 <h1 className="text-3xl font-bold">Finance Portal</h1>
-                <p className="text-muted-foreground">A consolidated overview of all company revenue streams.</p>
+                <p className="text-muted-foreground">A consolidated overview of all company revenue streams and financial operations.</p>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
                 <StatCard 
                     title="Total Revenue"
                     value={`Ksh ${data.totalRevenue.toLocaleString()}`}
@@ -95,13 +129,20 @@ export default async function FinanceDashboard() {
                     icon={UserCheck}
                     description={`From ${data.fieldSalesOrders.length} orders`}
                 />
+                 <StatCard 
+                    title="Pending Refunds"
+                    value={data.ordersForRefund.length.toString()}
+                    icon={Undo2}
+                    description="Orders awaiting refund processing"
+                />
             </div>
             
             <Tabs defaultValue="all-sales">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="all-sales">All Sales</TabsTrigger>
                     <TabsTrigger value="online-sales">Online Sales</TabsTrigger>
                     <TabsTrigger value="field-sales">Field Sales</TabsTrigger>
+                    <TabsTrigger value="returns">Returns & Refunds</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="all-sales">
@@ -136,6 +177,20 @@ export default async function FinanceDashboard() {
                         </CardHeader>
                         <CardContent>
                             <OrderTable orders={data.fieldSalesOrders} showSalesperson={true} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                
+                <TabsContent value="returns">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Returns & Refunds</CardTitle>
+                            <CardDescription>
+                                A list of orders marked for return. Once an item is received by Operations and its status is "Returned", process the refund.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <OrderTable orders={data.ordersForRefund} showSalesperson={true}/>
                         </CardContent>
                     </Card>
                 </TabsContent>

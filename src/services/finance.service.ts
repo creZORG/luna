@@ -8,6 +8,7 @@ export interface FinanceData {
     allOrders: Order[];
     onlineOrders: Order[];
     fieldSalesOrders: Order[];
+    ordersForRefund: Order[];
     totalRevenue: number;
     onlineSalesRevenue: number;
     fieldSalesRevenue: number;
@@ -24,8 +25,14 @@ class FinanceService {
 
         const onlineOrders: Order[] = [];
         const fieldSalesOrders: Order[] = [];
+        const ordersForRefund: Order[] = [];
 
         for (const order of allOrders) {
+            // Categorize orders for refund processing
+            if (order.status === 'return-pending' || order.status === 'returned') {
+                ordersForRefund.push(order);
+            }
+
             // If the order has a userId and that user is a salesperson, it's a field sale.
             // Otherwise, it's an online sale (guest checkout or customer account).
             if (order.userId && salesUserIds.has(order.userId)) {
@@ -47,6 +54,7 @@ class FinanceService {
             allOrders,
             onlineOrders,
             fieldSalesOrders,
+            ordersForRefund,
             totalRevenue,
             onlineSalesRevenue,
             fieldSalesRevenue,
