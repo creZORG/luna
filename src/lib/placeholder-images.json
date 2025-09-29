@@ -29,6 +29,12 @@
       "description": "A bright and energetic shot that focuses on cleanliness and efficacy.",
       "imageUrl": "https://res.cloudinary.com/dvciksxcn/image/upload/v1719927689/luna-essentials/category-dish-wash.png",
       "imageHint": "clean dishes"
+    },
+    {
+      "id": "citrus-bloom-dish-wash",
+      "description": "A close up of the Citrus Bloom Dish Wash bottle.",
+      "imageUrl": "https://res.cloudinary.com/dvciksxcn/image/upload/v1720084013/luna-essentials/citrus-bloom-dish-wash.png",
+      "imageHint": "dish soap"
     }
   ]
 }

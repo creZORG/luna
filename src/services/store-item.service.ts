@@ -3,6 +3,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
 import { activityService } from './activity.service';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 class StoreItemService {
     async getStoreItems(): Promise<StoreItem[]> {
@@ -18,6 +19,8 @@ class StoreItemService {
             const product = doc.data();
              product.sizes.forEach((size: { size: string, price: number}) => {
                 const compositeId = `${doc.id}-${size.size.replace(/\s/g, '')}`;
+                const placeholderImage = PlaceHolderImages.find(p => p.id === product.slug);
+
                 // Do not add if it already exists from a dedicated storeItem entry
                 if (!items.some(i => i.id === compositeId)) {
                     items.push({
@@ -25,7 +28,7 @@ class StoreItemService {
                         name: `${product.name} (${size.size})`,
                         category: 'Finished Goods',
                         inventory: 0, // Default inventory
-                        productImageId: product.imageId,
+                        imageUrl: placeholderImage?.imageUrl,
                         price: size.price,
                         productId: doc.id,
                         size: size.size,

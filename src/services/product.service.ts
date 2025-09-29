@@ -88,6 +88,7 @@ class ProductService {
                 ...data,
                 rating: data.rating ?? 0,
                 reviewCount: data.reviewCount ?? 0,
+                wholesaleMoq: data.wholesaleMoq ?? 120,
             } as Product);
         });
         return products;
@@ -105,7 +106,8 @@ class ProductService {
             id: docSnap.id,
             ...data,
             rating: data.rating ?? 5,
-            reviewCount: data.reviewCount ?? Math.floor(Math.random() * 50) + 5 
+            reviewCount: data.reviewCount ?? Math.floor(Math.random() * 50) + 5,
+            wholesaleMoq: data.wholesaleMoq ?? 120,
         } as Product;
     }
 
@@ -119,6 +121,7 @@ class ProductService {
                 ...data,
                 rating: data.rating ?? 0,
                 reviewCount: data.reviewCount ?? 0,
+                wholesaleMoq: data.wholesaleMoq ?? 120,
             } as Product;
         }
         return null;

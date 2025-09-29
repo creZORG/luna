@@ -6,10 +6,46 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Product } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Check, Send, ShoppingCart } from 'lucide-react';
+import { Check, Send, ShoppingCart, MessageSquare, CornerDownRight, ThumbsUp } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+
+// Placeholder Chat Component
+const ChatPlaceholder = () => (
+    <Card className="mt-8 border-primary/50">
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="text-primary" />
+                <span>Live Chat with Operations</span>
+            </CardTitle>
+            <CardDescription>Discuss bulk pricing, availability, or custom orders directly.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="space-y-4 text-sm">
+                <div className="flex gap-3">
+                    <div className="bg-primary text-primary-foreground h-8 w-8 rounded-full flex items-center justify-center font-bold">A</div>
+                    <div className="p-3 rounded-lg bg-muted max-w-[80%]">
+                        <p className="font-semibold">Alex (Ops Manager)</p>
+                        <p>Hi there! How can I help you with your bulk order today?</p>
+                    </div>
+                </div>
+                 <div className="flex gap-3 justify-end">
+                    <div className="p-3 rounded-lg bg-primary/10 max-w-[80%]">
+                        <p>I'm interested in a large quantity of this product. Can we discuss a better price?</p>
+                    </div>
+                     <div className="bg-secondary text-secondary-foreground h-8 w-8 rounded-full flex items-center justify-center font-bold">Y</div>
+                </div>
+                 <div className="flex items-center gap-2 text-muted-foreground">
+                    <CornerDownRight className="h-4 w-4 ml-10"/>
+                    <button className="px-3 py-1 text-xs border rounded-full hover:bg-muted">That's what I want to ask</button>
+                    <button className="px-3 py-1 text-xs border rounded-full hover:bg-muted">What's the lead time?</button>
+                 </div>
+            </div>
+        </CardContent>
+    </Card>
+);
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const primaryImage = product.imageUrl;
@@ -37,7 +73,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           
           <div className="flex flex-col gap-4">
               <div className="aspect-square w-full bg-card rounded-lg overflow-hidden shadow-lg border">
-                {selectedImage && (
+                {selectedImage ? (
                   <Image
                     src={selectedImage}
                     alt={product.name}
@@ -46,6 +82,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     className="object-cover w-full h-full"
                     priority
                   />
+                ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+                        No Image Available
+                    </div>
                 )}
               </div>
               
@@ -81,13 +121,22 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               <p className="text-muted-foreground">Available in: {product.sizes.map(s => `${s.size} (Ksh ${s.price})`).join(', ')}</p>
             </div>
 
+             <Card className="mt-6 bg-accent/50 border-accent">
+                <CardContent className="pt-6">
+                    <p className="font-bold text-accent-foreground">Wholesale Available!</p>
+                    <p className="text-sm text-accent-foreground/80">
+                        Get a discount on orders of <span className="font-semibold">{product.wholesaleMoq} units</span> or more. Perfect for retailers and distributors.
+                    </p>
+                </CardContent>
+            </Card>
+
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Button size="lg" disabled>
                   <ShoppingCart className="mr-2 h-5 w-5" />
                   Buy Now (Coming Soon)
               </Button>
               <Button size="lg" variant="outline" asChild>
-                  <Link href="/#contact">
+                  <Link href="#chat">
                       <Send className="mr-2 h-5 w-5" />
                       Wholesale Enquiry
                   </Link>
@@ -110,18 +159,21 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
           </div>
         </div>
-        <div className="mt-16">
+        <div id="chat" className="mt-16">
           <Separator/>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 lg:gap-16 mt-8">
               <div>
                   <h3 className="font-headline text-xl font-semibold mb-4">Ingredients</h3>
                   <p className="text-sm text-muted-foreground">{product.ingredients.join(', ')}.</p>
+                   <div className='mt-8'>
+                    <h3 className="font-headline text-xl font-semibold mb-4">Directions for Use</h3>
+                    <p className="text-sm text-muted-foreground">{product.directions}</p>
+                    <h3 className="font-headline text-xl font-semibold mt-4 mb-2">Cautions</h3>
+                    <p className="text-sm text-muted-foreground">{product.cautions}</p>
+                  </div>
               </div>
               <div>
-                  <h3 className="font-headline text-xl font-semibold mb-4">Directions for Use</h3>
-                  <p className="text-sm text-muted-foreground">{product.directions}</p>
-                  <h3 className="font-headline text-xl font-semibold mt-4 mb-2">Cautions</h3>
-                  <p className="text-sm text-muted-foreground">{product.cautions}</p>
+                <ChatPlaceholder />
               </div>
           </div>
         </div>
