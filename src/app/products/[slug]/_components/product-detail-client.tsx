@@ -10,7 +10,6 @@ import { Check, Send, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
-import { PurchaseModal } from './purchase-modal';
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const primaryImage = product.imageUrl;
@@ -21,15 +20,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const allImages = primaryImage ? [primaryImage, ...galleryImages] : galleryImages;
 
   const [selectedImage, setSelectedImage] = useState<string | undefined>(allImages[0]);
-  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   
   return (
     <>
-      <PurchaseModal 
-        isOpen={isPurchaseModalOpen} 
-        onClose={() => setIsPurchaseModalOpen(false)}
-        product={product}
-      />
       <div className="container mx-auto px-4 py-12 md:py-20">
           <div className="text-sm mb-4 text-muted-foreground">
               <Link href="/" className="hover:text-primary">Home</Link>
@@ -89,9 +82,9 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             </div>
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button size="lg" onClick={() => setIsPurchaseModalOpen(true)}>
+              <Button size="lg" disabled>
                   <ShoppingCart className="mr-2 h-5 w-5" />
-                  Buy Now
+                  Buy Now (Coming Soon)
               </Button>
               <Button size="lg" variant="outline" asChild>
                   <Link href="/#contact">
