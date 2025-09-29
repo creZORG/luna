@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -67,7 +68,7 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
       shortDescription: '',
       scentProfile: [],
       features: [],
-      sizes: [{ size: '' }],
+      sizes: [{ size: '', price: 0 }],
       keyBenefits: '',
       ingredients: '',
       directions: '',
@@ -214,7 +215,7 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
                           <FormItem>
                             <FormLabel>Price</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="e.g. 220" {...field} />
+                              <Input type="number" placeholder="e.g. 220" {...field} value={field.value ?? ''} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -236,7 +237,7 @@ export function ProductForm({ role = "operations" }: { role?: "admin" | "operati
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => append({ size: "" })}
+                    onClick={() => append({ size: "", price: 0 })}
                   >
                     Add Size
                   </Button>

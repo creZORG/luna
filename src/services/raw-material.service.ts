@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy, setDoc, updateDoc, getDoc } from 'firebase/firestore';
 import type { RawMaterial, RawMaterialIntake, UnitOfMeasure } from '@/lib/raw-materials.data';
 import { userService } from './user.service';
 import { sendEmail } from '@/ai/flows/send-email-flow';
@@ -41,25 +41,44 @@ const toDataUri = (file: File): Promise<string> => {
 class RawMaterialService {
 
     async getRawMaterials(): Promise<RawMaterial[]> {
-        const q = query(collection(db, 'rawMaterials'), orderBy('name'));
-        const querySnapshot = await getDocs(q);
-        const materials: RawMaterial[] = [];
-        querySnapshot.forEach((doc) => {
+        const materialsQuery = query(collection(db, 'rawMaterials'), orderBy('name'));
+        const materialsSnapshot = await getDocs(materialsQuery);
+        const materials: Omit<RawMaterial, 'quantity'>[] = [];
+        materialsSnapshot.forEach((doc) => {
             materials.push({ id: doc.id, ...doc.data() } as RawMaterial);
         });
-        return materials;
+        
+        const inventorySnapshot = await getDocs(collection(db, 'inventory'));
+        const inventoryMap = new Map<string, number>();
+        inventorySnapshot.forEach(doc => {
+            inventoryMap.set(doc.id, doc.data().quantity);
+        });
+
+        const fullMaterials: RawMaterial[] = materials.map(material => ({
+            ...material,
+            quantity: inventoryMap.get(material.id) ?? 0,
+        }));
+
+        return fullMaterials;
     }
     
     async createRawMaterial(data: NewRawMaterialData, userId: string, userName: string): Promise<string> {
-        const docRef = await addDoc(collection(db, 'rawMaterials'), data);
-        activityService.logActivity(`Created new raw material: ${data.name}.`, userId, userName);
-        return docRef.id;
+        const materialRef = doc(collection(db, 'rawMaterials'));
+        const inventoryRef = doc(db, 'inventory', materialRef.id);
+        
+        const batch = writeBatch(db);
+        batch.set(materialRef, { name: data.name, unitOfMeasure: data.unitOfMeasure });
+        batch.set(inventoryRef, { quantity: data.quantity });
+        await batch.commit();
+
+        activityService.logActivity(`Created new raw material: ${data.name} with initial stock of ${data.quantity}.`, userId, userName);
+        return materialRef.id;
     }
 
     async updateRawMaterialQuantity(materialId: string, quantity: number, userId: string, userName: string): Promise<void> {
-        const materialRef = doc(db, 'rawMaterials', materialId);
-        await updateDoc(materialRef, { quantity });
-        activityService.logActivity(`Updated inventory for material ID ${materialId} to ${quantity}.`, userId, userName);
+        const inventoryRef = doc(db, 'inventory', materialId);
+        await setDoc(inventoryRef, { quantity }, { merge: true });
+        activityService.logActivity(`Adjusted inventory for material ID ${materialId} to ${quantity}.`, userId, userName);
     }
 
     async logIntakeAndupdateInventory(formData: IntakeFormData, userId: string): Promise<string> {
@@ -74,6 +93,7 @@ class RawMaterialService {
         // 2. Create the intake log and update inventory in a transaction
         const intakeRef = doc(collection(db, 'rawMaterialIntakes'));
         const materialRef = doc(db, 'rawMaterials', formData.rawMaterialId);
+        const inventoryRef = doc(db, 'inventory', formData.rawMaterialId);
 
         let materialName = 'Unknown Material';
         let userProfile = await userService.getUserProfile(userId);
@@ -81,14 +101,17 @@ class RawMaterialService {
         try {
             await runTransaction(db, async (transaction) => {
                 const materialDoc = await transaction.get(materialRef);
+                const inventoryDoc = await transaction.get(inventoryRef);
+
                 if (!materialDoc.exists()) {
                     throw "Raw material document does not exist!";
                 }
                 materialName = materialDoc.data().name;
 
-                const newQuantity = (materialDoc.data().quantity || 0) + formData.actualQuantity;
+                const currentQuantity = inventoryDoc.exists() ? inventoryDoc.data().quantity : 0;
+                const newQuantity = currentQuantity + formData.actualQuantity;
                 
-                transaction.update(materialRef, { quantity: newQuantity });
+                transaction.set(inventoryRef, { quantity: newQuantity }, { merge: true });
 
                 const intakeData: Omit<RawMaterialIntake, 'id'> = {
                     supplier: formData.supplier,
@@ -160,16 +183,18 @@ class RawMaterialService {
 
         const batch = writeBatch(db);
         materials.forEach(material => {
-            const docRef = doc(collectionRef);
-            const newMaterial: Omit<RawMaterial, 'id'> = {
-                ...material,
-                quantity: 0, // All materials start with 0 quantity
-            };
-            batch.set(docRef, newMaterial);
+            const materialDocRef = doc(collectionRef);
+            const inventoryDocRef = doc(db, 'inventory', materialDocRef.id);
+            
+            // Set the material details
+            batch.set(materialDocRef, { name: material.name, unitOfMeasure: material.unitOfMeasure });
+
+            // Set the initial inventory to 0 in the central inventory collection
+            batch.set(inventoryDocRef, { quantity: 0 });
         });
 
         await batch.commit();
-        console.log("Successfully seeded raw materials inventory.");
+        console.log("Successfully seeded raw materials and initialized inventory.");
     }
 }
 

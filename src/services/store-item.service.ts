@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
@@ -16,20 +17,24 @@ class StoreItemService {
         productSnapshot.forEach((doc) => {
             const product = doc.data();
              product.sizes.forEach((size: { size: string, price: number}) => {
-                const compositeId = `${doc.id}-${size.size}`;
+                const compositeId = `${doc.id}-${size.size.replace(/\s/g, '')}`;
                 // Do not add if it already exists from a dedicated storeItem entry
                 if (!items.some(i => i.id === compositeId)) {
                     items.push({
                         id: compositeId,
                         name: `${product.name} (${size.size})`,
                         category: 'Finished Goods',
-                        inventory: 0 // Default inventory
-                    });
+                        inventory: 0, // Default inventory
+                        productImageId: product.imageId,
+                        price: size.price,
+                        productId: doc.id,
+                        size: size.size,
+                    } as any);
                 }
             });
         });
 
-        // Get inventory levels
+        // Get inventory levels from the central inventory collection
         const inventorySnapshot = await getDocs(collection(db, "inventory"));
         const inventoryMap = new Map<string, number>();
         inventorySnapshot.forEach(doc => {

@@ -1,5 +1,6 @@
+
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, getDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
 
 // A leaner version of the form data for this service
@@ -31,8 +32,22 @@ class ProductService {
                 ingredients: productData.ingredients.split(',').map(i => i.trim()).filter(i => i !== ''),
                 sizes: productData.sizes.map(s => ({ size: s.size, price: s.price || 0 })),
             }
-            const docRef = await addDoc(collection(db, "products"), productToSave);
-            return docRef.id;
+            
+            const batch = writeBatch(db);
+            const productRef = doc(collection(db, "products"));
+            
+            batch.set(productRef, productToSave);
+
+            // Also create initial inventory records for each size
+            productData.sizes.forEach(s => {
+                const inventoryId = `${productRef.id}-${s.size.replace(/\s/g, '')}`;
+                const inventoryRef = doc(db, 'inventory', inventoryId);
+                batch.set(inventoryRef, { quantity: 0 });
+            });
+
+            await batch.commit();
+
+            return productRef.id;
         } catch (e) {
             console.error("Error adding document: ", e);
             throw new Error("Could not create product");
