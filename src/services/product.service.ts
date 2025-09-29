@@ -46,12 +46,16 @@ class ProductService {
                 );
             }
             
-            const productToSave = {
+            const productToSave: any = {
                 ...productData,
                 imageUrl: finalImageUrl,
                 galleryImageUrls: finalGalleryUrls.filter(url => url), // Filter out any empty strings
-            }
+            };
             
+            // **FIX:** Remove the file objects before sending to Firestore
+            delete productToSave.image;
+            delete productToSave.galleryImages;
+
             const batch = writeBatch(db);
             const productRef = doc(collection(db, "products"));
             
@@ -109,6 +113,10 @@ class ProductService {
                      wholesalePrice: s.wholesalePrice || 0
                 }));
             }
+
+            // **FIX:** Remove the file objects before sending to Firestore
+            delete dataToUpdate.image;
+            delete dataToUpdate.galleryImages;
             
             await updateDoc(productRef, dataToUpdate);
 
