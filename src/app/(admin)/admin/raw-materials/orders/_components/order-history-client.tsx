@@ -34,6 +34,17 @@ interface OrderHistoryClientProps {
 export default function OrderHistoryClient({
   initialOrders,
 }: OrderHistoryClientProps) {
+
+  const getDate = (timestamp: any): Date => {
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      return timestamp.toDate();
+    }
+    if (timestamp && timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000);
+    }
+    return new Date();
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -62,7 +73,7 @@ export default function OrderHistoryClient({
                   </div>
                   <div>
                     <p className="font-semibold">
-                      {format(order.orderDate.toDate(), 'PPP')}
+                      {format(getDate(order.orderDate), 'PPP')}
                     </p>
                     <p className="text-sm text-muted-foreground">Order Date</p>
                   </div>
