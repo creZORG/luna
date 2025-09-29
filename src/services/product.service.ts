@@ -1,4 +1,5 @@
 
+'use server';
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc, increment } from 'firebase/firestore';
@@ -33,6 +34,10 @@ export interface ProductUpdateData {
 class ProductService {
     async createProduct(productData: Omit<Product, 'id' | 'orderCount' | 'totalRevenue' | 'viewCount' >, userId: string, userName: string): Promise<string> {
         try {
+            if (!productData.imageUrl) {
+              throw new Error("A primary image (imageUrl) is required to create a product.");
+            }
+
             const productToSave: any = {
                  ...productData,
                  rating: 0,
@@ -62,9 +67,9 @@ class ProductService {
             );
 
             return productRef.id;
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error adding document: ", e);
-            throw new Error("Could not create product");
+            throw new Error(`Could not create product: ${e.message}`);
         }
     }
     
