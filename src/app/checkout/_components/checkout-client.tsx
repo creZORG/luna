@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useCart } from '@/hooks/use-cart';
@@ -366,6 +367,9 @@ export default function CheckoutClient() {
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
         email: data.email,
         amount: totalAmount * 100, // Amount in kobo
+        metadata: {
+            "send_receipt": false,
+        },
         onSuccess: async (transaction) => {
             try {
                 const orderId = await verifyPaymentAndProcessOrder({
@@ -612,4 +616,5 @@ export default function CheckoutClient() {
   );
 }
 
+    
     
