@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -30,6 +31,14 @@ interface UserAttendanceStatus {
 
 const LATE_THRESHOLD_HOUR = 9; // 9 AM
 
+// Helper to safely convert a serialized timestamp to a Date object
+const toDate = (timestamp: any): Date | null => {
+    if (!timestamp || typeof timestamp.seconds !== 'number') {
+        return null;
+    }
+    return new Date(timestamp.seconds * 1000);
+}
+
 export default function AttendanceClient({ initialRecords, allUsers }: AttendanceClientProps) {
     const [isSendingReport, setIsSendingReport] = useState(false);
     const { toast } = useToast();
@@ -38,9 +47,9 @@ export default function AttendanceClient({ initialRecords, allUsers }: Attendanc
         return allUsers.map(user => {
             const record = initialRecords.find(rec => rec.userId === user.uid);
             if (record) {
-                const checkInTime = (record.checkInTime as any).toDate();
-                const checkOutTime = record.checkOutTime ? (record.checkOutTime as any).toDate() : null;
-                const isLate = checkInTime.getHours() >= LATE_THRESHOLD_HOUR;
+                const checkInTime = toDate(record.checkInTime);
+                const checkOutTime = record.checkOutTime ? toDate(record.checkOutTime) : null;
+                const isLate = checkInTime && checkInTime.getHours() >= LATE_THRESHOLD_HOUR;
 
                 let status: UserAttendanceStatus['status'];
                 if (checkOutTime) {
