@@ -89,6 +89,7 @@ class ProductService {
              // Temporary fix for incorrect category data
             if (data.slug === 'citrus-bloom-dish-wash') {
                 data.category = 'dish-wash';
+                 data.imageUrl = 'https://res.cloudinary.com/dvciksxcn/image/upload/v1720084013/luna-essentials/citrus-bloom-dish-wash.png';
             }
             products.push({ 
                 id: doc.id,
@@ -115,6 +116,7 @@ class ProductService {
         // Temporary fix for incorrect category data
         if (slug === 'citrus-bloom-dish-wash') {
             data.category = 'dish-wash';
+            data.imageUrl = 'https://res.cloudinary.com/dvciksxcn/image/upload/v1720084013/luna-essentials/citrus-bloom-dish-wash.png';
         }
 
         return { 
@@ -136,6 +138,7 @@ class ProductService {
              // Temporary fix for incorrect category data
             if (data.slug === 'citrus-bloom-dish-wash') {
                 data.category = 'dish-wash';
+                data.imageUrl = 'https://res.cloudinary.com/dvciksxcn/image/upload/v1720084013/luna-essentials/citrus-bloom-dish-wash.png';
             }
             return { 
                 id: docSnap.id,
