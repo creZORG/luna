@@ -81,10 +81,6 @@ class ProductService {
                      wholesalePrice: s.wholesalePrice || 0
                 }));
             }
-            // Remove undefined fields to avoid overwriting with null
-            if (dataToUpdate.deliveryFee !== undefined) {
-                delete dataToUpdate.deliveryFee;
-            }
             
             await updateDoc(productRef, dataToUpdate);
 
@@ -113,11 +109,6 @@ class ProductService {
         const products: Product[] = [];
         productsSnapshot.forEach((doc) => {
             let data = doc.data();
-             // Temporary fix for incorrect category data
-            if (data.slug === 'citrus-bloom-dish-wash') {
-                data.category = 'dish-wash';
-                 data.imageUrl = 'https://res.cloudinary.com/dvciksxcn/image/upload/v1720084013/luna-essentials/citrus-bloom-dish-wash.png';
-            }
             const stats = productStats.get(doc.id) || { orderCount: 0, totalRevenue: 0 };
             
             products.push({ 
@@ -144,12 +135,6 @@ class ProductService {
         const docSnap = querySnapshot.docs[0];
         let data = docSnap.data();
 
-        // Temporary fix for incorrect category data
-        if (slug === 'citrus-bloom-dish-wash') {
-            data.category = 'dish-wash';
-            data.imageUrl = 'https://res.cloudinary.com/dvciksxcn/image/upload/v1720084013/luna-essentials/citrus-bloom-dish-wash.png';
-        }
-
         return { 
             id: docSnap.id,
             ...data,
@@ -165,11 +150,6 @@ class ProductService {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             let data = docSnap.data();
-             // Temporary fix for incorrect category data
-            if (data.slug === 'citrus-bloom-dish-wash') {
-                data.category = 'dish-wash';
-                data.imageUrl = 'https://res.cloudinary.com/dvciksxcn/image/upload/v1720084013/luna-essentials/citrus-bloom-dish-wash.png';
-            }
             return { 
                 id: docSnap.id,
                 ...data,
