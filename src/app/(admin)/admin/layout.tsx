@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart, Package2, Users, FileText, Moon, Warehouse, PieChart } from 'lucide-react';
+import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart, Package2, Users, FileText, Moon, Warehouse, PieChart, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,6 +23,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { UserProfile } from '@/services/user.service';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 
 function PendingProfileModal({ isOpen }: { isOpen: boolean }) {
@@ -256,11 +257,11 @@ export default function AdminLayout({
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
-       <aside className={cn(
-            "fixed inset-y-0 left-0 z-40 flex-col border-r bg-background/80 backdrop-blur-sm transition-all duration-300 ease-in-out shadow-lg",
-            "top-4 bottom-4 ml-4 rounded-xl",
-            isCollapsed ? "w-20" : "w-64"
+    <div className="grid min-h-screen w-full md:grid-cols-[auto_1fr]">
+      <aside className={cn(
+            "hidden md:fixed md:inset-y-0 md:left-0 md:z-40 md:flex md:flex-col border-r bg-background/80 backdrop-blur-sm transition-all duration-300 ease-in-out shadow-lg",
+            "md:top-4 md:bottom-4 md:ml-4 md:rounded-xl",
+            isCollapsed ? "md:w-20" : "md:w-64"
         )}>
            <div className="flex h-full max-h-screen flex-col gap-2">
                 <div className="flex h-14 items-center justify-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -270,7 +271,7 @@ export default function AdminLayout({
                     </Link>
                 </div>
                 <div className={cn("flex-1 overflow-auto py-2", isCollapsed && "flex flex-col items-center")}>
-                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute -right-4 top-1/2 -translate-y-1/2 bg-background hover:bg-muted border rounded-full h-8 w-8 z-50">
+                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute -right-4 top-1/2 -translate-y-1/2 bg-background hover:bg-muted border rounded-full h-8 w-8 z-50 hidden md:flex">
                         {isCollapsed ? <PanelRight /> : <PanelLeftClose />}
                     </Button>
                     <NavContent isCollapsed={isCollapsed} userProfile={userProfile} />
@@ -321,15 +322,40 @@ export default function AdminLayout({
             </div>
       </aside>
 
-      <div className={cn("flex flex-col transition-all duration-300 ease-in-out", isCollapsed ? "sm:pl-28" : "sm:pl-72")}>
-        <header className="flex h-14 items-center gap-4 bg-background/80 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
+      <div className={cn("flex flex-col transition-all duration-300 ease-in-out", isCollapsed ? "md:pl-28" : "md:pl-72")}>
+        <header className="flex h-14 items-center gap-4 bg-background/80 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30 border-b">
+           <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex flex-col p-0">
+               <div className="flex h-full max-h-screen flex-col gap-2">
+                    <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+                        <Link href="/" className="flex items-center gap-2 font-semibold">
+                           <Moon className="h-6 w-6 text-primary" />
+                           <span className="">Home</span>
+                        </Link>
+                    </div>
+                    <div className="flex-1 overflow-auto py-2">
+                        <NavContent isCollapsed={false} userProfile={userProfile} />
+                    </div>
+                </div>
+            </SheetContent>
+          </Sheet>
           <div className="flex-1">
-             {/* Can add breadcrumbs or page title here */}
+             <p className="text-sm font-medium text-muted-foreground">
+                <span className="capitalize">{userProfile.roles.join(', ').replace(/-/g, ' ')} Portal</span>
+             </p>
           </div>
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-sm font-medium text-muted-foreground hidden sm:block">
             Welcome, <span className="font-semibold text-foreground">{userProfile.displayName}</span>
-            <span className="mx-2">|</span>
-            <span className="capitalize">{userProfile.roles.join(', ').replace(/-/g, ' ')}</span>
           </p>
         </header>
 
