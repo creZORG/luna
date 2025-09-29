@@ -35,28 +35,35 @@ export async function processFieldSale(input: ProcessFieldSaleInput) {
 
 // Helper to format phone number to 254... format
 const formatPhoneNumber = (phone: string): string => {
-    // Remove any non-digit characters
-    const digitsOnly = phone.replace(/\D/g, '');
+    let phoneNumber = phone.trim();
 
-    // Case 1: Starts with '254' and has 12 digits (e.g., 254712345678)
-    if (digitsOnly.startsWith('254') && digitsOnly.length === 12) {
-        return digitsOnly;
-    }
-
-    // Case 2: Starts with '0' and has 10 digits (e.g., 0712345678)
-    if (digitsOnly.startsWith('0') && digitsOnly.length === 10) {
-        return '254' + digitsOnly.substring(1);
+    // Case 1: Starts with '+'
+    if (phoneNumber.startsWith('+')) {
+        // If it's '+254' followed by 9 digits, remove '+'
+        if (phoneNumber.startsWith('+254') && phoneNumber.length === 13) {
+            return phoneNumber.substring(1);
+        }
     }
     
-    // Case 3: Starts with '7' and has 9 digits (e.g., 712345678)
-     if (digitsOnly.length === 9) {
-        return '254' + digitsOnly;
+    // Case 2: Starts with '254' and has 12 digits
+    if (phoneNumber.startsWith('254') && phoneNumber.length === 12) {
+        return phoneNumber;
     }
+    
+    // Case 3: Starts with '0' and has 10 digits
+    if (phoneNumber.startsWith('0') && phoneNumber.length === 10) {
+        return '254' + phoneNumber.substring(1);
+    }
+    
+    // Case 4: Starts with '7' or '1' and has 9 digits
+    if ((phoneNumber.startsWith('7') || phoneNumber.startsWith('1')) && phoneNumber.length === 9) {
+        return '254' + phoneNumber;
+    }
+    
+    // If no case matches, return the original number to let Paystack validate
+    return phoneNumber;
+};
 
-    // If it doesn't match a known valid format, return the original input
-    // to let the payment gateway handle the error.
-    return phone;
-}
 
 const processFieldSaleFlow = ai.defineFlow(
   {
@@ -111,7 +118,7 @@ const processFieldSaleFlow = ai.defineFlow(
         const maxRetries = 10; // Poll for ~1 minute
         let retries = 0;
 
-        while (status === 'pending' && retries < maxRetries) {
+        while ((status === 'pending' || status === 'send_otp') && retries < maxRetries) {
             await new Promise(resolve => setTimeout(resolve, 6000)); // Wait 6 seconds
 
             const statusResponse = await axios.get(

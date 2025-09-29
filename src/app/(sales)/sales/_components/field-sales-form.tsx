@@ -20,13 +20,14 @@ export default function FieldSalesForm({ onProcessSale, isProcessing }: FieldSal
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const phoneRegex = /^(?:254|\+254|0)?(7\d{8})$/;
         if (!customerName || !customerPhone) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please enter customer name and phone number.' });
             return;
         }
-        if (!phoneRegex.test(customerPhone)) {
-             toast({ variant: 'destructive', title: 'Invalid Phone Number', description: 'Please enter a valid Kenyan phone number (e.g., 0712345678).' });
+        
+        // Basic length check, backend will do the heavy lifting for formatting
+        if (customerPhone.replace(/\D/g, '').length < 9) {
+             toast({ variant: 'destructive', title: 'Invalid Phone Number', description: 'Please enter a valid Kenyan phone number.' });
             return;
         }
 
