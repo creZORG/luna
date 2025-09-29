@@ -35,8 +35,15 @@ export function middleware(request: NextRequest) {
   }
 
   // If on the staff domain and at the root, redirect to a default dashboard.
+  // The client-side AuthProvider will then route them to their specific portal.
   if (isStaffDomain && pathname === '/') {
       url.pathname = '/admin/dashboard';
+      return NextResponse.redirect(url);
+  }
+  
+  // If someone tries to access the old digital-marketing path, redirect them to campaigns
+  if (pathname.startsWith('/digital-marketing')) {
+      url.pathname = '/campaigns';
       return NextResponse.redirect(url);
   }
 

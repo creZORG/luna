@@ -1,5 +1,4 @@
 
-
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
 import type { Campaign } from '@/lib/campaigns.data';
