@@ -17,6 +17,7 @@ import { cartService } from '@/services/cart.service';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/use-cart';
+import { WholesaleRedirectModal } from './wholesale-redirect-modal';
 
 
 export default function ProductDetailClient({ product }: { product: Product }) {
@@ -29,6 +30,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
   const [selectedImage, setSelectedImage] = useState<string | undefined>(allImages[0]);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isRedirectModalOpen, setIsRedirectModalOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
   const router = useRouter();
@@ -60,8 +62,12 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   };
 
   const handleBuyNow = () => {
-    handleAddToCart();
-    router.push('/checkout');
+    if (quantity >= (product.wholesaleMoq || Infinity)) {
+        setIsRedirectModalOpen(true);
+    } else {
+        handleAddToCart();
+        router.push('/checkout');
+    }
   };
   
   return (
@@ -216,6 +222,12 @@ export default function ProductDetailClient({ product }: { product: Product }) {
         onClose={() => setIsChatOpen(false)}
         productName={product.name}
       />
+      <WholesaleRedirectModal 
+        isOpen={isRedirectModalOpen} 
+        onClose={() => setIsRedirectModalOpen(false)} 
+      />
     </>
   );
 }
+
+    
