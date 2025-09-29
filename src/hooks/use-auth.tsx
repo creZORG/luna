@@ -48,8 +48,9 @@ const getPrimaryDashboard = (roles: UserProfile['roles']): string => {
             return ROLE_DASHBOARDS[role];
         }
     }
-    // Fallback for users with no roles or unrecognized roles
-    return '/admin/dashboard'; 
+    // Fallback for users with no roles or unrecognized roles (e.g. delivery-partner)
+    // will just go to the generic profile page.
+    return '/profile';
 };
 
 

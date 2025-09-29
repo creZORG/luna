@@ -17,22 +17,24 @@ export function middleware(request: NextRequest) {
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'luna.co.ke';
   const isMainDomain = hostname === rootDomain || hostname === `www.${rootDomain}`;
   
-  const portalPaths = [
+  // These paths are for internal staff and should be blocked on the main domain.
+  // Paths for external partners (like /campaigns, /profile) are excluded from this list.
+  const internalPortalPaths = [
     '/admin', '/sales', '/operations', '/finance', 
-    '/manufacturing', '/digital-marketing', '/campaigns'
+    '/manufacturing', '/digital-marketing'
   ];
 
-  // If on the main marketing domain, block access to any staff portal paths.
+  // If on the main marketing domain, block access to any internal staff portal paths.
   if (isMainDomain) {
-      const isPortalPath = portalPaths.some(p => pathname.startsWith(p));
-      if (isPortalPath) {
+      const isInternalPath = internalPortalPaths.some(p => pathname.startsWith(p));
+      if (isInternalPath) {
           url.pathname = '/access-denied';
           return NextResponse.rewrite(url);
       }
   }
 
   // Allow all other requests to proceed. Client-side logic in AuthProvider
-  // will handle routing within the staff portals.
+  // will handle routing within the staff portals or main site.
   return NextResponse.next();
 }
 

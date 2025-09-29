@@ -26,7 +26,7 @@ export function Header() {
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const { cartItems, setIsCartOpen } = useCart();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
   const totalQuantity = React.useMemo(() => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -40,6 +40,8 @@ export function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const isPortalPage = userProfile && userProfile.roles.length > 0;
 
   return (
     <header
@@ -62,7 +64,7 @@ export function Header() {
           </Link>
 
           <div className="flex items-center gap-1">
-              <nav className="hidden md:flex items-center gap-1">
+              { !isPortalPage && <nav className="hidden md:flex items-center gap-1">
                   {navLinks.map(({ href, label }) => (
                       <Button asChild variant="ghost" key={href} className={cn(
                           'text-sm font-medium rounded-full',
@@ -72,7 +74,7 @@ export function Header() {
                           <Link href={href}>{label}</Link>
                       </Button>
                   ))}
-              </nav>
+              </nav>}
               
               <ThemeToggle />
               
