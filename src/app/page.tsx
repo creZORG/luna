@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Leaf, Recycle } from 'lucide-react';
+import { CheckCircle, Leaf, Recycle, Handshake, Bike, Warehouse } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -61,6 +61,24 @@ export default async function Home() {
     },
   ];
 
+  const partnerOpportunities = [
+    {
+        icon: Handshake,
+        title: "Brand Influencers",
+        description: "Join our program to get exclusive promo codes, earn commissions, and share products you love.",
+    },
+    {
+        icon: Bike,
+        title: "Delivery Partners",
+        description: "Become a crucial part of our logistics network, helping us deliver products to customers efficiently.",
+    },
+    {
+        icon: Warehouse,
+        title: "Pickup Locations",
+        description: "Become an official pickup station and drive more foot traffic to your existing business.",
+    },
+];
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -83,13 +101,18 @@ export default async function Home() {
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto">
             Explore wholesale opportunities with Luna Essentials and stock your shelves with products your customers will love.
           </p>
-          <Button asChild size="lg" className="mt-8 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-            <Link href="/#wholesale">Explore Wholesale</Link>
-          </Button>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <Link href="/#wholesale">Become a Retailer</Link>
+            </Button>
+             <Button asChild size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white hover:text-black">
+                <Link href="/products">Explore Our Products</Link>
+            </Button>
+          </div>
         </div>
       </section>
       
-      {/* Wholesale & Retail Section */}
+      {/* Product Categories Section */}
       <section id="wholesale" className="py-16 md:py-24 bg-background">
         <div className="container mx-auto px-4 text-center">
             <h2 className="font-headline text-3xl md:text-4xl font-bold mb-4">
@@ -127,9 +150,6 @@ export default async function Home() {
                 </Card>
                 ))}
             </div>
-             <Button asChild size="lg" className="mt-12">
-                <Link href="#contact">Enquire About Wholesale</Link>
-            </Button>
         </div>
       </section>
 
@@ -150,6 +170,36 @@ export default async function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Partner with us section */}
+      <section className="py-16 md:py-24 bg-background">
+        <div className="container mx-auto px-4">
+           <div className="text-center mb-12">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold">
+                    Join Our Growth
+                </h2>
+                <p className="max-w-3xl mx-auto text-muted-foreground mt-4">
+                    We believe in the power of partnership. Whether you're an influencer, a logistics expert, or a local business, there's a place for you at Luna Essentials.
+                </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {partnerOpportunities.map((opp, index) => (
+                    <Card key={index} className="flex flex-col text-center items-center p-6 bg-card">
+                        <div className="bg-primary/10 p-4 rounded-full mb-4">
+                            <opp.icon className="w-10 h-10 text-primary" />
+                        </div>
+                        <CardTitle className="font-headline text-xl mb-2">{opp.title}</CardTitle>
+                        <CardDescription className="flex-grow text-foreground/80">{opp.description}</CardDescription>
+                    </Card>
+                ))}
+            </div>
+             <div className="text-center mt-12">
+                <Button asChild size="lg">
+                    <Link href="/partners">Learn More About Partnerships</Link>
+                </Button>
+            </div>
         </div>
       </section>
 
