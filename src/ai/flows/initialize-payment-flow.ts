@@ -28,7 +28,8 @@ export type InitializePaymentOutput = z.infer<typeof InitializePaymentOutputSche
 
 
 export async function initializePaymentFlow(input: InitializePaymentInput): Promise<InitializePaymentOutput> {
-  return await initializePayment(input);
+  // This flow now correctly calls the isolated service, which is never imported by the client.
+  return await paystackService.initializeTransaction(input);
 }
 
 

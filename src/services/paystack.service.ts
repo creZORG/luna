@@ -7,6 +7,8 @@ import { orderService } from './order.service';
 import type { InitializePaymentInput, InitializePaymentOutput } from '@/ai/flows/initialize-payment-flow';
 import type { ProcessPaymentOutput } from '@/ai/flows/process-payment-flow';
 
+// This is now the ONLY file that imports 'paystack-node'.
+// It is never imported by a client-side component.
 const paystack = new Paystack(process.env.PAYSTACK_SECRET_KEY!);
 
 class PaystackService {

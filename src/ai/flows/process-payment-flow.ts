@@ -22,7 +22,8 @@ const ProcessPaymentOutputSchema = z.object({
 export type ProcessPaymentOutput = z.infer<typeof ProcessPaymentOutputSchema>;
 
 export async function processPayment(reference: string): Promise<ProcessPaymentOutput> {
-  return await processPaymentFlow({ reference });
+  // This flow now correctly calls the isolated service.
+  return await paystackService.verifyAndCreateOrder(reference);
 }
 
 const processPaymentFlow = ai.defineFlow(
