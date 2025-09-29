@@ -20,12 +20,29 @@ const navLinks = [
   { href: '#contact', label: 'Contact' },
 ];
 
+function useIsStaffDomain() {
+  const [isStaffDomain, setIsStaffDomain] = React.useState(false);
+
+  React.useEffect(() => {
+    // This code only runs on the client, where window is available
+    if (typeof window !== 'undefined') {
+        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'luna.co.ke';
+        const staffHostname = `staff.${rootDomain}`;
+        setIsStaffDomain(window.location.hostname === staffHostname);
+    }
+  }, []);
+
+  return isStaffDomain;
+}
+
 export function Header() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const { cartItems, setIsCartOpen } = useCart();
-  const { user, userProfile } = useAuth();
+  const { user } = useAuth();
+  const isStaffDomain = useIsStaffDomain();
+
 
   const totalQuantity = React.useMemo(() => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -39,12 +56,6 @@ export function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Correctly identify if the user is a staff member who should not see the main nav
-  const isStaffUser = userProfile && userProfile.roles.some(role => 
-    ['admin', 'sales', 'operations', 'finance', 'manufacturing'].includes(role)
-  );
-
 
   return (
     <header
@@ -67,7 +78,7 @@ export function Header() {
           </Link>
 
           <div className="flex items-center gap-1">
-              { !isStaffUser && <nav className="hidden md:flex items-center gap-1">
+              { !isStaffDomain && <nav className="hidden md:flex items-center gap-1">
                   {navLinks.map(({ href, label }) => (
                       <Button asChild variant="ghost" key={href} className={cn(
                           'text-sm font-medium rounded-full',
@@ -121,21 +132,23 @@ export function Header() {
                           LUNA
                       </span>
                   </div>
-                  <nav className="flex flex-col gap-4 p-4">
-                    {navLinks.map(({ href, label }) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={cn(
-                          'text-lg font-medium transition-colors hover:text-primary flex items-center gap-4',
-                          pathname === href ? 'text-primary' : 'text-foreground'
-                        )}
-                      >
-                        {label}
-                      </Link>
-                    ))}
-                  </nav>
+                  {!isStaffDomain && (
+                    <nav className="flex flex-col gap-4 p-4">
+                      {navLinks.map(({ href, label }) => (
+                        <Link
+                          key={href}
+                          href={href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={cn(
+                            'text-lg font-medium transition-colors hover:text-primary flex items-center gap-4',
+                            pathname === href ? 'text-primary' : 'text-foreground'
+                          )}
+                        >
+                          {label}
+                        </Link>
+                      ))}
+                    </nav>
+                   )}
                    <div className="mt-auto p-4 border-t">
                      <Button className="w-full" asChild>
                        <Link href="/login">
