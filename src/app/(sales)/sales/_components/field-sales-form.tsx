@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -24,9 +23,9 @@ export default function FieldSalesForm({ onProcessSale, isProcessing }: FieldSal
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please enter customer name and phone number.' });
             return;
         }
-        
-        // Basic length check, backend will do the heavy lifting for formatting
-        if (customerPhone.replace(/\D/g, '').length < 9) {
+
+        // Minimal check, the backend will handle robust formatting.
+        if (customerPhone.trim().length < 9) {
              toast({ variant: 'destructive', title: 'Invalid Phone Number', description: 'Please enter a valid Kenyan phone number.' });
             return;
         }

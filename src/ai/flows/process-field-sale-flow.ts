@@ -33,35 +33,11 @@ export async function processFieldSale(input: ProcessFieldSaleInput) {
     return await processFieldSaleFlow(input);
 }
 
-// Helper to format phone number to 254... format
+// Helper to format phone number to 254... format reliably
 const formatPhoneNumber = (phone: string): string => {
-    let phoneNumber = phone.trim();
-
-    // Case 1: Starts with '+'
-    if (phoneNumber.startsWith('+')) {
-        // If it's '+254' followed by 9 digits, remove '+'
-        if (phoneNumber.startsWith('+254') && phoneNumber.length === 13) {
-            return phoneNumber.substring(1);
-        }
-    }
-    
-    // Case 2: Starts with '254' and has 12 digits
-    if (phoneNumber.startsWith('254') && phoneNumber.length === 12) {
-        return phoneNumber;
-    }
-    
-    // Case 3: Starts with '0' and has 10 digits
-    if (phoneNumber.startsWith('0') && phoneNumber.length === 10) {
-        return '254' + phoneNumber.substring(1);
-    }
-    
-    // Case 4: Starts with '7' or '1' and has 9 digits
-    if ((phoneNumber.startsWith('7') || phoneNumber.startsWith('1')) && phoneNumber.length === 9) {
-        return '254' + phoneNumber;
-    }
-    
-    // If no case matches, return the original number to let Paystack validate
-    return phoneNumber;
+    const cleaned = phone.replace(/\D/g, ''); // Remove all non-digit characters
+    const last9 = cleaned.slice(-9); // Get the last 9 digits
+    return `254${last9}`; // Prepend 254
 };
 
 
