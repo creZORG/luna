@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Truck, Warehouse, Package } from "lucide-react";
+import { Truck, Warehouse, Package, MapPin } from "lucide-react";
 import Link from "next/link";
 
 export default function OperationsDashboard() {
@@ -22,6 +22,12 @@ export default function OperationsDashboard() {
             description: "Check current stock levels of raw materials.",
             icon: Warehouse,
             href: "/operations/raw-materials/inventory"
+        },
+        {
+            title: "Pickup Locations",
+            description: "Manage pickup station locations for customers.",
+            icon: MapPin,
+            href: "/operations/pickup-locations"
         }
     ];
 

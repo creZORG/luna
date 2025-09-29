@@ -56,7 +56,7 @@ class OrderService {
                     customerName: customer.fullName,
                     customerEmail: customer.email,
                     customerPhone: customer.phone,
-                    shippingAddress: `${customer.address}, ${customer.constituency}`,
+                    shippingAddress: customer.address, // Address is now pre-formatted in client
                     items: items,
                     totalAmount: totalAmount,
                     status: 'paid',

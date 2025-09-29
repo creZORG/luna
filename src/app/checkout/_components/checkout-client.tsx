@@ -70,19 +70,39 @@ import { useRouter } from 'next/navigation';
 import { verifyPaymentAndProcessOrder } from '@/ai/flows/verify-payment-and-process-order-flow';
 import PaystackPop from '@paystack/inline-js';
 import { orderService } from '@/services/order.service';
+import { pickupLocationService, PickupLocation } from '@/services/pickup-location.service';
 
 
 const deliveryFormSchema = z.object({
+  deliveryMethod: z.enum(['door-to-door', 'pickup']),
   fullName: z.string().min(3, 'Full name is required'),
   email: z.string().email('Invalid email address'),
   phone: z
     .string()
     .min(10, 'Phone number must be at least 10 digits')
     .regex(/^(\+254|0)?\d{9}$/, 'Invalid Kenyan phone number format'),
-  constituency: z.string().min(1, 'Please select a constituency'),
-  address: z.string().min(10, 'Please provide a detailed address, including building and house number.'),
+  constituency: z.string().optional(),
+  address: z.string().optional(),
+  pickupLocationId: z.string().optional(),
   deliveryNotes: z.string().optional(),
+}).refine(data => {
+    if (data.deliveryMethod === 'door-to-door') {
+        return !!data.constituency && !!data.address && data.address.length >= 10;
+    }
+    return true;
+}, {
+    message: 'Constituency and a detailed address are required for door delivery.',
+    path: ['address'],
+}).refine(data => {
+    if (data.deliveryMethod === 'pickup') {
+        return !!data.pickupLocationId;
+    }
+    return true;
+}, {
+    message: 'Please select a pickup location.',
+    path: ['pickupLocationId'],
 });
+
 
 type DeliveryFormData = z.infer<typeof deliveryFormSchema>;
 
@@ -251,11 +271,13 @@ export default function CheckoutClient() {
   const [identifiedLocation, setIdentifiedLocation] = useState<string | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+  const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
 
 
   const form = useForm<DeliveryFormData>({
     resolver: zodResolver(deliveryFormSchema),
     defaultValues: {
+      deliveryMethod: 'door-to-door',
       fullName: userProfile?.displayName || '',
       email: userProfile?.email || '',
       phone: '',
@@ -264,7 +286,9 @@ export default function CheckoutClient() {
     },
   });
   
-  // Effect to pre-fill form with last order details
+  const deliveryMethod = form.watch('deliveryMethod');
+
+  // Effect to pre-fill form with last order details & fetch pickup locations
   useEffect(() => {
     async function prefillForm() {
         if (user) {
@@ -272,6 +296,7 @@ export default function CheckoutClient() {
             if (lastOrder) {
                 const [address, constituency] = lastOrder.shippingAddress.split(',').map(s => s.trim());
                 form.reset({
+                    deliveryMethod: 'door-to-door',
                     fullName: lastOrder.customerName,
                     email: lastOrder.customerEmail,
                     phone: lastOrder.customerPhone,
@@ -282,6 +307,7 @@ export default function CheckoutClient() {
             } else if (userProfile) {
                  // If no last order, use profile info
                  form.reset({
+                    deliveryMethod: 'door-to-door',
                     fullName: userProfile.displayName,
                     email: userProfile.email || '',
                     phone: '',
@@ -292,7 +318,14 @@ export default function CheckoutClient() {
             }
         }
     }
+    
+    async function fetchPickupLocations() {
+        const locations = await pickupLocationService.getPickupLocations();
+        setPickupLocations(locations);
+    }
+
     prefillForm();
+    fetchPickupLocations();
   }, [user, userProfile, form]);
 
 
@@ -360,22 +393,37 @@ export default function CheckoutClient() {
         return acc + (product?.platformFee || 0);
     }, 0);
     
-    const totalAmount = subtotal + totalDeliveryFee + totalPlatformFee;
+    // Delivery fee is waived for pickup
+    const finalTotal = data.deliveryMethod === 'pickup'
+        ? subtotal + totalPlatformFee
+        : subtotal + totalDeliveryFee + totalPlatformFee;
 
     const paystack = new PaystackPop();
     paystack.newTransaction({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
         email: data.email,
-        amount: totalAmount * 100, // Amount in kobo
+        amount: finalTotal * 100, // Amount in kobo
         metadata: {
             "send_receipt": false,
         },
         onSuccess: async (transaction) => {
             try {
+                // Determine shipping address string
+                let shippingAddress = '';
+                if(data.deliveryMethod === 'pickup') {
+                    const location = pickupLocations.find(l => l.id === data.pickupLocationId);
+                    shippingAddress = `Pickup at: ${location?.name}, ${location?.address}`;
+                } else {
+                    shippingAddress = `${data.address}, ${data.constituency}`;
+                }
+
                 const orderId = await verifyPaymentAndProcessOrder({
                     reference: transaction.reference,
                     cartItems: cartItems,
-                    customer: data,
+                    customer: {
+                        ...data,
+                        address: shippingAddress // We send the combined address string
+                    },
                     userId: user?.uid, // Pass user ID if they are logged in
                 });
 
@@ -437,28 +485,48 @@ export default function CheckoutClient() {
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handlePaymentAndOrderProcessing)} className="space-y-4">
-                 <RadioGroup defaultValue="door-to-door" className="grid grid-cols-2 gap-4">
-                    <div>
-                        <RadioGroupItem value="door-to-door" id="door-to-door" className="peer sr-only" />
-                        <Label
-                        htmlFor="door-to-door"
-                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                        >
-                        <Truck className="mb-3 h-6 w-6" />
-                        Door Delivery
-                        </Label>
-                    </div>
-                    <div>
-                        <RadioGroupItem value="pickup" id="pickup" className="peer sr-only" disabled />
-                         <Label
-                            htmlFor="pickup"
-                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary peer-data-[state=disabled]:cursor-not-allowed peer-data-[state=disabled]:opacity-50"
+                 <FormField
+                    control={form.control}
+                    name="deliveryMethod"
+                    render={({ field }) => (
+                    <FormItem className="space-y-3">
+                        <FormLabel>Choose Delivery Method</FormLabel>
+                        <FormControl>
+                            <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="grid grid-cols-2 gap-4"
                             >
-                            <Warehouse className="mb-3 h-6 w-6" />
-                            Pickup Station
-                        </Label>
-                    </div>
-                 </RadioGroup>
+                                <FormItem>
+                                    <FormControl>
+                                        <RadioGroupItem value="door-to-door" id="door-to-door" className="peer sr-only" />
+                                    </FormControl>
+                                    <Label
+                                        htmlFor="door-to-door"
+                                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                                    >
+                                        <Truck className="mb-3 h-6 w-6" />
+                                        Door Delivery
+                                    </Label>
+                                </FormItem>
+                                <FormItem>
+                                     <FormControl>
+                                        <RadioGroupItem value="pickup" id="pickup" className="peer sr-only" />
+                                    </FormControl>
+                                    <Label
+                                        htmlFor="pickup"
+                                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                                        >
+                                        <Warehouse className="mb-3 h-6 w-6" />
+                                        Pickup Station
+                                    </Label>
+                                </FormItem>
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
@@ -503,102 +571,133 @@ export default function CheckoutClient() {
                   />
 
                 <Separator className="my-6" />
-                 <h3 className="text-lg font-medium">Delivery Address</h3>
-                 <p className="text-sm text-muted-foreground">We currently only deliver within Nairobi.</p>
-                 
-                <div className="space-y-4 animate-in fade-in-0 duration-500">
-                    <Alert className='flex items-center justify-between'>
-                      <div>
-                          <AlertTitle>Confirm Nairobi Delivery</AlertTitle>
-                          <AlertDescription>
-                              Use your location to quickly confirm you're in our delivery zone.
-                          </AlertDescription>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleCheckLocation}
-                        disabled={locationState === 'loading'}
-                      >
-                        {locationState === 'loading' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />} 
-                        Check Location
-                      </Button>
-                    </Alert>
 
-                     {locationState === 'outside_nairobi' && (
-                          <Alert variant="destructive">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Outside Nairobi Delivery Area</AlertTitle>
+                {deliveryMethod === 'door-to-door' && (
+                    <div className="space-y-4 animate-in fade-in-0 duration-500">
+                        <h3 className="text-lg font-medium">Delivery Address</h3>
+                        <p className="text-sm text-muted-foreground">We currently only deliver within Nairobi.</p>
+                        
+                        <Alert className='flex items-center justify-between'>
+                        <div>
+                            <AlertTitle>Confirm Nairobi Delivery</AlertTitle>
                             <AlertDescription>
-                                {identifiedLocation
-                                    ? `It looks like you're in ${identifiedLocation} (approx. ${distanceInKm}km away), which is outside our standard delivery zone.`
-                                    : `It looks like you're outside our standard delivery zone (approx. ${distanceInKm}km away).`
-                                }
-                                {' '}For special arrangements, please contact our support team.
+                                Use your location to quickly confirm you're in our delivery zone.
                             </AlertDescription>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCheckLocation}
+                            disabled={locationState === 'loading'}
+                        >
+                            {locationState === 'loading' ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <MapPin className="mr-2 h-4 w-4" />} 
+                            Check Location
+                        </Button>
                         </Alert>
-                     )}
-                     {locationState === 'error' && (
-                         <Alert variant="destructive">
-                            <AlertTitle>Location Error</AlertTitle>
-                            <AlertDescription>{locationError}</AlertDescription>
-                        </Alert>
-                     )}
-                     {locationState === 'in_nairobi' && <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-                        <Home className="h-4 w-4 !text-green-600" />
-                        <AlertTitle className="text-green-800 dark:text-green-300">You're in Nairobi!</AlertTitle>
-                         <AlertDescription className="text-green-700 dark:text-green-400">
-                            Great! We deliver to your area (approx. {distanceInKm}km from our office). Please fill out the address details below.
-                        </AlertDescription>
-                    </Alert>}
-                    
-                     <FormField
-                        control={form.control}
-                        name="constituency"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Constituency</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select your constituency" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {NAIROBI_CONSTITUENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+
+                        {locationState === 'outside_nairobi' && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Outside Nairobi Delivery Area</AlertTitle>
+                                <AlertDescription>
+                                    {identifiedLocation
+                                        ? `It looks like you're in ${identifiedLocation} (approx. ${distanceInKm}km away), which is outside our standard delivery zone.`
+                                        : `It looks like you're outside our standard delivery zone (approx. ${distanceInKm}km away).`
+                                    }
+                                    {' '}For special arrangements, please contact our support team.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {locationState === 'error' && (
+                            <Alert variant="destructive">
+                                <AlertTitle>Location Error</AlertTitle>
+                                <AlertDescription>{locationError}</AlertDescription>
+                            </Alert>
+                        )}
+                        {locationState === 'in_nairobi' && <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                            <Home className="h-4 w-4 !text-green-600" />
+                            <AlertTitle className="text-green-800 dark:text-green-300">You're in Nairobi!</AlertTitle>
+                            <AlertDescription className="text-green-700 dark:text-green-400">
+                                Great! We deliver to your area (approx. {distanceInKm}km from our office). Please fill out the address details below.
+                            </AlertDescription>
+                        </Alert>}
+                        
+                        <FormField
+                            control={form.control}
+                            name="constituency"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Constituency</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select your constituency" />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {NAIROBI_CONSTITUENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="address"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Street Address, Building & House No.</FormLabel>
+                                <FormControl>
+                                    <Textarea placeholder="e.g., Maple Street, Crystal Apartments, Apt B4" {...field} />
+                                </FormControl>
                                 <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Street Address, Building & House No.</FormLabel>
-                            <FormControl>
-                                <Textarea placeholder="e.g., Maple Street, Crystal Apartments, Apt B4" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="deliveryNotes"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Delivery Notes (Optional)</FormLabel>
-                            <FormControl>
-                                <Textarea placeholder="e.g., Leave at the reception with the security guard" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                )}
+                
+                {deliveryMethod === 'pickup' && (
+                    <div className="space-y-4 animate-in fade-in-0 duration-500">
+                        <h3 className="text-lg font-medium">Pickup Station</h3>
+                        <FormField
+                            control={form.control}
+                            name="pickupLocationId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Choose a pickup location</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a station" />
+                                        </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {pickupLocations.map(loc => <SelectItem key={loc.id} value={loc.id}>{loc.name} - {loc.address}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                     <FormDescription>Delivery fees are waived for pickup orders.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                )}
+                 
+                 <FormField
+                    control={form.control}
+                    name="deliveryNotes"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Order Notes (Optional)</FormLabel>
+                        <FormControl>
+                            <Textarea placeholder="e.g., Gift wrap the items" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 <Button type="submit" size="lg" className="w-full" disabled={!form.formState.isValid || isSubmitting || cartItems.length === 0}>
                     {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
@@ -615,6 +714,3 @@ export default function CheckoutClient() {
     </>
   );
 }
-
-    
-    
