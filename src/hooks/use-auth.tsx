@@ -85,8 +85,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     router.push('/verify-email');
                 }
             } 
-            // If email is verified and they are on an auth page or the root, redirect to their dashboard.
-            else if (isAuthPage || pathname === '/') {
+            // If email is verified and they are on an auth page, redirect to their dashboard.
+            else if (isAuthPage) {
                 const dashboardUrl = getPrimaryDashboard(profile.roles);
                 router.push(dashboardUrl);
             }
