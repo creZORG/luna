@@ -19,7 +19,10 @@ export interface ProductUpdateData {
   sizes?: {
     size: string;
     price?: number;
+    wholesalePrice?: number;
   }[];
+  wholesaleDiscountPercentage?: number;
+  wholesaleMoq?: number;
 }
 
 class ProductService {
@@ -100,7 +103,11 @@ class ProductService {
                 dataToUpdate.ingredients = productData.ingredients.split(',').map(i => i.trim()).filter(i => i !== '');
             }
             if (productData.sizes) {
-                 dataToUpdate.sizes = productData.sizes.map(s => ({ size: s.size, price: s.price || 0 }));
+                 dataToUpdate.sizes = productData.sizes.map(s => ({
+                     size: s.size,
+                     price: s.price || 0,
+                     wholesalePrice: s.wholesalePrice || 0
+                }));
             }
             
             await updateDoc(productRef, dataToUpdate);

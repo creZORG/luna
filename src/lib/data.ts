@@ -7,7 +7,11 @@ export type Product = {
   slug: string;
   name: string;
   category: ProductCategory;
-  sizes: { size: string; price: number }[];
+  sizes: { 
+    size: string; 
+    price: number;
+    wholesalePrice?: number;
+  }[];
   description: string;
   keyBenefits: string[];
   ingredients: string[];
@@ -16,6 +20,8 @@ export type Product = {
   imageUrl: string; // Now a direct URL
   galleryImageUrls?: string[]; // Now a direct URL
   shortDescription: string;
+  wholesaleDiscountPercentage?: number;
+  wholesaleMoq?: number;
 };
 
 export const products: Product[] = [

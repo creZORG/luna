@@ -63,7 +63,10 @@ const formSchema = z.object({
   sizes: z.array(z.object({
     size: z.string().min(1, "Size cannot be empty"),
     price: z.coerce.number().optional(),
+    wholesalePrice: z.coerce.number().optional(),
   })).min(1, "Add at least one size"),
+  wholesaleDiscountPercentage: z.coerce.number().optional(),
+  wholesaleMoq: z.coerce.number().optional(),
 });
 
 export type ProductFormData = z.infer<typeof formSchema>;
@@ -71,9 +74,10 @@ export type ProductFormData = z.infer<typeof formSchema>;
 interface ProductFormProps {
     role?: "admin" | "operations";
     product?: Product; // For editing
+    wholesaleDiscount?: number;
 }
 
-export function ProductForm({ role = "operations", product }: ProductFormProps) {
+export function ProductForm({ role = "operations", product, wholesaleDiscount = 0 }: ProductFormProps) {
     const isEditMode = !!product;
     const { toast } = useToast();
     const router = useRouter();
@@ -94,7 +98,7 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
             slug: '',
             description: '',
             shortDescription: '',
-            sizes: [{ size: '', price: 0 }],
+            sizes: [{ size: '', price: 0, wholesalePrice: 0 }],
             keyBenefits: '',
             ingredients: '',
             directions: '',
@@ -136,10 +140,15 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
         ingredients: values.ingredients.split(',').map(i => i.trim()).filter(i => i !== ''),
         imageUrl: imageAsDataUri,
         galleryImageUrls: galleryAsDataUris,
-        sizes: values.sizes.map(s => ({
-          size: s.size,
-          price: role === 'admin' ? s.price || 0 : isEditMode ? (product.sizes.find(ps => ps.size === s.size)?.price || 0) : 0
-        }))
+        sizes: values.sizes.map(s => {
+          const retailPrice = s.price || 0;
+          const wholesaleCalc = retailPrice * (1 - (wholesaleDiscount / 100));
+          return {
+            size: s.size,
+            price: retailPrice,
+            wholesalePrice: role === 'admin' ? wholesaleCalc : (isEditMode ? (product.sizes.find(ps => ps.size === s.size)?.wholesalePrice || 0) : 0),
+          };
+        }),
       };
 
       if (isEditMode) {
@@ -155,7 +164,7 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
           description: `The product "${values.name}" has been created successfully.`,
         });
       }
-      router.push('/operations/products');
+      router.push(role === 'admin' ? '/admin/products' : '/operations/products');
       router.refresh();
     } catch (error) {
       console.error("Error saving product:", error);
@@ -169,6 +178,8 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
 
   const isSubmitting = form.formState.isSubmitting;
   const isAdminView = role === 'admin';
+
+  const prices = form.watch('sizes');
 
   return (
     <Form {...form}>
@@ -254,51 +265,68 @@ export function ProductForm({ role = "operations", product }: ProductFormProps) 
 
              <Card>
                 <CardHeader>
-                    <CardTitle>Sizing {isAdminView && '& Pricing'}</CardTitle>
-                    <CardDescription>Add the different sizes {isAdminView && 'and prices'} for this product.</CardDescription>
+                    <CardTitle>Sizing & Pricing</CardTitle>
+                    <CardDescription>
+                      {isAdminView 
+                        ? "Set the Recommended Retail Price (RRP) for each size. The wholesale price is calculated automatically based on the global discount."
+                        : "Add the different sizes available for this product. Pricing is set by an administrator."
+                      }
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                 <div>
-                  {fields.map((field, index) => (
-                    <div key={field.id} className={`grid ${isAdminView ? 'grid-cols-3' : 'grid-cols-2'} gap-4 items-start mb-4`}>
-                      <FormField
-                        control={form.control}
-                        name={`sizes.${index}.size`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Size</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g. 500ml" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
+                  {fields.map((field, index) => {
+                    const rrp = prices?.[index]?.price || 0;
+                    const wholesalePrice = rrp * (1 - (wholesaleDiscount / 100));
+
+                    return (
+                      <div key={field.id} className={`grid ${isAdminView ? 'grid-cols-4' : 'grid-cols-2'} gap-4 items-end mb-4`}>
+                        <FormField
+                          control={form.control}
+                          name={`sizes.${index}.size`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Size</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. 500ml" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        {isAdminView && (
+                          <>
+                            <FormField
+                              control={form.control}
+                              name={`sizes.${index}.price`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>RRP (Ksh)</FormLabel>
+                                  <FormControl>
+                                    <Input type="number" placeholder="e.g. 220" {...field} value={field.value ?? ''} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <div className="space-y-2">
+                               <Label>Wholesale (Ksh)</Label>
+                               <Input type="text" readOnly disabled value={wholesalePrice.toFixed(2)} />
+                            </div>
+                          </>
                         )}
-                      />
-                      {isAdminView && <FormField
-                        control={form.control}
-                        name={`sizes.${index}.price`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Price</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="e.g. 220" {...field} value={field.value ?? ''} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />}
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => remove(index)}
-                        className="mt-8"
-                        disabled={fields.length <= 1}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          disabled={fields.length <= 1}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
                   <Button
                     type="button"
                     variant="outline"
