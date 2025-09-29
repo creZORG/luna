@@ -17,11 +17,13 @@ export type Product = {
   ingredients: string[];
   directions: string;
   cautions: string;
-  imageUrl: string; // Now a direct URL
-  galleryImageUrls?: string[]; // Now a direct URL
+  imageUrl: string;
+  galleryImageUrls?: string[];
   shortDescription: string;
   wholesaleDiscountPercentage?: number;
   wholesaleMoq?: number;
+  rating: number;
+  reviewCount: number;
 };
 
 export const products: Product[] = [
