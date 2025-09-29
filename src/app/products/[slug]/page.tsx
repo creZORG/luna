@@ -1,3 +1,4 @@
+
 import { products as mockProducts } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import ProductDetailClient from './_components/product-detail-client';
