@@ -15,7 +15,6 @@ export interface IntakeFormData {
     rawMaterialId: string;
     quantityOnNote: number;
     actualQuantity: number;
-    alkalinity: string;
     batchNumber: string;
     manufacturingDate: Date;
     expiryDate: Date;
@@ -132,7 +131,6 @@ class RawMaterialService {
                     rawMaterialId: formData.rawMaterialId,
                     quantityOnNote: formData.quantityOnNote,
                     actualQuantity: formData.actualQuantity,
-                    alkalinity: formData.alkalinity,
                     batchNumber: formData.batchNumber,
                     manufacturingDate: formData.manufacturingDate,
                     expiryDate: formData.expiryDate,
@@ -216,3 +214,5 @@ class RawMaterialService {
 }
 
 export const rawMaterialService = new RawMaterialService();
+
+    

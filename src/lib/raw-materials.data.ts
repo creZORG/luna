@@ -15,7 +15,6 @@ export interface RawMaterialIntake {
     rawMaterialId: string;
     quantityOnNote: number;
     actualQuantity: number;
-    alkalinity: string; // Or number, depending on what's measured
     batchNumber: string;
     manufacturingDate: any; // Firebase Timestamp
     expiryDate: any; // Firebase Timestamp
@@ -46,3 +45,5 @@ export const RAW_MATERIALS_SEED: Omit<RawMaterial, 'id' | 'quantity'>[] = [
     { name: 'Lemon Fragrance Oil', unitOfMeasure: 'ml' },
     { name: 'Water', unitOfMeasure: 'L' },
 ];
+
+    

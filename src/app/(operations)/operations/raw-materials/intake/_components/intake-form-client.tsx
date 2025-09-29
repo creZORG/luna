@@ -44,7 +44,6 @@ const formSchema = z.object({
   rawMaterialId: z.string({ required_error: "Please select a raw material." }),
   quantityOnNote: z.coerce.number().min(0.1, "Quantity must be greater than 0."),
   actualQuantity: z.coerce.number().min(0.1, "Actual quantity must be greater than 0."),
-  alkalinity: z.string().min(1, "Alkalinity check result is required."),
   batchNumber: z.string().min(1, "Batch number is required."),
   manufacturingDate: z.date({ required_error: "A manufacturing date is required."}),
   expiryDate: z.date({ required_error: "An expiry date is required." }),
@@ -238,19 +237,6 @@ export default function IntakeFormClient({ rawMaterials }: { rawMaterials: RawMa
                     </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="alkalinity"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Alkalinity</FormLabel>
-                        <FormControl>
-                        <Input placeholder="e.g., 7.2" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
                  <FormField
                     control={form.control}
                     name="batchNumber"
@@ -379,3 +365,5 @@ export default function IntakeFormClient({ rawMaterials }: { rawMaterials: RawMa
     </Form>
   );
 }
+
+    
