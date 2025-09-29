@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { attendanceService, TodayAttendanceStatus } from '@/services/attendance.service';
-import { Loader, MapPin, AlertCircle, CheckCircle, Ban } from 'lucide-react';
+import { Loader, MapPin, AlertCircle, CheckCircle, Ban, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 import { getCompanySettings } from '@/lib/config';
 
@@ -41,6 +41,35 @@ export default function CheckInPage() {
     const [isLoadingStatus, setIsLoadingStatus] = useState(true);
     const [settings, setSettings] = useState<{ COMPANY_LOCATION: any, MAX_CHECK_IN_DISTANCE_METERS: number} | null>(null);
 
+    const getLocation = (appSettings: { COMPANY_LOCATION: any, MAX_CHECK_IN_DISTANCE_METERS: number}) => {
+         navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                setLocation({ latitude, longitude });
+                const dist = getDistance(latitude, longitude, appSettings.COMPANY_LOCATION.latitude, appSettings.COMPANY_LOCATION.longitude);
+                setDistance(dist);
+                setIsWithinRange(dist <= appSettings.MAX_CHECK_IN_DISTANCE_METERS);
+                setError(null);
+            },
+            (err) => {
+                switch (err.code) {
+                    case err.PERMISSION_DENIED:
+                        setError("Location access was denied. Please enable it in your browser settings to check in.");
+                        break;
+                    case err.POSITION_UNAVAILABLE:
+                        setError("Location information is unavailable.");
+                        break;
+                    case err.TIMEOUT:
+                        setError("The request to get user location timed out.");
+                        break;
+                    default:
+                        setError("An unknown error occurred while getting location.");
+                        break;
+                }
+            }
+        );
+    }
+
     useEffect(() => {
         const fetchSettingsAndCheckStatus = async () => {
             try {
@@ -50,33 +79,8 @@ export default function CheckInPage() {
                 if (user) {
                     const status = await attendanceService.getTodayAttendanceStatus(user.uid);
                     setAttendanceStatus(status);
-                    if (!status.hasCheckedIn) {
-                        navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                                const { latitude, longitude } = position.coords;
-                                setLocation({ latitude, longitude });
-                                const dist = getDistance(latitude, longitude, appSettings.COMPANY_LOCATION.latitude, appSettings.COMPANY_LOCATION.longitude);
-                                setDistance(dist);
-                                setIsWithinRange(dist <= appSettings.MAX_CHECK_IN_DISTANCE_METERS);
-                                setError(null);
-                            },
-                            (err) => {
-                                switch (err.code) {
-                                    case err.PERMISSION_DENIED:
-                                        setError("Location access was denied. Please enable it in your browser settings to check in.");
-                                        break;
-                                    case err.POSITION_UNAVAILABLE:
-                                        setError("Location information is unavailable.");
-                                        break;
-                                    case err.TIMEOUT:
-                                        setError("The request to get user location timed out.");
-                                        break;
-                                    default:
-                                        setError("An unknown error occurred while getting location.");
-                                        break;
-                                }
-                            }
-                        );
+                    if (!status.hasCheckedIn || (status.hasCheckedIn && !status.hasCheckedOut)) {
+                       getLocation(appSettings);
                     }
                 }
             } catch (e) {
@@ -111,6 +115,30 @@ export default function CheckInPage() {
             setIsSubmitting(false);
         }
     };
+    
+    const handleCheckOut = async () => {
+        if (!location || !user || !userProfile) return;
+
+        setIsSubmitting(true);
+        try {
+            await attendanceService.logCheckout(user.uid, userProfile.displayName, location);
+            toast({
+                title: 'Check-out Successful!',
+                description: `Goodbye! Your attendance log for today is complete.`,
+            });
+            const status = await attendanceService.getTodayAttendanceStatus(user.uid);
+            setAttendanceStatus(status);
+        } catch (e) {
+            toast({
+                variant: 'destructive',
+                title: 'Check-out Failed',
+                description: 'There was a problem logging your checkout. Please try again.',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
 
     const renderStatus = () => {
         if (isLoadingStatus || !settings) {
@@ -122,16 +150,50 @@ export default function CheckInPage() {
             );
         }
 
-        if (attendanceStatus?.hasCheckedIn) {
-            return (
+        if (attendanceStatus?.hasCheckedIn && attendanceStatus?.hasCheckedOut) {
+             return (
                  <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
                     <CheckCircle className="h-4 w-4 !text-green-600" />
-                    <AlertTitle className="text-green-800 dark:text-green-300">Already Checked In!</AlertTitle>
+                    <AlertTitle className="text-green-800 dark:text-green-300">Day Complete!</AlertTitle>
                     <AlertDescription className="text-green-700 dark:text-green-400">
-                        You successfully checked in today at {format(attendanceStatus.checkInTime!, 'p')}. Have a productive day!
+                        You checked in at {format(attendanceStatus.checkInTime!, 'p')} and checked out at {format(attendanceStatus.checkOutTime!, 'p')}. See you tomorrow!
                     </AlertDescription>
                 </Alert>
             );
+        }
+        
+        if (attendanceStatus?.hasCheckedIn) {
+            return (
+                <div className='space-y-6'>
+                    <Alert variant="default" className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                        <CheckCircle className="h-4 w-4 !text-blue-600" />
+                        <AlertTitle className="text-blue-800 dark:text-blue-300">Checked In!</AlertTitle>
+                        <AlertDescription className="text-blue-700 dark:text-blue-400">
+                            You checked in today at {format(attendanceStatus.checkInTime!, 'p')}. Ready to head out?
+                        </AlertDescription>
+                    </Alert>
+
+                     {isWithinRange ? (
+                         <Button 
+                            onClick={handleCheckOut} 
+                            disabled={!isWithinRange || isSubmitting} 
+                            className="w-full"
+                            size="lg"
+                        >
+                            {isSubmitting ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-5 w-5" />}
+                            Confirm Check-out for {format(new Date(), 'p')}
+                        </Button>
+                    ) : (
+                         <Alert variant="destructive">
+                            <Ban className="h-4 w-4" />
+                            <AlertTitle>Out of Range for Checkout</AlertTitle>
+                            <AlertDescription>
+                                You must be within {settings.MAX_CHECK_IN_DISTANCE_METERS} meters of the office to check out. You are currently approximately {distance?.toFixed(0)} meters away.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                </div>
+            )
         }
 
         if (error) {
@@ -195,7 +257,7 @@ export default function CheckInPage() {
                     <div className='flex justify-center mb-4'>
                         <MapPin className="w-12 h-12 text-primary" />
                     </div>
-                    <CardTitle className="text-2xl">Daily Attendance Check-in</CardTitle>
+                    <CardTitle className="text-2xl">Daily Attendance</CardTitle>
                     <CardDescription>
                         Verify your location to log your attendance for today.
                     </CardDescription>
@@ -207,4 +269,3 @@ export default function CheckInPage() {
         </div>
     );
 }
-

@@ -1,6 +1,8 @@
 
+'use client';
+
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { activityService } from './activity.service';
 
 export interface AttendanceRecord {
@@ -8,7 +10,12 @@ export interface AttendanceRecord {
     userId: string;
     userName: string;
     checkInTime: any; // Firebase Timestamp
+    checkOutTime?: any; // Firebase Timestamp
     location: {
+        latitude: number;
+        longitude: number;
+    };
+    checkOutLocation?: {
         latitude: number;
         longitude: number;
     };
@@ -17,6 +24,8 @@ export interface AttendanceRecord {
 export interface TodayAttendanceStatus {
     hasCheckedIn: boolean;
     checkInTime: Date | null;
+    hasCheckedOut: boolean;
+    checkOutTime: Date | null;
 }
 
 class AttendanceService {
@@ -40,6 +49,37 @@ class AttendanceService {
         }
     }
 
+    async logCheckout(userId: string, userName: string, location: { latitude: number, longitude: number }): Promise<void> {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const q = query(
+            collection(db, "attendance"),
+            where("userId", "==", userId),
+            where("checkInTime", ">=", Timestamp.fromDate(today)),
+            where("checkInTime", "<", Timestamp.fromDate(tomorrow))
+        );
+
+        try {
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const docToUpdate = querySnapshot.docs[0];
+                await updateDoc(docToUpdate.ref, {
+                    checkOutTime: serverTimestamp(),
+                    checkOutLocation: location,
+                });
+                activityService.logActivity('Checked out for the day.', userId, userName);
+            } else {
+                throw new Error("No check-in record found for today to check out against.");
+            }
+        } catch (error) {
+             console.error("Error logging checkout:", error);
+            throw new Error("Could not log your checkout.");
+        }
+    }
+
     async getTodayAttendanceStatus(userId: string): Promise<TodayAttendanceStatus> {
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Start of today
@@ -60,10 +100,12 @@ class AttendanceService {
                 const data = doc.data();
                 return {
                     hasCheckedIn: true,
-                    checkInTime: (data.checkInTime as Timestamp).toDate()
+                    checkInTime: (data.checkInTime as Timestamp).toDate(),
+                    hasCheckedOut: !!data.checkOutTime,
+                    checkOutTime: data.checkOutTime ? (data.checkOutTime as Timestamp).toDate() : null
                 };
             }
-            return { hasCheckedIn: false, checkInTime: null };
+            return { hasCheckedIn: false, checkInTime: null, hasCheckedOut: false, checkOutTime: null };
         } catch (error) {
             console.error("Error fetching today's attendance:", error);
             throw new Error("Could not verify attendance status.");
