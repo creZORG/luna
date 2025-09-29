@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { storeItemService } from '@/services/store-item.service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FieldSalesClient from './_components/field-sales-client';
+import { orderService } from '@/services/order.service';
+import OnlineOrdersClient from './_components/online-orders-client';
 
 async function getInitialStockData(): Promise<StockInfo[]> {
     const allStoreItems = await storeItemService.getStoreItems();
@@ -23,6 +25,7 @@ async function getInitialStockData(): Promise<StockInfo[]> {
 
 export default async function SalesDashboard() {
     const stockData = await getInitialStockData();
+    const orders = await orderService.getOrders();
 
     if (!stockData || stockData.length === 0) {
         return (
@@ -48,15 +51,19 @@ export default async function SalesDashboard() {
             </div>
             
             <Tabs defaultValue="daily-log">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="daily-log">Daily Log</TabsTrigger>
                     <TabsTrigger value="field-sale">Field Sale (POS)</TabsTrigger>
+                    <TabsTrigger value="online-orders">Online Orders</TabsTrigger>
                 </TabsList>
                 <TabsContent value="daily-log">
                     <SalesDashboardClient initialStock={stockData} />
                 </TabsContent>
                 <TabsContent value="field-sale">
                     <FieldSalesClient initialStock={stockData} />
+                </TabsContent>
+                 <TabsContent value="online-orders">
+                    <OnlineOrdersClient initialOrders={orders} />
                 </TabsContent>
             </Tabs>
         </div>
