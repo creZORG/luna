@@ -13,19 +13,18 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const imageUrl = product.imageUrl || `https://placehold.co/400x600/EEE/31343C`;
+  const imageUrl = product.imageUrl || `https://placehold.co/250x250/EEE/31343C`;
   
   return (
     <div className="group relative border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full bg-card">
-      <Link href={`/products/${product.slug}`} className="block">
-        <div className="relative aspect-square bg-muted">
-          <Image
-            src={imageUrl}
-            alt={product.name || "Product Image"}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
+      <Link href={`/products/${product.slug}`} className="block p-4 bg-muted">
+        <Image
+          src={imageUrl}
+          alt={product.name || "Product Image"}
+          width={250}
+          height={250}
+          className="object-cover transition-transform duration-300 group-hover:scale-105 mx-auto"
+        />
       </Link>
       <div className="p-4 flex flex-col flex-grow">
         <h3 className="text-lg font-headline font-semibold text-foreground leading-tight">
