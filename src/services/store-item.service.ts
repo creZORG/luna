@@ -48,6 +48,28 @@ class StoreItemService {
         
         return finalItems;
     }
+    
+    async createStoreItem(itemData: Omit<StoreItem, 'id' | 'inventory'>, adminId: string, adminName: string): Promise<StoreItem> {
+        try {
+            const docRef = await addDoc(collection(db, "storeItems"), {
+                ...itemData,
+                inventory: 0, // All new items start with 0 inventory
+            });
+
+             await activityService.logActivity(
+                `Created new store item: ${itemData.name}`,
+                adminId,
+                adminName
+            );
+
+            return { id: docRef.id, ...itemData, inventory: 0 };
+
+        } catch (error) {
+             console.error("Error creating store item:", error);
+            throw new Error("Could not create store item.");
+        }
+    }
+
 
     async getItemRequests(status?: RequestStatus): Promise<StoreItemRequest[]> {
         let q = query(collection(db, "itemRequests"));

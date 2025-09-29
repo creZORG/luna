@@ -17,7 +17,7 @@ export default async function StoreItemsPage() {
             <p className="text-muted-foreground">Adjust stock levels for finished goods and internal equipment.</p>
         </div>
         <ManageStoreItemsClient initialItems={finishedGoods} title="Finished Goods Inventory" description="Set and adjust stock levels for products ready for sale." />
-        <ManageStoreItemsClient initialItems={equipment} title="Equipment & Supplies Inventory" description="Add, edit, or remove equipment available for internal requests." />
+        <ManageStoreItemsClient initialItems={equipment} title="Equipment & Supplies Inventory" description="Add, edit, or remove equipment available for internal requests." canAddItem={true} />
     </div>
   );
 }

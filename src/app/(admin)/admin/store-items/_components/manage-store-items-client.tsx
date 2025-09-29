@@ -22,19 +22,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { storeItemService } from "@/services/store-item.service";
-import { Loader } from "lucide-react";
+import { Loader, PlusCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ManageStoreItemsClientProps {
     initialItems: StoreItem[];
     title: string;
     description: string;
+    canAddItem?: boolean;
 }
 
-export default function ManageStoreItemsClient({ initialItems, title, description }: ManageStoreItemsClientProps) {
+export default function ManageStoreItemsClient({ initialItems, title, description, canAddItem = false }: ManageStoreItemsClientProps) {
     const [items, setItems] = useState(initialItems);
     const [changedItems, setChangedItems] = useState<Record<string, number>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [newItemName, setNewItemName] = useState('');
+    const [newItemCategory, setNewItemCategory] = useState<'Electronics' | 'Accessories' | 'Software' | ''>('');
+    const [isAdding, setIsAdding] = useState(false);
+
     const { toast } = useToast();
     const { user, userProfile } = useAuth();
 
@@ -75,19 +85,87 @@ export default function ManageStoreItemsClient({ initialItems, title, descriptio
             setIsSubmitting(false);
         }
     };
+    
+    const handleAddItem = async () => {
+        if (!user || !userProfile) return toast({ variant: 'destructive', title: 'Not authenticated.'});
+        if (!newItemName || !newItemCategory) {
+            return toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please provide a name and category.' });
+        }
+        setIsAdding(true);
+        try {
+            const newItem = await storeItemService.createStoreItem({
+                name: newItemName,
+                category: newItemCategory,
+            }, user.uid, userProfile.displayName);
+
+            setItems(prev => [...prev, newItem].sort((a,b) => a.name.localeCompare(b.name)));
+            toast({ title: "Item Added", description: `${newItemName} has been added to the store.` });
+            
+            setNewItemName('');
+            setNewItemCategory('');
+            setIsAddDialogOpen(false);
+
+        } catch (error) {
+             toast({ variant: 'destructive', title: "Add Failed", description: "Could not add the new item." });
+        } finally {
+            setIsAdding(false);
+        }
+    };
+
 
     return (
          <Card>
             <CardHeader>
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-4">
                     <div>
                         <CardTitle>{title}</CardTitle>
                         <CardDescription>{description}</CardDescription>
                     </div>
-                    <Button onClick={handleSave} disabled={isSubmitting || Object.keys(changedItems).length === 0}>
-                        {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Changes
-                    </Button>
+                    <div className="flex gap-2 flex-shrink-0">
+                        {canAddItem && (
+                            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button size="sm" variant="outline"><PlusCircle className="mr-2 h-4 w-4"/>Add Item</Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Add New Equipment/Supply</DialogTitle>
+                                        <DialogDescription>Create a new item that can be requested by staff.</DialogDescription>
+                                    </DialogHeader>
+                                     <div className="grid gap-4 py-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="name">Item Name</Label>
+                                            <Input id="name" value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="e.g., Ring Light Stand" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="category">Category</Label>
+                                            <Select onValueChange={(v) => setNewItemCategory(v as any)} value={newItemCategory}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select category" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Electronics">Electronics</SelectItem>
+                                                    <SelectItem value="Accessories">Accessories</SelectItem>
+                                                    <SelectItem value="Software">Software</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+                                        <Button onClick={handleAddItem} disabled={isAdding}>
+                                            {isAdding && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                            Create Item
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        )}
+                        <Button size="sm" onClick={handleSave} disabled={isSubmitting || Object.keys(changedItems).length === 0}>
+                            {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Changes
+                        </Button>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
@@ -96,7 +174,7 @@ export default function ManageStoreItemsClient({ initialItems, title, descriptio
                         <TableRow>
                             <TableHead>Item Name</TableHead>
                             <TableHead className="w-[150px]">Category</TableHead>
-                            <TableHead className="w-[150px] text-right">Quantity In Stock</TableHead>
+                            <TableHead className="w-[180px] text-right">Quantity In Stock</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
