@@ -41,6 +41,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
+import { useAuth } from '@/hooks/use-auth';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -81,6 +82,7 @@ export function ProductForm({ product }: ProductFormProps) {
     const isEditMode = !!product;
     const { toast } = useToast();
     const router = useRouter();
+    const { user, userProfile } = useAuth();
 
     const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null);
     const [galleryPreviews, setGalleryPreviews] = useState<string[]>(product?.galleryImageUrls || []);
@@ -183,6 +185,10 @@ export function ProductForm({ product }: ProductFormProps) {
   };
 
   async function onSubmit(values: ProductFormData) {
+    if (!user || !userProfile) {
+        toast({ variant: 'destructive', title: "Not Authenticated" });
+        return;
+    }
     try {
         const finalImageUrl = imagePreview && imagePreview.startsWith('data:') 
           ? await uploadImageFlow({ imageDataUri: imagePreview, folder: 'products' })
@@ -219,7 +225,7 @@ export function ProductForm({ product }: ProductFormProps) {
           description: `The product "${values.name}" has been updated successfully.`,
         });
       } else {
-        await productService.createProduct(productPayload as Omit<Product, 'id'>);
+        await productService.createProduct(productPayload as Omit<Product, 'id'>, user.uid, userProfile.displayName);
         toast({
           title: 'Product Created!',
           description: `The product "${values.name}" has been created successfully.`,
@@ -640,5 +646,3 @@ export function ProductForm({ product }: ProductFormProps) {
     </Form>
   );
 }
-
-    

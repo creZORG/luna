@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 interface EditRolesModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export function EditRolesModal({ isOpen, onClose, user, allRoles, onRolesUpdated
   const [selectedRoles, setSelectedRoles] = useState<string[]>(user.roles);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user: adminUser, userProfile: adminUserProfile } = useAuth();
 
   const handleCheckboxChange = (role: string) => {
     setSelectedRoles(prev => 
@@ -38,9 +40,13 @@ export function EditRolesModal({ isOpen, onClose, user, allRoles, onRolesUpdated
   };
 
   const handleSubmit = async () => {
+    if (!adminUser || !adminUserProfile) {
+        toast({ variant: 'destructive', title: 'Authentication Error'});
+        return;
+    }
     setIsSubmitting(true);
     try {
-        await userService.updateUserRoles(user.uid, selectedRoles as UserProfile['roles']);
+        await userService.updateUserRoles(user.uid, selectedRoles as UserProfile['roles'], adminUser.uid, adminUserProfile.displayName);
         onRolesUpdated(user.uid, selectedRoles as UserProfile['roles']);
         toast({
             title: 'Roles Updated',

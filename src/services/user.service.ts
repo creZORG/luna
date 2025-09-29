@@ -1,4 +1,5 @@
 
+
 import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
@@ -119,19 +120,18 @@ class UserService {
         return admins;
     }
 
-    async updateUserRoles(uid: string, roles: UserProfile['roles']): Promise<void> {
+    async updateUserRoles(uid: string, roles: UserProfile['roles'], adminUid: string, adminName: string): Promise<void> {
         try {
             const userDocRef = doc(db, 'users', uid);
             await updateDoc(userDocRef, { roles });
             
-            const adminUser = await this.getUserProfile("temp-admin-id"); // In real app, get from auth
             const targetUser = await this.getUserProfile(uid);
             
-            if (targetUser && adminUser) {
+            if (targetUser) {
                 activityService.logActivity(
                     `Updated roles for ${targetUser.displayName} to: ${roles.join(', ')}`,
-                    adminUser.uid,
-                    adminUser.displayName
+                    adminUid,
+                    adminName
                 );
             }
 

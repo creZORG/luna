@@ -23,7 +23,7 @@ class PurchaseOrderService {
       });
 
       activityService.logActivity(
-        `Created purchase order #${docRef.id} for supplier ${orderData.supplierName}.`,
+        `Created purchase order #${docRef.id.substring(0,6).toUpperCase()} for supplier ${orderData.supplierName}.`,
         orderData.orderedBy.userId,
         orderData.orderedBy.userName
       );

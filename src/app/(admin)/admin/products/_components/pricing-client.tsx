@@ -88,7 +88,7 @@ export default function PricingClient({ initialProducts, wholesaleDiscount }: Pr
             if (product) {
                 // We create a new sizes array with the updated prices
                 const newSizes = product.sizes.map(sizeInfo => {
-                    const dirtySize = dirtyPrices[productId][sizeInfo.size];
+                    const dirtySize = dirtyPrices[productId]?.[sizeInfo.size];
                     if (dirtySize) {
                         return { ...sizeInfo, price: dirtySize.price, wholesalePrice: dirtySize.wholesalePrice };
                     }

@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart, Package2 } from 'lucide-react';
+import { Home, BarChart2, PanelLeft, LogOut, Loader, Image as ImageIcon, Briefcase, Factory, Target, Activity, Settings, Store, ShieldAlert, ClipboardCheck, ChevronDown, UserCog, PanelRight, PanelLeftClose, User as UserIcon, ShoppingCart, Package2, Users, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -52,8 +52,8 @@ const getNavLinks = (userProfile: UserProfile | null) => {
     const allLinks = [
         { href: '/admin/dashboard', icon: BarChart2, label: 'Dashboard', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
         { href: '/admin/orders', icon: Package2, label: 'Orders', roles: ['admin', 'sales', 'operations'] },
-        { href: '/admin/media', icon: ImageIcon, label: 'Media', roles: ['admin'] },
-        { separator: true, id: 'sep1', roles: ['admin'] },
+        { href: '/admin/media', icon: ImageIcon, label: 'Media Library', roles: ['admin'] },
+        { separator: true, id: 'sep-store', roles: ['admin'] },
         {
           label: 'Store Management',
           icon: Store,
@@ -61,9 +61,9 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           id: 'store-management',
           roles: ['admin'],
           subLinks: [
-            { href: '/operations/products', icon: Briefcase, label: 'Products', roles:['admin'] },
-            { href: '/admin/products', icon: Briefcase, label: 'Pricing', roles:['admin'] },
-            { href: '/admin/store-items', icon: Factory, label: 'Store Items', roles:['admin'] },
+            { href: '/operations/products', icon: Briefcase, label: 'Product Catalog', roles:['admin'] },
+            { href: '/admin/products', icon: Factory, label: 'Product Pricing', roles:['admin'] },
+            { href: '/admin/store-items', icon: Warehouse, label: 'Inventory', roles:['admin'] },
           ],
         },
         {
@@ -73,7 +73,8 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           id: 'procurement',
           roles: ['admin'],
           subLinks: [
-            { href: '/admin/raw-materials/orders', icon: ShoppingCart, label: 'Raw Material Orders', roles: ['admin'] },
+            { href: '/admin/raw-materials/orders', icon: FileText, label: 'Purchase Orders', roles: ['admin'] },
+            { href: '/operations/raw-materials/manage', icon: Factory, label: 'Manage Materials', roles: ['admin'] },
           ]
         },
         {
@@ -99,7 +100,7 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           subLinks: [
             { href: '/admin/attendance/check-in', icon: ClipboardCheck, label: 'My Attendance', roles: ['admin', 'sales', 'operations', 'finance', 'manufacturing', 'digital-marketing'] },
             { href: '/admin/attendance/overview', icon: BarChart2, label: 'Attendance Overview', roles: ['admin'] },
-            { href: '/admin/users', icon: UserCog, label: 'Staff Management', roles: ['admin'] },
+            { href: '/admin/users', icon: Users, label: 'Staff Management', roles: ['admin'] },
             { href: '/admin/activities', icon: Activity, label: 'Recent Activities', roles: ['admin'] },
           ],
         },
@@ -109,6 +110,19 @@ const getNavLinks = (userProfile: UserProfile | null) => {
     return allLinks.map(link => {
         if (!link) return null;
 
+        // Admins see everything
+        if (hasRole('admin')) {
+             if (link.type === 'collapsible') {
+                const subLinksWithAccess = (link.subLinks || []).filter(sublink => hasAnyRole(sublink.roles as any));
+                if (subLinksWithAccess.length > 0) {
+                  return { ...link, subLinks: subLinksWithAccess };
+                }
+                return null;
+            }
+            return link;
+        }
+
+        // Non-admins see a filtered list
         if (link.type === 'collapsible') {
             const visibleSubLinks = (link.subLinks || []).filter(sublink => hasAnyRole(sublink.roles as any));
             if (visibleSubLinks.length > 0) {
@@ -140,21 +154,25 @@ function NavContent({ isCollapsed, userProfile }: { isCollapsed: boolean, userPr
                             return <Separator key={index} className="my-2" />;
                          }
                          if (link.type === 'collapsible') {
-                            const subLinksWithAccess = link.subLinks.filter(sub => userProfile?.roles.some(r => sub.roles.includes(r)));
-                            if(subLinksWithAccess.length === 0) return null;
+                            if (link.subLinks.length === 0) return null;
 
                             return (
                                 <Collapsible key={link.id} defaultOpen={(link.subLinks || []).some(sub => pathname.startsWith(sub.href))}>
-                                     <CollapsibleTrigger asChild>
-                                        <Button variant="ghost" className={cn("w-full justify-start", isCollapsed && "justify-center w-10 h-10 p-0")}>
-                                            <link.icon className="h-5 w-5" />
-                                            {!isCollapsed && <span className="ml-4">{link.label}</span>}
-                                            {!isCollapsed && <ChevronDown className="ml-auto h-4 w-4" />}
-                                        </Button>
-                                    </CollapsibleTrigger>
-                                     <CollapsibleContent className="space-y-1">
+                                     <Tooltip delayDuration={0}>
+                                        <TooltipTrigger asChild>
+                                            <CollapsibleTrigger asChild>
+                                                <Button variant="ghost" className={cn("w-full justify-start", isCollapsed && "justify-center w-10 h-10 p-0")}>
+                                                    <link.icon className="h-5 w-5" />
+                                                    {!isCollapsed && <span className="ml-4">{link.label}</span>}
+                                                    {!isCollapsed && <ChevronDown className="ml-auto h-4 w-4" />}
+                                                </Button>
+                                            </CollapsibleTrigger>
+                                        </TooltipTrigger>
+                                        {isCollapsed && <TooltipContent side="right"><p>{link.label}</p></TooltipContent>}
+                                    </Tooltip>
+
+                                     <CollapsibleContent className={cn("space-y-1", !isCollapsed && "pl-6")}>
                                         {(link.subLinks || []).map(subLink => {
-                                             if (!userProfile?.roles.some(r => subLink.roles.includes(r))) return null;
                                              return (
                                              <Tooltip key={subLink.href} delayDuration={0}>
                                                 <TooltipTrigger asChild>
@@ -218,13 +236,6 @@ export default function AdminLayout({
         router.push('/login');
         return;
     }
-
-    // This is the crucial check. If the profile is loaded and the user is not an admin, deny access.
-    if (userProfile && !userProfile.roles.includes('admin')) {
-      router.push('/access-denied');
-      return;
-    }
-
   }, [user, userProfile, loading, router]);
 
 
@@ -236,15 +247,6 @@ export default function AdminLayout({
     );
   }
   
-  // An extra layer of protection in case the useEffect hook is slow to fire.
-  if (!userProfile.roles.includes('admin')) {
-    return (
-        <div className="flex min-h-screen w-full items-center justify-center">
-            <Loader className="h-8 w-8 animate-spin" />
-        </div>
-    );
-  }
-
   const handleLogout = async () => {
     await authService.logout();
     router.push('/login');
@@ -262,7 +264,7 @@ export default function AdminLayout({
            <div className="flex h-full max-h-screen flex-col gap-2">
                 <div className="flex h-14 items-center justify-center border-b px-4 lg:h-[60px] lg:px-6">
                     <Link href="/" className="flex items-center gap-2 font-semibold">
-                        <Home className="h-6 w-6" />
+                        <Moon className="h-6 w-6 text-primary" />
                         <span className={cn(isCollapsed && "hidden")}>Home</span>
                     </Link>
                 </div>
@@ -272,65 +274,64 @@ export default function AdminLayout({
                     </Button>
                     <NavContent isCollapsed={isCollapsed} userProfile={userProfile} />
                 </div>
+                 <div className={cn("mt-auto flex flex-col items-center gap-2 border-t p-4", isCollapsed && 'p-2')}>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                className={cn("w-full justify-center", isCollapsed ? 'h-12 w-12 rounded-full p-0' : 'h-12 rounded-lg')}
+                            >
+                               <Image
+                                    src={userProfile?.photoURL || `https://i.pravatar.cc/36?u=${user.uid}`}
+                                    width={36}
+                                    height={36}
+                                    alt="Avatar"
+                                    className="overflow-hidden rounded-full object-cover"
+                                />
+                                <div className={cn("text-left ml-3", isCollapsed && "hidden")}>
+                                    <p className="text-sm font-medium leading-none">{userProfile?.displayName || user.email}</p>
+                                    <p className="text-xs text-muted-foreground capitalize">{userProfile.roles.join(', ').replace(/-/g, ' ')}</p>
+                                </div>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className={cn(isCollapsed && 'ml-4 mb-2')}>
+                             <DropdownMenuLabel>{userProfile?.displayName || user.email}</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link href="/admin/profile">
+                                <UserIcon className="mr-2 h-4 w-4" />
+                                <span>My Profile</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link href="/admin/settings">
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    <span>Settings</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                <span>Logout</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
       </aside>
 
       <div className={cn("flex flex-col transition-all duration-300 ease-in-out", isCollapsed ? "sm:pl-28" : "sm:pl-72")}>
-        <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
+        <header className="flex h-14 items-center gap-4 bg-background/80 backdrop-blur-sm px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
           <div className="flex-1">
              {/* Can add breadcrumbs or page title here */}
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="rounded-full"
-              >
-                <Image
-                  src={userProfile?.photoURL || `https://i.pravatar.cc/36?u=${user.uid}`}
-                  width={36}
-                  height={36}
-                  alt="Avatar"
-                  className="overflow-hidden rounded-full object-cover"
-                />
-                <span className="sr-only">Toggle user menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{userProfile?.displayName || user.email}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-               <DropdownMenuItem asChild>
-                <Link href="/admin/profile">
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  <span>My Profile</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                 <Link href="/admin/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <p className="text-sm font-medium text-muted-foreground">
+            Welcome, <span className="font-semibold text-foreground">{userProfile.displayName}</span>
+            <span className="mx-2">|</span>
+            <span className="capitalize">{userProfile.roles.join(', ').replace(/-/g, ' ')}</span>
+          </p>
         </header>
-        {userProfile && (
-            <div className="bg-muted/60 border-b border-muted">
-                <div className="px-4 sm:px-6 py-2">
-                    <p className="text-sm font-medium text-muted-foreground">
-                        Welcome, <span className="font-semibold text-foreground">{userProfile.displayName}</span>
-                        <span className="mx-2">|</span>
-                        <span className="capitalize">{userProfile.roles.join(', ').replace(/-/g, ' ')}</span>
-                    </p>
-                </div>
-            </div>
-        )}
+
         <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8 mt-4">
             <PendingProfileModal isOpen={isProfilePending} />
             {isProfilePending ? null : children}

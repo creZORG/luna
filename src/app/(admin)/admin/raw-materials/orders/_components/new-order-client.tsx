@@ -110,7 +110,7 @@ export default function NewOrderClient({ rawMaterials }: NewOrderClientProps) {
               requesterName: userProfile.displayName,
           });
 
-          toast({ title: "Order Sent!", description: `Purchase order #${orderId} has been sent to ${supplierName}.`});
+          toast({ title: "Order Sent!", description: `Purchase order #${orderId.substring(0,6).toUpperCase()} has been sent to ${supplierName}.`});
           
           // Reset form
           setSupplierName('');

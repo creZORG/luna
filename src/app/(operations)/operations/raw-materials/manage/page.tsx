@@ -1,11 +1,4 @@
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { rawMaterialService } from "@/services/raw-material.service";
 import ManageMaterialsClient from "./_components/manage-materials-client";
 

@@ -56,12 +56,12 @@ const emailPrompt = ai.definePrompt({
         Additional notes: {{{notes}}}
         {{/if}}
 
-        Start the email by greeting the supplier, "{{{supplierName}}} Team".
+        Start the email by greeting the supplier, "Hello {{{supplierName}}} Team,".
         State clearly that this is a new purchase order from Luna Essentials.
         List the items exactly as provided.
         Include the expected delivery date and any notes if they are present.
         Conclude by asking them to confirm receipt of the order and to provide an estimated delivery timeline.
-        Sign off from "{{{requesterName}}}".
+        Sign off from "{{{requesterName}}} at Luna Essentials".
     `,
 });
 
@@ -81,7 +81,7 @@ const sendPurchaseOrderFlow = ai.defineFlow(
     }
 
     // 2. Construct the full HTML email
-    const subject = `New Purchase Order from Luna Essentials - PO #${input.orderId}`;
+    const subject = `New Purchase Order from Luna Essentials - PO #${input.orderId.substring(0,6).toUpperCase()}`;
     const emailHtml = createEmailTemplate(
       subject,
       `<p>${emailBody.replace(/\n/g, '<br>')}</p>`

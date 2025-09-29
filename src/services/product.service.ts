@@ -3,6 +3,7 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
+import { activityService } from './activity.service';
 
 export interface ProductUpdateData {
   name?: string;
@@ -31,7 +32,7 @@ export interface ProductUpdateData {
 }
 
 class ProductService {
-    async createProduct(productData: Omit<Product, 'id'>): Promise<string> {
+    async createProduct(productData: Omit<Product, 'id'>, userId: string, userName: string): Promise<string> {
         try {
             const productToSave: any = {
                  ...productData,
@@ -51,6 +52,12 @@ class ProductService {
             });
 
             await batch.commit();
+
+             activityService.logActivity(
+                `Created new product: ${productData.name}`,
+                userId,
+                userName
+            );
 
             return productRef.id;
         } catch (e) {

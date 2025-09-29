@@ -51,8 +51,8 @@ export default function OrderHistoryClient({
               className="border bg-card rounded-lg overflow-hidden"
             >
               <AccordionTrigger className="p-4 hover:no-underline data-[state=open]:border-b">
-                <div className="flex justify-between items-center w-full">
-                  <div className="text-left">
+                <div className="grid grid-cols-4 items-center w-full gap-4 text-left">
+                  <div className="col-span-2">
                     <p className="font-semibold">
                       PO #{order.id.substring(0, 6).toUpperCase()}
                     </p>
@@ -60,13 +60,13 @@ export default function OrderHistoryClient({
                       To: {order.supplierName}
                     </p>
                   </div>
-                  <div className="hidden sm:block text-left">
+                  <div>
                     <p className="font-semibold">
                       {format(order.orderDate.toDate(), 'PPP')}
                     </p>
                     <p className="text-sm text-muted-foreground">Order Date</p>
                   </div>
-                  <div>
+                  <div className="text-right">
                     <Badge
                       className={cn(
                         order.status === 'completed' && 'bg-green-600/80',
@@ -78,7 +78,7 @@ export default function OrderHistoryClient({
                   </div>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="p-4">
+              <AccordionContent className="p-4 bg-muted/50">
                 <div className="space-y-4">
                   <Table>
                     <TableHeader>
@@ -99,10 +99,13 @@ export default function OrderHistoryClient({
                     </TableBody>
                   </Table>
                   {order.notes && (
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground border-t pt-4 mt-4">
                         <strong>Notes:</strong> {order.notes}
                     </div>
                   )}
+                   <div className="text-xs text-muted-foreground border-t pt-4 mt-4">
+                       Ordered by {order.orderedBy.userName}
+                    </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
