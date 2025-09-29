@@ -13,26 +13,18 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
-  // Use the provided fallback URL if imageUrl is missing.
   const imageUrl = product.imageUrl || `https://placehold.co/400x600/EEE/31343C`;
 
   return (
     <div className="group relative">
       <Link href={`/products/${product.slug}`} className="block">
-        <div className="relative w-full bg-muted rounded-lg overflow-hidden border transition-all group-hover:shadow-xl">
+        <div className="relative w-full bg-muted rounded-lg overflow-hidden border transition-all group-hover:shadow-xl aspect-square">
           <Image
             src={imageUrl}
             alt={product.name || "Product Image"}
-            width={500}
-            height={500}
-            className="object-cover w-full h-auto transition-transform duration-300 group-hover:scale-105"
+            fill
+            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
           />
-          <Badge variant="secondary" className={cn(
-            "absolute top-3 right-3 capitalize transition-opacity duration-300",
-            "group-hover:bg-primary group-hover:text-primary-foreground"
-          )}>
-            {product.category.replace(/-/g, ' ')}
-          </Badge>
         </div>
       </Link>
       <div className="mt-4 text-center">
