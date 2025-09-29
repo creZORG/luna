@@ -1,10 +1,12 @@
 
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { analyticsService, AnalyticsData } from '@/services/analytics.service';
-import { DollarSign, Package, BarChart, Eye } from 'lucide-react';
+import { DollarSign, Package, BarChart, Users, Star } from 'lucide-react';
 import AnalyticsClient from './_components/analytics-client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 function StatCard({ title, value, icon: Icon, description }: { title: string; value: string; icon: React.ElementType; description: string; }) {
     return (
@@ -54,42 +56,81 @@ export default async function AnalyticsPage() {
             
             <AnalyticsClient salesOverTime={data.salesOverTime} salesByCategory={data.salesByCategory} />
             
-            <Card>
-                <CardHeader>
-                    <CardTitle>Top Performing Products</CardTitle>
-                    <CardDescription>Your best-selling products ranked by total revenue generated.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Product</TableHead>
-                                <TableHead className="text-right">Revenue</TableHead>
-                                <TableHead className="text-right hidden sm:table-cell">Orders</TableHead>
-                                <TableHead className="text-right hidden sm:table-cell">Views</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {data.topProducts.map(product => (
-                                <TableRow key={product.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="rounded-md object-cover" />
-                                            <div>
-                                                <div className="font-medium">{product.name}</div>
-                                                <div className="text-xs text-muted-foreground capitalize">{product.category.replace(/-/g, ' ')}</div>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-right font-semibold">Ksh {product.totalRevenue?.toLocaleString() ?? 0}</TableCell>
-                                    <TableCell className="text-right hidden sm:table-cell">{product.orderCount?.toLocaleString() ?? 0}</TableCell>
-                                    <TableCell className="text-right hidden sm:table-cell">{product.viewCount?.toLocaleString() ?? 0}</TableCell>
+             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+                <Card className="lg:col-span-4">
+                    <CardHeader>
+                        <CardTitle>Top Performing Products</CardTitle>
+                        <CardDescription>Your best-selling products ranked by total revenue generated.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Product</TableHead>
+                                    <TableHead className="text-right">Revenue</TableHead>
+                                    <TableHead className="text-right hidden sm:table-cell">Orders</TableHead>
+                                    <TableHead className="text-right hidden sm:table-cell">Views</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                            </TableHeader>
+                            <TableBody>
+                                {data.topProducts.map(product => (
+                                    <TableRow key={product.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="rounded-md object-cover" />
+                                                <div>
+                                                    <div className="font-medium">{product.name}</div>
+                                                    <div className="text-xs text-muted-foreground capitalize">{product.category.replace(/-/g, ' ')}</div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold">Ksh {product.totalRevenue?.toLocaleString() ?? 0}</TableCell>
+                                        <TableCell className="text-right hidden sm:table-cell">{product.orderCount?.toLocaleString() ?? 0}</TableCell>
+                                        <TableCell className="text-right hidden sm:table-cell">{product.viewCount?.toLocaleString() ?? 0}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+                 <Card className="lg:col-span-3">
+                    <CardHeader>
+                        <CardTitle>Top Performing Salespeople</CardTitle>
+                        <CardDescription>Field sales staff ranked by total revenue generated.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Salesperson</TableHead>
+                                    <TableHead className="text-right">Revenue</TableHead>
+                                    <TableHead className="text-right hidden sm:table-cell">Orders</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {data.topSalespeople.map(person => (
+                                    <TableRow key={person.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                 <Avatar>
+                                                    <AvatarImage src={person.photoUrl} alt={person.name} />
+                                                    <AvatarFallback>{person.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div className="font-medium">{person.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{person.email}</div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold">Ksh {person.totalRevenue.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right hidden sm:table-cell">{person.orderCount}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

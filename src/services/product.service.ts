@@ -1,7 +1,7 @@
 
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc, increment } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
 import { activityService } from './activity.service';
 import { orderService, Order } from './order.service';
@@ -120,11 +120,6 @@ class ProductService {
             }
             const stats = productStats.get(doc.id) || { orderCount: 0, totalRevenue: 0 };
             
-            // Generate a more realistic view count based on order count
-            const baseViews = Math.floor(Math.random() * 500) + 100; // Base random traffic
-            const orderDrivenViews = stats.orderCount * (Math.floor(Math.random() * 80) + 20); // 20x to 100x orders
-            const realisticViewCount = baseViews + orderDrivenViews;
-
             products.push({ 
                 id: doc.id,
                 ...data,
@@ -134,7 +129,7 @@ class ProductService {
                 platformFee: data.platformFee ?? 0,
                 orderCount: stats.orderCount,
                 totalRevenue: stats.totalRevenue,
-                viewCount: data.viewCount ?? realisticViewCount,
+                viewCount: data.viewCount ?? 0,
             } as Product);
         });
         return products;
@@ -185,6 +180,18 @@ class ProductService {
             } as Product;
         }
         return null;
+    }
+
+    async incrementViewCount(productId: string): Promise<void> {
+        try {
+            const productRef = doc(db, 'products', productId);
+            await updateDoc(productRef, {
+                viewCount: increment(1)
+            });
+        } catch (error) {
+            // Non-critical error, so we just log it and don't throw
+            console.error(`Failed to increment view count for product ${productId}:`, error);
+        }
     }
 }
 

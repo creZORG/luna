@@ -1,4 +1,5 @@
 
+
 import { products as mockProducts } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import ProductDetailClient from './_components/product-detail-client';
@@ -51,6 +52,9 @@ export default async function ProductDetailPage({ params }: Props) {
   if (!product) {
     notFound();
   }
+
+  // Increment view count - this is a fire-and-forget operation
+  productService.incrementViewCount(product.id);
 
   return <ProductDetailClient product={product} />;
 }

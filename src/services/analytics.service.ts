@@ -1,9 +1,12 @@
 
+
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Order, orderService } from './order.service';
 import { Product, productService } from './product.service';
 import { subDays, startOfDay, endOfDay, format } from 'date-fns';
+import { UserProfile, userService } from './user.service';
+
 
 export interface SalesOverTimeData {
     date: string;
@@ -15,6 +18,15 @@ export interface SalesByCategoryData {
     sales: number;
 }
 
+export interface SalespersonPerformance {
+    id: string;
+    name: string;
+    email: string;
+    photoUrl?: string;
+    orderCount: number;
+    totalRevenue: number;
+}
+
 export interface AnalyticsData {
     totalRevenue: number;
     totalOrders: number;
@@ -22,13 +34,17 @@ export interface AnalyticsData {
     salesOverTime: SalesOverTimeData[];
     salesByCategory: SalesByCategoryData[];
     topProducts: Product[];
+    topSalespeople: SalespersonPerformance[];
 }
 
 class AnalyticsService {
     
     async getDashboardAnalytics(): Promise<AnalyticsData> {
-        const orders = await orderService.getOrders();
-        const products = await productService.getProducts();
+        const [orders, products, users] = await Promise.all([
+            orderService.getOrders(),
+            productService.getProducts(),
+            userService.getUsers(),
+        ]);
 
         // 1. Calculate Total Revenue and Orders
         const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
@@ -76,6 +92,33 @@ class AnalyticsService {
         const topProducts = [...products]
             .sort((a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0))
             .slice(0, 5);
+
+        // 5. Calculate Salesperson Performance
+        const salespeople = users.filter(u => u.roles.includes('sales'));
+        const salespersonPerformanceMap = new Map<string, SalespersonPerformance>();
+
+        salespeople.forEach(sp => {
+            salespersonPerformanceMap.set(sp.uid, {
+                id: sp.uid,
+                name: sp.displayName,
+                email: sp.email,
+                photoUrl: sp.photoURL,
+                orderCount: 0,
+                totalRevenue: 0,
+            });
+        });
+        
+        orders.forEach(order => {
+            if (order.userId && salespersonPerformanceMap.has(order.userId)) {
+                const performance = salespersonPerformanceMap.get(order.userId)!;
+                performance.orderCount += 1;
+                performance.totalRevenue += order.totalAmount;
+            }
+        });
+        
+        const topSalespeople = Array.from(salespersonPerformanceMap.values())
+            .sort((a, b) => b.totalRevenue - a.totalRevenue)
+            .slice(0, 5);
         
         return {
             totalRevenue,
@@ -84,6 +127,7 @@ class AnalyticsService {
             salesOverTime,
             salesByCategory,
             topProducts,
+            topSalespeople,
         };
     }
 }
