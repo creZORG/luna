@@ -59,12 +59,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from "@/components/ui/label";
 import { productService } from '@/services/product.service';
 import { Product } from '@/lib/data';
 import { reverseGeocode } from '@/ai/flows/reverse-geocode-flow';
 import { getCompanySettings } from '@/lib/config';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { processOrder } from '@/ai/flows/process-order-flow';
 
 const deliveryFormSchema = z.object({
   fullName: z.string().min(3, 'Full name is required'),
@@ -139,8 +141,9 @@ function OrderSummary() {
   useEffect(() => {
     async function fetchProducts() {
         if (cartItems.length > 0) {
+            const productIds = Array.from(new Set(cartItems.map(item => item.productId)));
             const fetchedProducts = await Promise.all(
-                cartItems.map(item => productService.getProductById(item.productId))
+                productIds.map(id => productService.getProductById(id))
             );
             setProducts(fetchedProducts.filter(p => p !== null) as Product[]);
         }
@@ -154,7 +157,6 @@ function OrderSummary() {
   }, [cartItems]);
 
   const totalDeliveryFee = useMemo(() => {
-      // Use a Set to only count delivery fee once per unique product
       const uniqueProductIds = new Set(cartItems.map(item => item.productId));
       return Array.from(uniqueProductIds).reduce((acc, productId) => {
           const product = products.find(p => p.id === productId);
@@ -163,7 +165,6 @@ function OrderSummary() {
   }, [cartItems, products]);
 
   const totalPlatformFee = useMemo(() => {
-       // Use a Set to only count platform fee once per unique product
       const uniqueProductIds = new Set(cartItems.map(item => item.productId));
       return Array.from(uniqueProductIds).reduce((acc, productId) => {
           const product = products.find(p => p.id === productId);
@@ -172,6 +173,8 @@ function OrderSummary() {
   }, [cartItems, products]);
 
   const total = subtotal + totalDeliveryFee + totalPlatformFee;
+
+  if (cartItems.length === 0) return null;
 
   return (
     <Card>
@@ -233,6 +236,10 @@ function OrderSummary() {
 
 export default function CheckoutClient() {
   const { user, userProfile } = useAuth();
+  const { cartItems, clearCart } = useCart();
+  const { toast } = useToast();
+  const router = useRouter();
+
   const [locationState, setLocationState] = useState<
     'idle' | 'loading' | 'in_nairobi' | 'outside_nairobi' | 'error'
   >('idle');
@@ -255,9 +262,9 @@ export default function CheckoutClient() {
     if (userProfile) {
       form.reset({
         fullName: userProfile.displayName,
-        email: userProfile.email,
-        phone: '', // Phone is not in profile
-        address: '', // Address is not in profile
+        email: userProfile.email || '',
+        phone: '', 
+        address: '',
         deliveryNotes: '',
       });
     }
@@ -291,7 +298,8 @@ export default function CheckoutClient() {
             if (geocodeResult && geocodeResult.city) {
               setIdentifiedLocation(geocodeResult.city);
             } else {
-              setIdentifiedLocation("your current location");
+              // This is a fallback if the AI fails to identify a city
+              setIdentifiedLocation("your current area");
             }
             setLocationState('outside_nairobi');
           } catch (e) {
@@ -312,9 +320,28 @@ export default function CheckoutClient() {
     );
   };
   
-  const onSubmit = (data: DeliveryFormData) => {
-      console.log('Submitting delivery data:', data);
-      // TODO: Integrate with payment flow
+  const onSubmit = async (data: DeliveryFormData) => {
+      try {
+        const orderId = await processOrder({
+            cartItems: cartItems,
+            customer: data,
+        });
+
+        toast({
+            title: "Order Placed!",
+            description: `Your order #${orderId.substring(0,6).toUpperCase()} has been successfully placed.`,
+        });
+        
+        clearCart();
+        router.push(`/order/success?orderId=${orderId}`);
+
+      } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: "Order Failed",
+            description: error.message || "There was an error processing your order. Please try again.",
+        });
+      }
   }
   
   const distanceInKm = distance ? (distance / 1000).toFixed(0) : 0;
@@ -439,9 +466,9 @@ export default function CheckoutClient() {
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Outside Nairobi Delivery Area</AlertTitle>
                             <AlertDescription>
-                                {identifiedLocation 
-                                    ? `It looks like you're in ${identifiedLocation} (approx. ${distanceInKm}km from our office), which is outside our standard delivery zone.`
-                                    : "It looks like you're outside our standard delivery zone."
+                                {identifiedLocation && identifiedLocation !== "your current area"
+                                    ? `It looks like you're in ${identifiedLocation} (approx. ${distanceInKm}km away), which is outside our standard delivery zone.`
+                                    : `It looks like you're outside our standard delivery zone (approx. ${distanceInKm}km away).`
                                 }
                                 {' '}For special arrangements, please contact our support team.
                             </AlertDescription>
@@ -458,7 +485,7 @@ export default function CheckoutClient() {
                         <Home className="h-4 w-4 !text-green-600" />
                         <AlertTitle className="text-green-800 dark:text-green-300">You're in Nairobi!</AlertTitle>
                          <AlertDescription className="text-green-700 dark:text-green-400">
-                            Great! We deliver to your area. Please fill out the address details below.
+                            Great! We deliver to your area (approx. {distanceInKm}km from our office). Please fill out the address details below.
                         </AlertDescription>
                     </Alert>}
                     
@@ -510,8 +537,7 @@ export default function CheckoutClient() {
                     />
                 </div>
 
-
-                <Button type="submit" size="lg" className="w-full" disabled={!form.formState.isValid || form.formState.isSubmitting}>
+                <Button type="submit" size="lg" className="w-full" disabled={!form.formState.isValid || form.formState.isSubmitting || cartItems.length === 0}>
                     {form.formState.isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                     Proceed to Payment
                 </Button>
@@ -526,3 +552,5 @@ export default function CheckoutClient() {
     </>
   );
 }
+
+    
