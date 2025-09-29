@@ -17,14 +17,22 @@ export async function generateMetadata(
 
   if (!product) {
     return {
-        title: 'Product Not Found',
-        description: "The product you are looking for does not exist.",
+        title: 'Product Not Found | Luna Essentials',
+        description: "The product you are looking for does not exist. Explore our other high-quality, sustainable products.",
     };
   }
 
+  // optionally access and extend (rather than replace) parent metadata
+  // const previousImages = (await parent).openGraph?.images || []
+
   return {
     title: `${product.name} | Luna Essentials`,
-    description: product.description,
+    description: product.shortDescription,
+    openGraph: {
+        title: `${product.name} | Luna Essentials`,
+        description: product.shortDescription,
+        images: product.imageUrl ? [product.imageUrl, ...((await parent).openGraph?.images || [])] : [],
+    },
   };
 }
 

@@ -29,31 +29,48 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const allImages = primaryImage ? [primaryImage, ...galleryImages] : galleryImages;
 
   const [selectedImage, setSelectedImage] = useState<string | undefined>(allImages[0]);
+  const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isRedirectModalOpen, setIsRedirectModalOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addItem, setIsCartOpen } = useCart();
+
+  const handleAddToCart = () => {
+     if (quantity >= (product.wholesaleMoq || Infinity)) {
+        setIsRedirectModalOpen(true);
+        return;
+    }
+    addItem({
+        productId: product.id,
+        productName: product.name,
+        imageUrl: product.imageUrl,
+        size: selectedSize.size,
+        quantity,
+        price: selectedSize.price,
+    });
+    toast({
+        title: "Added to Cart!",
+        description: `${quantity} x ${product.name} (${selectedSize.size}) has been added.`,
+        action: <Button variant="outline" size="sm" onClick={() => setIsCartOpen(true)}>View Cart</Button>
+    });
+  }
 
   const handleBuyNow = () => {
     if (quantity >= (product.wholesaleMoq || Infinity)) {
         setIsRedirectModalOpen(true);
-    } else {
-        addItem({
-            productId: product.id,
-            productName: product.name,
-            imageUrl: product.imageUrl,
-            size: product.sizes[0].size, // Assuming first size for now
-            quantity,
-            price: product.sizes[0].price,
-        });
-        toast({
-            title: "Added to Cart!",
-            description: `${quantity} x ${product.name} has been added to your cart.`,
-        });
-        router.push('/checkout');
+        return;
     }
+    addItem({
+        productId: product.id,
+        productName: product.name,
+        imageUrl: product.imageUrl,
+        size: selectedSize.size,
+        quantity,
+        price: selectedSize.price,
+    });
+    router.push('/checkout');
   };
   
   return (
@@ -122,19 +139,59 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             <div className="space-y-6">
                 <div>
                     <h3 className='text-sm font-semibold text-muted-foreground'>Recommended Retail Price (RRP)</h3>
-                    <div className='flex items-baseline gap-4'>
-                        <p className="text-4xl font-bold text-primary">Ksh {product.sizes[0].price.toFixed(2)}</p>
-                        <p className='text-muted-foreground'>per {product.sizes[0].size} unit</p>
+                     <p className="text-4xl font-bold text-primary">Ksh {selectedSize.price.toFixed(2)}</p>
+                </div>
+
+                {product.sizes.length > 1 && (
+                    <div>
+                        <h3 className='text-sm font-semibold text-muted-foreground mb-2'>Size</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {product.sizes.map((size) => (
+                            <Button
+                                key={size.size}
+                                variant={selectedSize.size === size.size ? 'default' : 'outline'}
+                                onClick={() => setSelectedSize(size)}
+                            >
+                                {size.size}
+                            </Button>
+                            ))}
+                        </div>
                     </div>
-                    {product.sizes.length > 1 && (
-                        <p className='text-sm text-muted-foreground mt-2'>Other sizes available.</p>
-                    )}
+                )}
+                
+                <div>
+                    <h3 className='text-sm font-semibold text-muted-foreground mb-2'>Quantity</h3>
+                    <div className="flex items-center gap-2 border rounded-md w-fit">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10"
+                            onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                        >
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-12 text-center text-lg font-bold">{quantity}</span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10"
+                             onClick={() => setQuantity(q => q + 1)}
+                        >
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="space-y-4">
-                  <Button size="lg" className="w-full" onClick={handleBuyNow}>
-                      Buy Now
-                  </Button>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                         <Button size="lg" className="flex-1" onClick={handleBuyNow}>
+                            Buy Now
+                        </Button>
+                        <Button size="lg" variant="outline" className="flex-1" onClick={handleAddToCart}>
+                            <ShoppingCart className="mr-2 h-5 w-5" />
+                            Add to Cart
+                        </Button>
+                    </div>
                 </div>
 
 

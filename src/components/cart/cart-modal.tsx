@@ -56,8 +56,8 @@ export function CartModal() {
                       />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold">{item.productName}</h4>
-                      <p className="text-sm text-muted-foreground">{item.size}</p>
+                      <h4 className="font-semibold text-sm">{item.productName}</h4>
+                      <p className="text-xs text-muted-foreground">{item.size}</p>
                        <p className="text-sm font-medium">Ksh {item.price.toFixed(2)}</p>
                        <div className="mt-2 flex items-center justify-between">
                             <div className="flex items-center gap-2 border rounded-md">
@@ -99,6 +99,7 @@ export function CartModal() {
                 <span>Subtotal</span>
                 <span>Ksh {subtotal.toFixed(2)}</span>
               </div>
+               <p className="text-xs text-muted-foreground text-center">Delivery fees and other charges will be calculated at checkout.</p>
               <Button onClick={handleCheckout} className="w-full" size="lg">
                 Proceed to Checkout
               </Button>

@@ -4,8 +4,8 @@ import { productService } from '@/services/product.service';
 import { Product } from '@/lib/data';
 
 export const metadata: Metadata = {
-  title: 'Our Products | Luna Essentials',
-  description: 'Discover the full range of Luna products, crafted for your daily needs.',
+  title: 'Our Product Catalog | Luna Essentials',
+  description: 'Explore the full range of high-quality, sustainable, and natural products manufactured by Luna Essentials. View our collections of shower gels, fabric softeners, and more.',
 };
 
 export default async function ProductsPage() {
