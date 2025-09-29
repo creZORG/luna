@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc, Transaction, increment } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
 import { activityService } from './activity.service';
 
@@ -22,7 +22,7 @@ class StoreItemService {
                 if (!items.some(i => i.id === compositeId)) {
                     items.push({
                         id: compositeId,
-                        name: `${product.name}`,
+                        name: `${product.name} (${size.size})`,
                         category: 'Finished Goods',
                         inventory: 0, 
                         price: size.price,
@@ -69,6 +69,12 @@ class StoreItemService {
             adminId,
             adminName
         );
+    }
+
+    // Helper for use within transactions
+    async incrementItemInventory(transaction: Transaction, itemId: string, quantity: number): Promise<void> {
+        const inventoryRef = doc(db, 'inventory', itemId);
+        transaction.set(inventoryRef, { quantity: increment(quantity) }, { merge: true });
     }
 
     async createItemRequests(itemIds: string[]): Promise<void> {

@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy, setDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy, setDoc, updateDoc, getDoc, Transaction, where } from 'firebase/firestore';
 import type { RawMaterial, RawMaterialIntake, UnitOfMeasure } from '@/lib/raw-materials.data';
 import { userService } from './user.service';
 import { sendEmail } from '@/ai/flows/send-email-flow';
@@ -45,11 +45,13 @@ class RawMaterialService {
     async getRawMaterials(): Promise<RawMaterial[]> {
         const materialsQuery = query(collection(db, 'rawMaterials'), orderBy('name'));
         const materialsSnapshot = await getDocs(materialsQuery);
-        const materials: Omit<RawMaterial, 'quantity'>[] = [];
+        const materials: RawMaterial[] = [];
         materialsSnapshot.forEach((doc) => {
             materials.push({ id: doc.id, ...doc.data() } as RawMaterial);
         });
         
+        // This is a simplified inventory fetch. For a large number of materials,
+        // it would be more performant to fetch inventory on demand.
         const inventorySnapshot = await getDocs(collection(db, 'inventory'));
         const inventoryMap = new Map<string, number>();
         inventorySnapshot.forEach(doc => {
@@ -62,6 +64,14 @@ class RawMaterialService {
         }));
 
         return fullMaterials;
+    }
+    
+    async getRawMaterialByName(name: string): Promise<RawMaterial | null> {
+        const q = query(collection(db, 'rawMaterials'), where('name', '==', name));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return null;
+        const docData = snapshot.docs[0];
+        return { id: docData.id, ...docData.data() } as RawMaterial;
     }
     
     async createRawMaterial(data: NewRawMaterialData, userId: string, userName: string): Promise<string> {
@@ -82,6 +92,62 @@ class RawMaterialService {
         await setDoc(inventoryRef, { quantity }, { merge: true });
         activityService.logActivity(`Adjusted inventory for material ID ${materialId} to ${quantity}.`, userId, userName);
     }
+    
+    // This is a simplified recipe for demonstration purposes. A real app would store this in the database.
+    getRecipeForProduct(productName: string): { materialName: string, quantityPerUnit: number }[] {
+        if (productName.toLowerCase().includes('shower gel')) {
+            return [
+                { materialName: 'SLES 70', quantityPerUnit: 0.1 }, // 100g per 1kg/1L product
+                { materialName: 'CDE', quantityPerUnit: 0.02 },
+                { materialName: 'NaCl', quantityPerUnit: 0.015 },
+                { materialName: 'Water', quantityPerUnit: 0.85 }, // Example quantities
+            ];
+        }
+         if (productName.toLowerCase().includes('fabric softener')) {
+            return [
+                { materialName: 'Cationic Surfactants', quantityPerUnit: 0.15 },
+                { materialName: 'Water', quantityPerUnit: 0.83 },
+            ];
+        }
+        if (productName.toLowerCase().includes('dish wash')) {
+            return [
+                { materialName: 'Anionic Surfactants', quantityPerUnit: 0.2 },
+                { materialName: 'Water', quantityPerUnit: 0.78 },
+            ];
+        }
+        return [];
+    }
+
+    async consumeRawMaterialsForProduction(
+        transaction: Transaction,
+        productName: string,
+        quantityProduced: number
+    ): Promise<void> {
+        const recipe = this.getRecipeForProduct(productName);
+        if (recipe.length === 0) {
+            console.warn(`No recipe found for product: ${productName}. Skipping raw material consumption.`);
+            return;
+        }
+
+        for (const ingredient of recipe) {
+            const material = await this.getRawMaterialByName(ingredient.materialName);
+            if (!material) {
+                throw new Error(`Recipe ingredient "${ingredient.materialName}" not found in raw materials inventory.`);
+            }
+
+            const quantityToConsume = ingredient.quantityPerUnit * quantityProduced;
+            const inventoryRef = doc(db, 'inventory', material.id);
+            const inventoryDoc = await transaction.get(inventoryRef);
+            
+            const currentQuantity = inventoryDoc.exists() ? inventoryDoc.data().quantity : 0;
+            if (currentQuantity < quantityToConsume) {
+                throw new Error(`Not enough stock of "${ingredient.materialName}". Required: ${quantityToConsume}, Available: ${currentQuantity}`);
+            }
+
+            transaction.update(inventoryRef, { quantity: currentQuantity - quantityToConsume });
+        }
+    }
+
 
     async logIntakeAndupdateInventory(formData: IntakeFormData, userId: string): Promise<string> {
         // 1. Upload the delivery note photo
@@ -184,32 +250,6 @@ class RawMaterialService {
             console.error("Transaction or email notification failed: ", e);
             throw new Error("Failed to log intake and update inventory.");
         }
-    }
-
-
-    // SEED FUNCTION: To be run once to populate the rawMaterials collection
-    async seedRawMaterials(materials: Omit<RawMaterial, 'id' | 'quantity'>[]): Promise<void> {
-        const collectionRef = collection(db, "rawMaterials");
-        const snapshot = await getDocs(collectionRef);
-        if (!snapshot.empty) {
-            console.log("Raw materials collection already has documents. Skipping seed.");
-            return;
-        }
-
-        const batch = writeBatch(db);
-        materials.forEach(material => {
-            const materialDocRef = doc(collectionRef);
-            const inventoryDocRef = doc(db, 'inventory', materialDocRef.id);
-            
-            // Set the material details
-            batch.set(materialDocRef, { name: material.name, unitOfMeasure: material.unitOfMeasure });
-
-            // Set the initial inventory to 0 in the central inventory collection
-            batch.set(inventoryDocRef, { quantity: 0 });
-        });
-
-        await batch.commit();
-        console.log("Successfully seeded raw materials and initialized inventory.");
     }
 }
 

@@ -20,7 +20,7 @@ import { RawMaterial, UnitOfMeasure } from '@/lib/raw-materials.data';
 import { useToast } from '@/hooks/use-toast';
 import { rawMaterialService } from '@/services/raw-material.service';
 import { useAuth } from '@/hooks/use-auth';
-import { Loader, PlusCircle } from 'lucide-react';
+import { Loader, PlusCircle, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const UNITS_OF_MEASURE: UnitOfMeasure[] = ['kg', 'L', 'g', 'ml', 'units'];
@@ -166,7 +166,7 @@ export default function ManageMaterialsClient({ initialMaterials }: { initialMat
                             </DialogContent>
                         </Dialog>
                         <Button size="sm" onClick={handleSaveQuantities} disabled={isSaving || Object.keys(changedQuantities).length === 0}>
-                            {isSaving && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                            {isSaving ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4"/>}
                             Save Changes
                         </Button>
                     </div>

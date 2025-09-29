@@ -73,10 +73,10 @@ const getNavLinks = (userProfile: UserProfile | null) => {
           icon: ShoppingCart,
           type: 'collapsible',
           id: 'procurement',
-          roles: ['admin'],
+          roles: ['admin', 'operations'],
           subLinks: [
             { href: '/admin/raw-materials/orders', icon: FileText, label: 'Purchase Orders', roles: ['admin'] },
-            { href: '/operations/raw-materials/manage', icon: Factory, label: 'Manage Materials', roles: ['admin'] },
+            { href: '/operations/raw-materials/manage', icon: Factory, label: 'Manage Materials', roles: ['admin', 'operations'] },
           ]
         },
         {
@@ -369,5 +369,3 @@ export default function AdminLayout({
     </div>
   );
 }
-
-    
