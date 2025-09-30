@@ -132,22 +132,6 @@ class OrderService {
 
 const orderServiceInstance = new OrderService();
 
-export async function createOrder(customer: CustomerInfo, items: CartItem[], totalAmount: number, paystackReference: string, userId?: string): Promise<string> {
-    return orderServiceInstance.createOrder(customer, items, totalAmount, paystackReference, userId);
-}
-
-export async function getOrders(): Promise<Order[]> {
-    return orderServiceInstance.getOrders();
-}
-
-export async function getOrdersByUserId(userId: string): Promise<Order[]> {
-    return orderServiceInstance.getOrdersByUserId(userId);
-}
-
-export async function getLastOrderByUserId(userId: string): Promise<Order | null> {
-    return orderServiceInstance.getLastOrderByUserId(userId);
-}
-
 // Re-exporting the class instance for internal module use only, not as a direct export from the server module.
 const orderService = orderServiceInstance;
 export { orderService };
