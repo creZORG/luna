@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -284,11 +285,3 @@ export async function incrementViewCount(productId: string): Promise<void> {
         console.error(`Failed to increment view count for product ${productId}:`, error);
     }
 }
-export const productService = {
-  createProduct,
-  updateProduct,
-  getProducts,
-  getProductBySlug,
-  getProductById,
-  incrementViewCount,
-};
