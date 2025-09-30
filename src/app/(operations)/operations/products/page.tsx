@@ -1,4 +1,5 @@
 
+
 import {
     Table,
     TableBody,
@@ -20,12 +21,12 @@ import {
   import Link from "next/link"
   import Image from "next/image"
   import { Badge } from "@/components/ui/badge"
-  import { getProducts } from "@/services/product.service"
+  import { productService } from "@/services/product.service"
 import { Product } from "@/lib/data"
 
   
   export default async function ProductsPage() {
-    const products: Product[] = await getProducts();
+    const products: Product[] = await productService.getProducts();
 
     return (
       <Card>

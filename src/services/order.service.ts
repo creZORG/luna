@@ -1,4 +1,6 @@
 
+'use server';
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit, updateDoc, getDoc } from 'firebase/firestore';
 import { CartItem } from './cart.service';
@@ -6,6 +8,7 @@ import { activityService } from './activity.service';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
 import { getProductById }from './product.service';
+import { storeItemService } from './store-item.service';
 
 export type OrderStatus = 'pending-payment' | 'paid' | 'processing' | 'ready-for-dispatch' | 'shipped' | 'delivered' | 'cancelled' | 'return-pending' | 'returned';
 
@@ -70,15 +73,9 @@ class OrderService {
 
                  // Decrement inventory for each item in the order
                 for (const item of items) {
-                    const inventoryId = `${item.productId}-${item.size.replace(/\s/g, '')}`;
-                    const inventoryRef = doc(db, 'inventory', inventoryId);
-                    const inventoryDoc = await transaction.get(inventoryRef);
-                    if (inventoryDoc.exists() && inventoryDoc.data().quantity >= item.quantity) {
-                        transaction.update(inventoryRef, { quantity: increment(-item.quantity) });
-                    } else {
-                        // Not enough stock, throw error to rollback transaction
-                        throw new Error(`Not enough stock for ${item.productName} (${item.size}).`);
-                    }
+                    // Finished goods inventory is managed in the 'storeItems' collection
+                    const storeItemId = `${item.productId}-${item.size.replace(/\s/g, '')}`;
+                    await storeItemService.decrementItemInventory(transaction, storeItemId, item.quantity);
                 }
 
 

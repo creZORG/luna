@@ -27,15 +27,17 @@ import { useAuth } from "@/hooks/use-auth";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 interface ManageStoreItemsClientProps {
     initialItems: StoreItem[];
     title: string;
     description: string;
     canAddItem?: boolean;
+    isReadOnly?: boolean; // New prop
 }
 
-export default function ManageStoreItemsClient({ initialItems, title, description, canAddItem = false }: ManageStoreItemsClientProps) {
+export default function ManageStoreItemsClient({ initialItems, title, description, canAddItem = false, isReadOnly = false }: ManageStoreItemsClientProps) {
     const [items, setItems] = useState(initialItems);
     const [changedItems, setChangedItems] = useState<Record<string, number>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +51,8 @@ export default function ManageStoreItemsClient({ initialItems, title, descriptio
     const { user, userProfile } = useAuth();
 
     const handleInventoryChange = (itemId: string, value: string) => {
+        if (isReadOnly) return; // Prevent changes if read-only
+
         const newInventory = parseInt(value, 10);
         if (!isNaN(newInventory)) {
             const originalItem = initialItems.find(i => i.id === itemId);
@@ -70,6 +74,7 @@ export default function ManageStoreItemsClient({ initialItems, title, descriptio
             toast({ variant: 'destructive', title: 'Not authenticated' });
             return;
         }
+        if (isReadOnly) return;
 
         setIsSubmitting(true);
         try {
@@ -161,10 +166,12 @@ export default function ManageStoreItemsClient({ initialItems, title, descriptio
                                 </DialogContent>
                             </Dialog>
                         )}
-                        <Button size="sm" onClick={handleSave} disabled={isSubmitting || Object.keys(changedItems).length === 0}>
-                            {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Changes
-                        </Button>
+                        {!isReadOnly && (
+                            <Button size="sm" onClick={handleSave} disabled={isSubmitting || Object.keys(changedItems).length === 0}>
+                                {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                Save Changes
+                            </Button>
+                        )}
                     </div>
                 </div>
             </CardHeader>
@@ -181,13 +188,15 @@ export default function ManageStoreItemsClient({ initialItems, title, descriptio
                         {items.map(item => (
                             <TableRow key={item.id}>
                                 <TableCell className="font-medium">{item.name}</TableCell>
-                                <TableCell>{item.category}</TableCell>
+                                <TableCell><Badge variant="secondary">{item.category}</Badge></TableCell>
                                 <TableCell className="text-right">
-                                    <Input 
+                                     <Input 
                                         type="number" 
                                         className="text-right"
                                         value={item.inventory} 
                                         onChange={(e) => handleInventoryChange(item.id, e.target.value)}
+                                        readOnly={isReadOnly}
+                                        disabled={isReadOnly}
                                     />
                                 </TableCell>
                             </TableRow>

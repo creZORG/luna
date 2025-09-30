@@ -17,6 +17,17 @@ class StoreItemService {
         return items;
     }
     
+     async getStoreItemsByCategory(category: 'Finished Goods' | 'Electronics' | 'Accessories' | 'Software'): Promise<StoreItem[]> {
+        const q = query(collection(db, "storeItems"), where("category", "==", category), orderBy("name"));
+        const querySnapshot = await getDocs(q);
+        const items: StoreItem[] = [];
+        querySnapshot.forEach((doc) => {
+            items.push({ id: doc.id, ...doc.data() } as StoreItem);
+        });
+        return items;
+    }
+
+
     async createStoreItem(itemData: Omit<StoreItem, 'id' | 'inventory'>, adminId: string, adminName: string): Promise<StoreItem> {
         try {
             const docRef = await addDoc(collection(db, "storeItems"), {
@@ -53,8 +64,6 @@ class StoreItemService {
     }
     
     async updateItemInventory(itemId: string, newInventory: number, adminId: string, adminName: string): Promise<void> {
-        // Finished goods inventory is managed by the product size level now.
-        // This function should only handle non-finished goods.
         const itemRef = doc(db, 'storeItems', itemId);
         await updateDoc(itemRef, { inventory: newInventory });
         
@@ -72,6 +81,17 @@ class StoreItemService {
     async incrementItemInventory(transaction: Transaction, itemId: string, quantity: number): Promise<void> {
         const inventoryRef = doc(db, 'storeItems', itemId);
         transaction.set(inventoryRef, { inventory: increment(quantity) }, { merge: true });
+    }
+
+    async decrementItemInventory(transaction: Transaction, itemId: string, quantity: number): Promise<void> {
+        const inventoryRef = doc(db, 'storeItems', itemId);
+        const inventoryDoc = await transaction.get(inventoryRef);
+        if (inventoryDoc.exists() && inventoryDoc.data().inventory >= quantity) {
+            transaction.update(inventoryRef, { inventory: increment(-quantity) });
+        } else {
+            const name = inventoryDoc.exists() ? inventoryDoc.data().name : `Item ID ${itemId}`;
+            throw new Error(`Not enough stock for ${name}.`);
+        }
     }
 
     async createItemRequests(itemIds: string[], requesterId: string, requesterName: string): Promise<void> {

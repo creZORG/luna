@@ -1,14 +1,24 @@
 
 import { storeItemService } from "@/services/store-item.service";
 import ManageStoreItemsClient from "./_components/manage-store-items-client";
+import { productService } from "@/services/product.service";
+import { StoreItem } from "@/lib/store-items.data";
 
 
 export default async function StoreItemsPage() {
-  const items = await storeItemService.getStoreItems();
+  const [equipmentAndSupplies, products] = await Promise.all([
+    storeItemService.getStoreItems().then(items => items.filter(item => item.category !== 'Finished Goods')),
+    productService.getProducts()
+  ]);
 
-  // This page now manages both finished goods and other internal store items.
-  const finishedGoods = items.filter(item => item.category === 'Finished Goods');
-  const equipmentAndSupplies = items.filter(item => item.category !== 'Finished Goods');
+  // Adapt the Product data to fit the expected StoreItem shape for the client component
+  const finishedGoodsAsStoreItems: StoreItem[] = products.map(p => ({
+    id: p.id,
+    name: p.name,
+    category: "Finished Goods", // The component uses this for display
+    inventory: p.sizes.reduce((acc, size) => acc + (size.inventory || 0), 0)
+  }));
+
 
   return (
     <div className="grid gap-8">
@@ -18,10 +28,11 @@ export default async function StoreItemsPage() {
         </div>
 
         <ManageStoreItemsClient
-            initialItems={finishedGoods} 
+            initialItems={finishedGoodsAsStoreItems} 
             title="Finished Goods Inventory" 
-            description="Set and adjust stock levels for products ready for sale (e.g., shower gels, dish wash)." 
-            canAddItem={false} // Finished goods are added via the Products page, not here.
+            description="View current stock levels for products ready for sale. Inventory is adjusted via production runs and sales." 
+            canAddItem={false}
+            isReadOnly={true} // This will be a new prop
         />
         
         <ManageStoreItemsClient 

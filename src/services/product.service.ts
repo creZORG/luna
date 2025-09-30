@@ -6,6 +6,7 @@ import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, upd
 import type { Product } from '@/lib/data';
 import { activityService } from './activity.service';
 import { getOrders } from './order.service';
+import { storeItemService } from './store-item.service';
 
 export interface ProductUpdateData {
   name?: string;
@@ -52,13 +53,24 @@ export async function createProduct(productData: Omit<Product, 'id' | 'orderCoun
         
         batch.set(productRef, productToSave);
 
-        // Initialize inventory for each size
+        // This is the CRITICAL change: also create a corresponding "Finished Goods" item in the storeItems collection.
+        // This is what the admin store items page uses.
         productData.sizes.forEach(size => {
-            const inventoryId = `${productRef.id}-${size.size.replace(/\s/g, '')}`;
-            const inventoryRef = doc(db, 'inventory', inventoryId);
-            batch.set(inventoryRef, { productId: productRef.id, size: size.size, quantity: 0 });
+            const storeItemId = `${productRef.id}-${size.size.replace(/\s/g, '')}`;
+            const storeItemRef = doc(db, 'storeItems', storeItemId);
+            batch.set(storeItemRef, {
+                 name: `${productData.name} (${size.size})`,
+                 category: 'Finished Goods',
+                 inventory: 0,
+                 // Add fields to link back to the main product
+                 productId: productRef.id,
+                 size: size.size,
+                 price: size.price,
+                 wholesalePrice: size.wholesalePrice,
+                 imageUrl: productData.imageUrl,
+            });
         });
-
+        
         await batch.commit();
 
         activityService.logActivity(
@@ -88,16 +100,24 @@ export async function updateProduct(id: string, productData: ProductUpdateData):
                     wholesalePrice: s.wholesalePrice || 0
             }));
             
-            // Ensure inventory documents exist for new sizes
+            // Ensure storeItem documents exist for new sizes
             const existingProductSnap = await getDoc(productRef);
             const existingProduct = existingProductSnap.data() as Product;
             const existingSizes = existingProduct.sizes.map(s => s.size);
 
             for (const size of productData.sizes) {
                 if (!existingSizes.includes(size.size)) {
-                    const inventoryId = `${id}-${size.size.replace(/\s/g, '')}`;
-                    const inventoryRef = doc(db, 'inventory', inventoryId);
-                    batch.set(inventoryRef, { productId: id, size: size.size, quantity: 0 }, { merge: true });
+                    const storeItemId = `${id}-${size.size.replace(/\s/g, '')}`;
+                    const storeItemRef = doc(db, 'storeItems', storeItemId);
+                     batch.set(storeItemRef, {
+                        name: `${existingProduct.name} (${size.size})`,
+                        category: 'Finished Goods',
+                        inventory: 0,
+                        productId: id,
+                        size: size.size,
+                        price: size.price || 0,
+                        imageUrl: existingProduct.imageUrl,
+                    }, { merge: true });
                 }
             }
             await batch.commit();
@@ -113,12 +133,19 @@ export async function updateProduct(id: string, productData: ProductUpdateData):
 
 
 export async function getProducts(): Promise<Product[]> {
-    // 1. Fetch all products, all orders, and all inventory in parallel.
-    const [productsSnapshot, allOrders, inventorySnapshot] = await Promise.all([
+    // 1. Fetch all products and all orders in parallel.
+    const [productsSnapshot, allOrders] = await Promise.all([
         getDocs(collection(db, "products")),
         getOrders(),
-        getDocs(collection(db, "inventory"))
     ]);
+
+     // Fetch all store items which now hold the inventory for finished goods.
+    const finishedGoodsItems = await storeItemService.getStoreItemsByCategory('Finished Goods');
+    const inventoryMap = new Map<string, { inventory: number, storeItemId: string }>();
+    finishedGoodsItems.forEach(item => {
+        const key = `${(item as any).productId}-${(item as any).size}`;
+        inventoryMap.set(key, { inventory: item.inventory, storeItemId: item.id });
+    });
     
     // 2. Create a map for sales statistics.
     const productStats = new Map<string, { orderCount: number; totalRevenue: number }>();
@@ -131,13 +158,6 @@ export async function getProducts(): Promise<Product[]> {
             productStats.set(item.productId, stats);
         });
     });
-
-    // 3. Create a map for inventory.
-    const inventoryMap = new Map<string, number>();
-    inventorySnapshot.forEach(doc => {
-        // Assuming doc.id is `productId-size`
-        inventoryMap.set(doc.id, doc.data().quantity);
-    });
     
     // 4. Map over products, merge stats and inventory.
     const products: Product[] = productsSnapshot.docs.map((docSnap) => {
@@ -145,10 +165,10 @@ export async function getProducts(): Promise<Product[]> {
         const stats = productStats.get(docSnap.id) || { orderCount: 0, totalRevenue: 0 };
 
         const sizesWithInventory = (data.sizes || []).map((sizeInfo: any) => {
-            const inventoryId = `${docSnap.id}-${sizeInfo.size.replace(/\s/g, '')}`;
+            const key = `${docSnap.id}-${sizeInfo.size}`;
             return {
                 ...sizeInfo,
-                inventory: inventoryMap.get(inventoryId) ?? 0
+                inventory: inventoryMap.get(key)?.inventory ?? 0
             };
         });
 
@@ -189,18 +209,20 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     const docSnap = querySnapshot.docs[0];
     let data = docSnap.data();
     
-    // Fetch inventory for this specific product
-    const inventorySnapshot = await getDocs(query(collection(db, 'inventory'), where('productId', '==', docSnap.id)));
+    const finishedGoodsItems = await storeItemService.getStoreItemsByCategory('Finished Goods');
     const inventoryMap = new Map<string, number>();
-    inventorySnapshot.forEach(doc => {
-        inventoryMap.set(`${doc.data().productId}-${doc.data().size.replace(/\s/g, '')}`, doc.data().quantity);
+     finishedGoodsItems.forEach(item => {
+        if ((item as any).productId === docSnap.id) {
+            const key = `${(item as any).productId}-${(item as any).size}`;
+            inventoryMap.set(key, item.inventory);
+        }
     });
     
     const sizesWithInventory = (data.sizes || []).map((sizeInfo: any) => {
-        const inventoryId = `${docSnap.id}-${sizeInfo.size.replace(/\s/g, '')}`;
+        const key = `${docSnap.id}-${sizeInfo.size}`;
         return {
             ...sizeInfo,
-            inventory: inventoryMap.get(inventoryId) ?? 0
+            inventory: inventoryMap.get(key) ?? 0
         };
     });
 
@@ -221,18 +243,20 @@ export async function getProductById(id: string): Promise<Product | null> {
     if (docSnap.exists()) {
         let data = docSnap.data();
         
-        // Fetch inventory
-        const inventorySnapshot = await getDocs(query(collection(db, 'inventory'), where('productId', '==', id)));
+        const finishedGoodsItems = await storeItemService.getStoreItemsByCategory('Finished Goods');
         const inventoryMap = new Map<string, number>();
-        inventorySnapshot.forEach(doc => {
-            inventoryMap.set(`${doc.data().productId}-${doc.data().size.replace(/\s/g, '')}`, doc.data().quantity);
+        finishedGoodsItems.forEach(item => {
+            if ((item as any).productId === id) {
+                const key = `${(item as any).productId}-${(item as any).size}`;
+                inventoryMap.set(key, item.inventory);
+            }
         });
 
          const sizesWithInventory = (data.sizes || []).map((sizeInfo: any) => {
-            const inventoryId = `${id}-${sizeInfo.size.replace(/\s/g, '')}`;
+            const key = `${id}-${sizeInfo.size}`;
             return {
                 ...sizeInfo,
-                inventory: inventoryMap.get(inventoryId) ?? 0
+                inventory: inventoryMap.get(key) ?? 0
             };
         });
 
@@ -260,3 +284,11 @@ export async function incrementViewCount(productId: string): Promise<void> {
         console.error(`Failed to increment view count for product ${productId}:`, error);
     }
 }
+export const productService = {
+  createProduct,
+  updateProduct,
+  getProducts,
+  getProductBySlug,
+  getProductById,
+  incrementViewCount,
+};
