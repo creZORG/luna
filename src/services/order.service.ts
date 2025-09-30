@@ -148,5 +148,6 @@ export async function getLastOrderByUserId(userId: string): Promise<Order | null
     return orderServiceInstance.getLastOrderByUserId(userId);
 }
 
-// Keep a single instance for other server-side usage within the module if needed.
-export const orderService = orderServiceInstance;
+// Re-exporting the class instance for internal module use only, not as a direct export from the server module.
+const orderService = orderServiceInstance;
+export { orderService };
