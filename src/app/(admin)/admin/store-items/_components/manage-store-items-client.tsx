@@ -34,7 +34,7 @@ interface ManageStoreItemsClientProps {
     title: string;
     description: string;
     canAddItem?: boolean;
-    isReadOnly?: boolean; // New prop
+    isReadOnly?: boolean;
 }
 
 export default function ManageStoreItemsClient({ initialItems, title, description, canAddItem = false, isReadOnly = false }: ManageStoreItemsClientProps) {
@@ -51,7 +51,7 @@ export default function ManageStoreItemsClient({ initialItems, title, descriptio
     const { user, userProfile } = useAuth();
 
     const handleInventoryChange = (itemId: string, value: string) => {
-        if (isReadOnly) return; // Prevent changes if read-only
+        if (isReadOnly) return;
 
         const newInventory = parseInt(value, 10);
         if (!isNaN(newInventory)) {
