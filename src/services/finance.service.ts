@@ -1,7 +1,8 @@
 
+
 import { collection, getDocs, query, where, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Order, orderService } from './order.service';
+import { Order, getOrders } from './order.service';
 import { UserProfile, userService } from './user.service';
 
 export interface FinanceData {
@@ -17,7 +18,7 @@ export interface FinanceData {
 class FinanceService {
     
     async getFinanceDashboardData(): Promise<FinanceData> {
-        const allOrders = await orderService.getOrders();
+        const allOrders = await getOrders();
         const users = await userService.getUsers();
         
         const salesUserIds = new Set(users.filter(u => u.roles.includes('sales')).map(u => u.uid));

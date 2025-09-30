@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useCart } from '@/hooks/use-cart';
@@ -66,7 +67,7 @@ import { Product } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { verifyPaymentAndProcessOrder } from '@/ai/flows/verify-payment-and-process-order-flow';
-import { orderService } from '@/services/order.service';
+import { getLastOrderByUserId } from '@/services/order.service';
 import { pickupLocationService, PickupLocation } from '@/services/pickup-location.service';
 import { KENYAN_COUNTIES, getDeliveryZone } from '@/lib/locations';
 import { settingsService, DeliveryZoneFees } from '@/services/settings.service';
@@ -248,7 +249,7 @@ export default function CheckoutClient() {
   useEffect(() => {
     async function prefillForm() {
         if (user) {
-            const lastOrder = await orderService.getLastOrderByUserId(user.uid);
+            const lastOrder = await getLastOrderByUserId(user.uid);
             if (lastOrder) {
                 form.reset({
                     deliveryMethod: lastOrder.deliveryMethod || 'door-to-door',

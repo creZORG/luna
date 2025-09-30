@@ -1,10 +1,11 @@
 
+
 import type { StockInfo } from './_components/sales-dashboard-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { storeItemService } from '@/services/store-item.service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import FieldSalesClient from './_components/field-sales-client';
-import { orderService } from '@/services/order.service';
+import { getOrders } from '@/services/order.service';
 import OnlineOrdersClient from './_components/online-orders-client';
 import SalesDashboardClient from './_components/sales-dashboard-client';
 
@@ -25,7 +26,7 @@ async function getInitialStockData(): Promise<StockInfo[]> {
 
 export default async function SalesDashboard() {
     const stockData = await getInitialStockData();
-    const orders = await orderService.getOrders();
+    const orders = await getOrders();
 
     if (!stockData || stockData.length === 0) {
         return (

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -15,7 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useEffect, useState } from 'react';
-import { Order, orderService } from '@/services/order.service';
+import { Order, getOrdersByUserId } from '@/services/order.service';
 import { format } from 'date-fns';
 
 export default function ProfileClient() {
@@ -25,7 +26,7 @@ export default function ProfileClient() {
     
     useEffect(() => {
         if (user) {
-            orderService.getOrdersByUserId(user.uid)
+            getOrdersByUserId(user.uid)
                 .then(setOrders)
                 .catch(err => console.error("Failed to fetch orders", err))
                 .finally(() => setOrdersLoading(false));

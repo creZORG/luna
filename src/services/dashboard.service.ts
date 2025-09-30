@@ -1,8 +1,9 @@
 
+
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Product } from '@/lib/data';
-import { orderService, Order } from './order.service';
+import { getOrders } from './order.service';
 import { activityService, ActivityLog } from './activity.service';
 
 export interface DashboardData {
@@ -37,7 +38,7 @@ class DashboardService {
         }));
 
         // Fetch all orders to calculate total sales and count
-        const allOrders = await orderService.getOrders();
+        const allOrders = await getOrders();
         const totalOrders = allOrders.length;
         const totalSales = allOrders.reduce((sum, order) => sum + order.totalAmount, 0);
 

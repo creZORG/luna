@@ -2,7 +2,7 @@
 
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Order, orderService } from './order.service';
+import { getOrders } from './order.service';
 import { Product, getProducts, getProductBySlug } from './product.service';
 import { subDays, startOfDay, endOfDay, format } from 'date-fns';
 import { UserProfile, userService } from './user.service';
@@ -53,7 +53,7 @@ class AnalyticsService {
         const product = await getProductBySlug(productSlug);
         if (!product) return null;
 
-        const allOrders = await orderService.getOrders();
+        const allOrders = await getOrders();
         
         const relevantOrders = allOrders.filter(order => 
             order.items.some(item => item.productId === product.id)
@@ -110,7 +110,7 @@ class AnalyticsService {
 
     async getDashboardAnalytics(): Promise<AnalyticsData> {
         const [orders, products, users, campaigns] = await Promise.all([
-            orderService.getOrders(),
+            getOrders(),
             getProducts(),
             userService.getUsers(),
             campaignService.getCampaigns(),
