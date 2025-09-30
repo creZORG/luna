@@ -2,7 +2,7 @@
 
 import { collection, getDocs, query, where, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Order, getOrders } from './order.service';
+import { Order, getOrders } from '@/services/order.service';
 import { UserProfile, userService } from './user.service';
 
 export interface FinanceData {

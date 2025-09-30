@@ -3,7 +3,7 @@
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Product } from '@/lib/data';
-import { getOrders } from './order.service';
+import { getOrders, Order } from '@/services/order.service';
 import { activityService, ActivityLog } from './activity.service';
 
 export interface DashboardData {

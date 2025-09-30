@@ -2,7 +2,7 @@
 
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getOrders } from './order.service';
+import { getOrders, Order } from '@/services/order.service';
 import { RawMaterial, rawMaterialService } from './raw-material.service';
 import { StoreItem, storeItemService } from './store-item.service';
 import { pickupLocationService } from './pickup-location.service';
