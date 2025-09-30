@@ -34,7 +34,7 @@ import { Product } from "@/lib/data"
             <div>
                 <CardTitle>Finished Goods</CardTitle>
                 <CardDescription>
-                Manage your finished products and view their performance metrics.
+                Manage your finished products and view their stock levels.
                 </CardDescription>
             </div>
             <Button asChild size="sm" className="gap-1">
@@ -55,9 +55,8 @@ import { Product } from "@/lib/data"
                   <span className="sr-only">Image</span>
                 </TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Revenue</TableHead>
-                <TableHead className="hidden md:table-cell">Orders</TableHead>
-                <TableHead className="hidden md:table-cell">Views</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell text-right">Quantity in Stock</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -65,6 +64,8 @@ import { Product } from "@/lib/data"
             </TableHeader>
             <TableBody>
               {products.map(product => {
+                  const totalStock = product.sizes.reduce((acc, size) => acc + (size.inventory || 0), 0);
+                  const status = totalStock > 0 ? "In Stock" : "Out of Stock";
                   return (
                     <TableRow key={product.id}>
                         <TableCell className="hidden sm:table-cell">
@@ -80,20 +81,14 @@ import { Product } from "@/lib/data"
                           {product.name}
                           <div className="text-xs text-muted-foreground capitalize">{product.category.replace(/-/g, ' ')}</div>
                         </TableCell>
-                         <TableCell>
-                          <div className="font-semibold">Ksh {product.totalRevenue?.toLocaleString() ?? 0}</div>
+                        <TableCell>
+                            <Badge variant={status === "In Stock" ? "secondary" : "destructive"} className={status === "In Stock" ? "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/50" : ""}>
+                                {status}
+                            </Badge>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                           <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span>{product.orderCount ?? 0}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex items-center gap-2">
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                            <span>{product.viewCount?.toLocaleString() ?? 0}</span>
-                          </div>
+                        <TableCell className="hidden md:table-cell text-right">
+                          <div className="font-semibold">{totalStock.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">across {product.sizes.length} sizes</div>
                         </TableCell>
                         <TableCell className="text-right">
                            <Button asChild size="icon" variant="outline">

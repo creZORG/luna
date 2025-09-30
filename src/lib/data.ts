@@ -12,6 +12,7 @@ export type Product = {
     size: string; 
     price: number;
     wholesalePrice?: number;
+    inventory?: number; // Added inventory
   }[];
   description: string;
   keyBenefits: string[];
