@@ -53,10 +53,16 @@ class StoreItemService {
     }
     
     async updateItemInventory(itemId: string, newInventory: number, adminId: string, adminName: string): Promise<void> {
-        const itemRef = doc(db, 'inventory', itemId);
-        await setDoc(itemRef, { quantity: newInventory }, { merge: true });
-         activityService.logActivity(
-            `Adjusted inventory for item ID ${itemId} to ${newInventory}.`,
+        // Finished goods inventory is managed by the product size level now.
+        // This function should only handle non-finished goods.
+        const itemRef = doc(db, 'storeItems', itemId);
+        await updateDoc(itemRef, { inventory: newInventory });
+        
+        const itemSnap = await getDoc(itemRef);
+        const itemName = itemSnap.exists() ? itemSnap.data().name : `item ID ${itemId}`;
+        
+        activityService.logActivity(
+            `Adjusted inventory for ${itemName} to ${newInventory}.`,
             adminId,
             adminName
         );
@@ -64,8 +70,8 @@ class StoreItemService {
 
     // Helper for use within transactions
     async incrementItemInventory(transaction: Transaction, itemId: string, quantity: number): Promise<void> {
-        const inventoryRef = doc(db, 'inventory', itemId);
-        transaction.set(inventoryRef, { quantity: increment(quantity) }, { merge: true });
+        const inventoryRef = doc(db, 'storeItems', itemId);
+        transaction.set(inventoryRef, { inventory: increment(quantity) }, { merge: true });
     }
 
     async createItemRequests(itemIds: string[], requesterId: string, requesterName: string): Promise<void> {
