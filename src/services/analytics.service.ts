@@ -2,7 +2,7 @@
 
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { getOrders } from './order.service';
+import { getOrders } from '@/services/order.service';
 import { Product, getProducts, getProductBySlug } from './product.service';
 import { subDays, startOfDay, endOfDay, format } from 'date-fns';
 import { UserProfile, userService } from './user.service';
