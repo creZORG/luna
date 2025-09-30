@@ -4,7 +4,7 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit, updateDoc, getDoc } from 'firebase/firestore';
 import { CartItem } from './cart.service';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 import { storeItemService } from './store-item.service';
 
 export type OrderStatus = 'pending-payment' | 'paid' | 'processing' | 'ready-for-dispatch' | 'shipped' | 'delivered' | 'cancelled' | 'return-pending' | 'returned';

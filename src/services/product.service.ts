@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc, increment } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
 import { logActivity } from './activity.service';
-import { getOrders } from '@/services/order.service';
+import { getOrders } from './order.service';
 import { storeItemService } from './store-item.service';
 
 export interface ProductUpdateData {

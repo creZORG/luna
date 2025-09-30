@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 
 export interface DeliveryZoneFees {
     nairobi: number;
@@ -57,7 +57,7 @@ class SettingsService {
             }
 
             // Log this important action
-            activityService.logActivity('Updated company-wide settings.', userId, userName);
+            logActivity('Updated company-wide settings.', userId, userName);
 
         } catch (error) {
             console.error("Error updating company settings:", error);

@@ -1,14 +1,14 @@
 
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { analyticsService } from '@/services/analytics.service';
+import { getProductAnalytics } from '@/services/analytics.service';
 import { notFound } from 'next/navigation';
 import { DollarSign, Package, BarChart, Users, Star } from 'lucide-react';
 import ProductAnalyticsClient from './_components/product-analytics-client';
 import Image from 'next/image';
 
 export default async function ProductAnalyticsPage({ params }: { params: { slug: string }}) {
-    const data = await analyticsService.getProductAnalytics(params.slug);
+    const data = await getProductAnalytics(params.slug);
 
     if (!data) {
         return notFound();
@@ -61,4 +61,3 @@ export default async function ProductAnalyticsPage({ params }: { params: { slug:
         </div>
     );
 }
-

@@ -1,7 +1,7 @@
 
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { analyticsService, AnalyticsData } from '@/services/analytics.service';
+import { getDashboardAnalytics, AnalyticsData } from '@/services/analytics.service';
 import { DollarSign, Package, BarChart, Users, Star } from 'lucide-react';
 import AnalyticsClient from './_components/analytics-client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -24,7 +24,7 @@ function StatCard({ title, value, icon: Icon, description }: { title: string; va
 }
 
 export default async function AnalyticsPage() {
-    const data: AnalyticsData = await analyticsService.getDashboardAnalytics();
+    const data: AnalyticsData = await getDashboardAnalytics();
 
     return (
         <div className="grid gap-6">

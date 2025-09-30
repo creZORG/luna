@@ -2,7 +2,7 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, getDoc, orderBy } from 'firebase/firestore';
 import type { Campaign } from '@/lib/campaigns.data';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 
 interface CreateCampaignData {
     name: string;
@@ -31,7 +31,7 @@ class CampaignService {
 
         const docRef = await addDoc(collection(db, "campaigns"), newCampaign);
 
-        activityService.logActivity(
+        logActivity(
             `Created a new campaign: ${data.name} and assigned it to ${data.marketerName}`,
             adminId,
             adminName
