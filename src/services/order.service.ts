@@ -130,6 +130,23 @@ class OrderService {
     }
 }
 
-export const orderService = new OrderService();
-// Re-export for server actions
-export const { getOrders, getOrdersByUserId, getLastOrderByUserId, createOrder } = new OrderService();
+const orderServiceInstance = new OrderService();
+
+export async function createOrder(customer: CustomerInfo, items: CartItem[], totalAmount: number, paystackReference: string, userId?: string): Promise<string> {
+    return orderServiceInstance.createOrder(customer, items, totalAmount, paystackReference, userId);
+}
+
+export async function getOrders(): Promise<Order[]> {
+    return orderServiceInstance.getOrders();
+}
+
+export async function getOrdersByUserId(userId: string): Promise<Order[]> {
+    return orderServiceInstance.getOrdersByUserId(userId);
+}
+
+export async function getLastOrderByUserId(userId: string): Promise<Order | null> {
+    return orderServiceInstance.getLastOrderByUserId(userId);
+}
+
+// Keep a single instance for other server-side usage within the module if needed.
+export const orderService = orderServiceInstance;
