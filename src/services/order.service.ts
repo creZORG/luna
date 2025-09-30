@@ -5,9 +5,6 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, runTransaction, doc, increment, getDocs, query, orderBy, where, limit, updateDoc, getDoc } from 'firebase/firestore';
 import { CartItem } from './cart.service';
 import { activityService } from './activity.service';
-import { sendEmail } from '@/ai/flows/send-email-flow';
-import { createEmailTemplate } from '@/lib/email-template';
-import { getProductById }from './product.service';
 import { storeItemService } from './store-item.service';
 
 export type OrderStatus = 'pending-payment' | 'paid' | 'processing' | 'ready-for-dispatch' | 'shipped' | 'delivered' | 'cancelled' | 'return-pending' | 'returned';
@@ -43,95 +40,87 @@ export interface CustomerInfo {
 }
 
 
-class OrderService {
-    async createOrder(customer: CustomerInfo, items: CartItem[], totalAmount: number, paystackReference: string, userId?: string): Promise<string> {
-        
-        try {
-            const orderId = await runTransaction(db, async (transaction) => {
-               
-                // Create the new order
-                const newOrder: Omit<Order, 'id'> = {
-                    customerName: customer.fullName,
-                    customerEmail: customer.email,
-                    customerPhone: customer.phone,
-                    shippingAddress: customer.address,
-                    deliveryMethod: customer.deliveryMethod,
-                    deliveryNotes: customer.deliveryNotes || '',
-                    county: customer.county || '',
-                    items: items,
-                    totalAmount: totalAmount,
-                    status: 'paid',
-                    orderDate: serverTimestamp(),
-                    paystackReference,
-                    promoCode: customer.promoCode || '',
-                };
-                if (userId) {
-                    newOrder.userId = userId;
-                }
-                const orderRef = doc(collection(db, 'orders'));
-                transaction.set(orderRef, newOrder);
-
-                 // Decrement inventory for each item in the order
-                for (const item of items) {
-                    // Finished goods inventory is managed in the 'storeItems' collection
-                    const storeItemId = `${item.productId}-${item.size.replace(/\s/g, '')}`;
-                    await storeItemService.decrementItemInventory(transaction, storeItemId, item.quantity);
-                }
-
-
-                return orderRef.id;
-            });
-
-            return orderId;
-
-        } catch (error: any) {
-            console.error("Error creating order and updating inventory:", error);
-            throw new Error(`Failed to create order: ${error.message}`);
-        }
-    }
-
-    async getOrders(): Promise<Order[]> {
-        const q = query(collection(db, "orders"), orderBy("orderDate", "desc"));
-        const querySnapshot = await getDocs(q);
-        const orders: Order[] = [];
-        querySnapshot.forEach(doc => {
-            orders.push({ id: doc.id, ...doc.data() } as Order);
-        });
-        return orders;
-    }
+export async function createOrder(customer: CustomerInfo, items: CartItem[], totalAmount: number, paystackReference: string, userId?: string): Promise<string> {
     
-    async getOrdersByUserId(userId: string): Promise<Order[]> {
-        const q = query(
-            collection(db, "orders"),
-            where("userId", "==", userId),
-            orderBy("orderDate", "desc")
-        );
-        const querySnapshot = await getDocs(q);
-        const orders: Order[] = [];
-        querySnapshot.forEach(doc => {
-            orders.push({ id: doc.id, ...doc.data() } as Order);
-        });
-        return orders;
-    }
+    try {
+        const orderId = await runTransaction(db, async (transaction) => {
+           
+            // Create the new order
+            const newOrder: Omit<Order, 'id'> = {
+                customerName: customer.fullName,
+                customerEmail: customer.email,
+                customerPhone: customer.phone,
+                shippingAddress: customer.address,
+                deliveryMethod: customer.deliveryMethod,
+                deliveryNotes: customer.deliveryNotes || '',
+                county: customer.county || '',
+                items: items,
+                totalAmount: totalAmount,
+                status: 'paid',
+                orderDate: serverTimestamp(),
+                paystackReference,
+                promoCode: customer.promoCode || '',
+            };
+            if (userId) {
+                newOrder.userId = userId;
+            }
+            const orderRef = doc(collection(db, 'orders'));
+            transaction.set(orderRef, newOrder);
 
-    async getLastOrderByUserId(userId: string): Promise<Order | null> {
-        const q = query(
-            collection(db, "orders"), 
-            where("userId", "==", userId),
-            orderBy("orderDate", "desc"),
-            limit(1)
-        );
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            const doc = querySnapshot.docs[0];
-            return { id: doc.id, ...doc.data() } as Order;
-        }
-        return null;
+             // Decrement inventory for each item in the order
+            for (const item of items) {
+                // Finished goods inventory is managed in the 'storeItems' collection
+                const storeItemId = `${item.productId}-${item.size.replace(/\s/g, '')}`;
+                await storeItemService.decrementItemInventory(transaction, storeItemId, item.quantity);
+            }
+
+
+            return orderRef.id;
+        });
+
+        return orderId;
+
+    } catch (error: any) {
+        console.error("Error creating order and updating inventory:", error);
+        throw new Error(`Failed to create order: ${error.message}`);
     }
 }
 
-const orderServiceInstance = new OrderService();
+export async function getOrders(): Promise<Order[]> {
+    const q = query(collection(db, "orders"), orderBy("orderDate", "desc"));
+    const querySnapshot = await getDocs(q);
+    const orders: Order[] = [];
+    querySnapshot.forEach(doc => {
+        orders.push({ id: doc.id, ...doc.data() } as Order);
+    });
+    return orders;
+}
 
-// Re-exporting the class instance for internal module use only, not as a direct export from the server module.
-const orderService = orderServiceInstance;
-export { orderService };
+export async function getOrdersByUserId(userId: string): Promise<Order[]> {
+    const q = query(
+        collection(db, "orders"),
+        where("userId", "==", userId),
+        orderBy("orderDate", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+    const orders: Order[] = [];
+    querySnapshot.forEach(doc => {
+        orders.push({ id: doc.id, ...doc.data() } as Order);
+    });
+    return orders;
+}
+
+export async function getLastOrderByUserId(userId: string): Promise<Order | null> {
+    const q = query(
+        collection(db, "orders"), 
+        where("userId", "==", userId),
+        orderBy("orderDate", "desc"),
+        limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        return { id: doc.id, ...doc.data() } as Order;
+    }
+    return null;
+}

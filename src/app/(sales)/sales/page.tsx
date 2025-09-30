@@ -8,20 +8,27 @@ import FieldSalesClient from './_components/field-sales-client';
 import { getOrders } from '@/services/order.service';
 import OnlineOrdersClient from './_components/online-orders-client';
 import SalesDashboardClient from './_components/sales-dashboard-client';
+import { Product, getProducts } from '@/services/product.service';
 
 async function getInitialStockData(): Promise<StockInfo[]> {
-    const allStoreItems = await storeItemService.getStoreItems();
-    const finishedGoods = allStoreItems.filter(item => item.category === 'Finished Goods');
+    const products: Product[] = await getProducts();
+    const stockInfo: StockInfo[] = [];
+
+    products.forEach(product => {
+        product.sizes.forEach(size => {
+            stockInfo.push({
+                productId: product.id,
+                productName: product.name,
+                size: size.size,
+                openingStock: size.inventory || 0,
+                price: size.price,
+                imageUrl: product.imageUrl,
+            });
+        });
+    });
     
     // In a real app, this would be filtered by stock assigned to the specific salesperson
-    return finishedGoods.map(item => ({
-        productId: (item as any).productId,
-        productName: item.name.replace(`(${(item as any).size})`, '').trim(),
-        size: (item as any).size,
-        openingStock: item.inventory,
-        price: (item as any).price,
-        imageUrl: (item as any).imageUrl,
-    }));
+    return stockInfo;
 }
 
 export default async function SalesDashboard() {
