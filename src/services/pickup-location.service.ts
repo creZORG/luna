@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { activityService } from './activity.service';
 
 export interface PickupLocation {
@@ -8,6 +8,8 @@ export interface PickupLocation {
     name: string;
     address: string;
     operatingHours: string;
+    partnerId?: string;
+    partnerName?: string;
 }
 
 class PickupLocationService {
@@ -23,11 +25,12 @@ class PickupLocationService {
         createdAt: serverTimestamp(),
       });
 
-      activityService.logActivity(
-        `Added new pickup location: ${locationData.name}`,
-        userId,
-        userName
-      );
+      let activityDescription = `Added new pickup location: ${locationData.name}`;
+      if (locationData.partnerId && locationData.partnerName) {
+        activityDescription += ` and assigned it to ${locationData.partnerName}.`;
+      }
+
+      activityService.logActivity(activityDescription, userId, userName);
 
       return { id: docRef.id, ...locationData };
     } catch (e) {
@@ -52,6 +55,19 @@ class PickupLocationService {
       console.error('Error fetching pickup locations: ', e);
       throw new Error('Could not fetch pickup locations.');
     }
+  }
+
+  async assignPartnerToLocation(locationId: string, partnerId: string, partnerName: string): Promise<void> {
+      try {
+        const locationRef = doc(db, 'pickupLocations', locationId);
+        await updateDoc(locationRef, {
+            partnerId: partnerId,
+            partnerName: partnerName
+        });
+      } catch (error) {
+         console.error("Error assigning partner:", error);
+         throw new Error("Could not assign partner to the location.");
+      }
   }
 }
 
