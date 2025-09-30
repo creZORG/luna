@@ -91,12 +91,20 @@ import { Product } from "@/lib/data"
                           <div className="text-xs text-muted-foreground">across {product.sizes.length} sizes</div>
                         </TableCell>
                         <TableCell className="text-right">
-                           <Button asChild size="icon" variant="outline">
-                             <Link href={`/operations/products/${product.id}/edit`}>
-                                <Edit className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
-                              </Link>
-                           </Button>
+                           <div className="flex gap-2 justify-end">
+                               <Button asChild size="icon" variant="outline">
+                                 <Link href={`/admin/analytics/${product.slug}`}>
+                                    <TrendingUp className="h-4 w-4" />
+                                    <span className="sr-only">View Stats</span>
+                                  </Link>
+                               </Button>
+                               <Button asChild size="icon" variant="outline">
+                                 <Link href={`/operations/products/${product.id}/edit`}>
+                                    <Edit className="h-4 w-4" />
+                                    <span className="sr-only">Edit</span>
+                                  </Link>
+                               </Button>
+                           </div>
                         </TableCell>
                     </TableRow>
                   )

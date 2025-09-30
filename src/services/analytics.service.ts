@@ -3,7 +3,7 @@
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Order, orderService } from './order.service';
-import { Product, getProducts } from './product.service';
+import { Product, getProducts, getProductBySlug } from './product.service';
 import { subDays, startOfDay, endOfDay, format } from 'date-fns';
 import { UserProfile, userService } from './user.service';
 import { campaignService } from './campaign.service';
@@ -38,8 +38,76 @@ export interface AnalyticsData {
     topSalespeople: SalespersonPerformance[];
 }
 
+export interface ProductAnalyticsData {
+    product: Product;
+    totalRevenue: number;
+    totalOrders: number;
+    totalUnitsSold: number;
+    salesOverTime: SalesOverTimeData[];
+}
+
+
 class AnalyticsService {
     
+    async getProductAnalytics(productSlug: string): Promise<ProductAnalyticsData | null> {
+        const product = await getProductBySlug(productSlug);
+        if (!product) return null;
+
+        const allOrders = await orderService.getOrders();
+        
+        const relevantOrders = allOrders.filter(order => 
+            order.items.some(item => item.productId === product.id)
+        );
+        
+        let totalRevenue = 0;
+        let totalUnitsSold = 0;
+        
+        relevantOrders.forEach(order => {
+            order.items.forEach(item => {
+                if (item.productId === product.id) {
+                    totalRevenue += item.price * item.quantity;
+                    totalUnitsSold += item.quantity;
+                }
+            });
+        });
+
+        const salesOverTime: SalesOverTimeData[] = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = subDays(new Date(), i);
+            const dayStart = startOfDay(date);
+            const dayEnd = endOfDay(date);
+            
+            const dailySales = relevantOrders
+                .filter(order => {
+                    const orderDate = (order.orderDate as Timestamp).toDate();
+                    return orderDate >= dayStart && orderDate <= dayEnd;
+                })
+                .reduce((sum, order) => {
+                    let dailySum = 0;
+                    order.items.forEach(item => {
+                        if (item.productId === product.id) {
+                           dailySum += item.price * item.quantity;
+                        }
+                    });
+                    return sum + dailySum;
+                }, 0);
+                
+            salesOverTime.push({
+                date: format(date, 'MMM d'),
+                sales: dailySales,
+            });
+        }
+        
+        return {
+            product,
+            totalRevenue,
+            totalOrders: relevantOrders.length,
+            totalUnitsSold,
+            salesOverTime,
+        }
+    }
+
+
     async getDashboardAnalytics(): Promise<AnalyticsData> {
         const [orders, products, users, campaigns] = await Promise.all([
             orderService.getOrders(),
