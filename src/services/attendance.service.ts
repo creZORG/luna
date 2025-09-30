@@ -1,7 +1,9 @@
 
+'use server';
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp, getDoc, doc, updateDoc } from 'firebase/firestore';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 
 export interface AttendanceRecord {
     id?: string;
@@ -38,7 +40,7 @@ class AttendanceService {
             });
 
             // Log activity
-            activityService.logActivity('Checked in for the day.', userId, userName);
+            logActivity('Checked in for the day.', userId, userName);
 
             return docRef.id;
         } catch (e) {
@@ -68,7 +70,7 @@ class AttendanceService {
                     checkOutTime: serverTimestamp(),
                     checkOutLocation: location,
                 });
-                activityService.logActivity('Checked out for the day.', userId, userName);
+                logActivity('Checked out for the day.', userId, userName);
             } else {
                 throw new Error("No check-in record found for today to check out against.");
             }

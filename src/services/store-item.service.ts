@@ -1,9 +1,10 @@
 
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, writeBatch, serverTimestamp, doc, updateDoc, setDoc, Transaction, increment, orderBy } from 'firebase/firestore';
 import type { StoreItem, StoreItemRequest, RequestStatus } from '@/lib/store-items.data';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 
 class StoreItemService {
     async getStoreItems(): Promise<StoreItem[]> {
@@ -35,7 +36,7 @@ class StoreItemService {
                 inventory: 0, // All new items start with 0 inventory
             });
 
-             await activityService.logActivity(
+             await logActivity(
                 `Created new store item: ${itemData.name}`,
                 adminId,
                 adminName
@@ -70,7 +71,7 @@ class StoreItemService {
         const itemSnap = await getDoc(itemRef);
         const itemName = itemSnap.exists() ? itemSnap.data().name : `item ID ${itemId}`;
         
-        activityService.logActivity(
+        logActivity(
             `Adjusted inventory for ${itemName} to ${newInventory}.`,
             adminId,
             adminName
@@ -116,7 +117,7 @@ class StoreItemService {
 
             await batch.commit();
             
-            activityService.logActivity(
+            logActivity(
                 `Requested ${itemIds.length} store item(s).`,
                 requesterId,
                 requesterName

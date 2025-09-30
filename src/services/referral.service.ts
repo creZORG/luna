@@ -1,8 +1,9 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, increment, getDoc, orderBy, setDoc } from 'firebase/firestore';
 import type { ReferralLink } from '@/lib/referrals.data';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 import { customAlphabet } from 'nanoid';
 
 // Using a custom alphabet for friendlier short URLs
@@ -27,7 +28,7 @@ class ReferralService {
         const docRef = doc(db, "referrals", shortCode);
         await setDoc(docRef, newLink);
 
-        activityService.logActivity(
+        logActivity(
             `Created a new referral link for campaign: ${campaignName || 'General'}`,
             marketerId,
             marketerName

@@ -1,10 +1,11 @@
 
 
+
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Product } from '@/lib/data';
 import { getOrders, Order } from '@/services/order.service';
-import { activityService, ActivityLog } from './activity.service';
+import { getRecentActivities, ActivityLog } from './activity.service';
 
 export interface DashboardData {
     totalProducts: number;
@@ -46,7 +47,7 @@ class DashboardService {
         const recentOrders = allOrders.slice(0, 5);
 
         // Fetch recent activities
-        const recentActivities = await activityService.getRecentActivities(5);
+        const recentActivities = await getRecentActivities(5);
 
         return {
             totalProducts,

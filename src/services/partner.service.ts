@@ -1,4 +1,5 @@
 
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -18,7 +19,7 @@ import type {
   PartnerType,
 } from '@/lib/partners.data';
 import type { UserProfile, UserRole } from './user.service';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 import { createEmailTemplate } from '@/lib/email-template';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { authService } from './auth.service';

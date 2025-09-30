@@ -1,4 +1,5 @@
 
+
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -9,7 +10,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import type { PurchaseOrder } from '@/lib/purchase-orders.data';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 
 class PurchaseOrderService {
   async createPurchaseOrder(
@@ -22,7 +23,7 @@ class PurchaseOrderService {
         status: 'ordered',
       });
 
-      activityService.logActivity(
+      logActivity(
         `Created purchase order #${docRef.id.substring(0,6).toUpperCase()} for supplier ${orderData.supplierName}.`,
         orderData.orderedBy.userId,
         orderData.orderedBy.userName

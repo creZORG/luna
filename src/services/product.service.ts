@@ -4,8 +4,8 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, where, getDoc, doc, writeBatch, updateDoc, setDoc, increment } from 'firebase/firestore';
 import type { Product } from '@/lib/data';
-import { activityService } from './activity.service';
-import { getOrders } from './order.service';
+import { logActivity } from './activity.service';
+import { getOrders } from '@/services/order.service';
 import { storeItemService } from './store-item.service';
 
 export interface ProductUpdateData {
@@ -73,7 +73,7 @@ export async function createProduct(productData: Omit<Product, 'id' | 'orderCoun
         
         await batch.commit();
 
-        activityService.logActivity(
+        logActivity(
             `Created new product: ${productData.name}`,
             userId,
             userName

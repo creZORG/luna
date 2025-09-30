@@ -1,11 +1,12 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, writeBatch, serverTimestamp, doc } from 'firebase/firestore';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { userService } from './user.service';
 import { format } from 'date-fns';
 import { createEmailTemplate } from '@/lib/email-template';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 
 export interface SalesLog {
     productId: string;
@@ -115,7 +116,7 @@ class SalesService {
             await batch.commit();
 
              // Log activity
-             activityService.logActivity(
+             logActivity(
                 `Submitted stock reconciliation for ${salespersonName}.`,
                 operatorId,
                 operatorName

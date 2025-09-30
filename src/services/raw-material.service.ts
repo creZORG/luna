@@ -1,11 +1,12 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, doc, runTransaction, serverTimestamp, writeBatch, query, orderBy, setDoc, updateDoc, getDoc, Transaction, where } from 'firebase/firestore';
 import type { RawMaterial, RawMaterialIntake, UnitOfMeasure } from '@/lib/raw-materials.data';
 import { userService } from './user.service';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
 
 
@@ -83,14 +84,18 @@ class RawMaterialService {
         batch.set(inventoryRef, { quantity: data.quantity });
         await batch.commit();
 
-        activityService.logActivity(`Created new raw material: ${data.name} with initial stock of ${data.quantity}.`, userId, userName);
+        logActivity(`Created new raw material: ${data.name} with initial stock of ${data.quantity}.`, userId, userName);
         return materialRef.id;
     }
 
     async updateRawMaterialQuantity(materialId: string, quantity: number, userId: string, userName: string): Promise<void> {
         const inventoryRef = doc(db, 'inventory', materialId);
         await setDoc(inventoryRef, { quantity }, { merge: true });
-        activityService.logActivity(`Adjusted inventory for material ID ${materialId} to ${quantity}.`, userId, userName);
+        
+        const materialDoc = await getDoc(doc(db, 'rawMaterials', materialId));
+        const materialName = materialDoc.exists() ? materialDoc.data().name : `material ID ${materialId}`;
+        
+        logActivity(`Adjusted inventory for ${materialName} to ${quantity}.`, userId, userName);
     }
     
     // This is a simplified recipe for demonstration purposes. A real app would store this in the database.
@@ -211,7 +216,7 @@ class RawMaterialService {
             
             // Log activity
             if (userProfile) {
-                 activityService.logActivity(
+                 logActivity(
                     `Logged intake of ${formData.actualQuantity} units of ${materialName} from ${formData.supplier}.`,
                     userId,
                     userProfile.displayName

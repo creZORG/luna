@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc, collection, getDocs, query, where, updateDoc, orde
 import type { User } from 'firebase/auth';
 import { sendEmail } from '@/ai/flows/send-email-flow';
 import { createEmailTemplate } from '@/lib/email-template';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 import { uploadImageFlow } from '@/ai/flows/upload-image-flow';
 import type { Product } from '@/lib/data';
 
@@ -80,7 +80,7 @@ class UserService {
             await setDoc(doc(db, 'users', user.uid), dataToSet);
             
             // Log this activity
-            activityService.logActivity(`New user signed up: ${userProfile.displayName} (${userProfile.email})`, 'system', 'System');
+            logActivity(`New user signed up: ${userProfile.displayName} (${userProfile.email})`, 'system', 'System');
 
 
             // Notify admins of new user
@@ -162,7 +162,7 @@ class UserService {
             const targetUser = await this.getUserProfile(uid);
             
             if (targetUser) {
-                activityService.logActivity(
+                logActivity(
                     `Updated roles for ${targetUser.displayName} to: ${roles.join(', ')}`,
                     adminUid,
                     adminName
@@ -199,7 +199,7 @@ class UserService {
             
             const user = await this.getUserProfile(uid);
             if (user) {
-                 activityService.logActivity(
+                 logActivity(
                     data.profileSetupComplete ? `Completed their profile setup.` : `Updated their profile.`,
                     user.uid,
                     user.displayName

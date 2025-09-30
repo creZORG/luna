@@ -1,9 +1,10 @@
 
+
 'use server';
 
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { activityService } from "./activity.service";
+import { logActivity } from "./activity.service";
 import { sendEmail } from "@/ai/flows/send-email-flow";
 import { createEmailTemplate } from "@/lib/email-template";
 import { getProductById } from "./product.service";
@@ -14,7 +15,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus, us
     await updateDoc(orderRef, { status });
 
     // Log the activity
-    await activityService.logActivity(
+    await logActivity(
         `Updated order #${orderId.substring(0,6).toUpperCase()} to status: ${status.replace('-', ' ')}`,
         userId,
         userName

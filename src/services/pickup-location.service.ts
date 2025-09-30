@@ -1,7 +1,8 @@
 
+
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 
 export interface PickupLocation {
     id: string;
@@ -30,7 +31,7 @@ class PickupLocationService {
         activityDescription += ` and assigned it to ${locationData.partnerName}.`;
       }
 
-      activityService.logActivity(activityDescription, userId, userName);
+      logActivity(activityDescription, userId, userName);
 
       return { id: docRef.id, ...locationData };
     } catch (e) {

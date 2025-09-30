@@ -1,8 +1,9 @@
 
 
+
 import { db } from '@/lib/firebase';
 import { runTransaction, doc, collection, addDoc, serverTimestamp, query, orderBy, getDocs, Transaction } from 'firebase/firestore';
-import { activityService } from './activity.service';
+import { logActivity } from './activity.service';
 import { storeItemService } from './store-item.service';
 
 export interface ConsumedMaterial {
@@ -66,7 +67,7 @@ class ManufacturingService {
             });
             
             // 4. Log the activity after the transaction is successful
-            await activityService.logActivity(
+            await logActivity(
                 `Logged production of ${data.quantityProduced} units of ${data.productName}`,
                 userId,
                 userName
