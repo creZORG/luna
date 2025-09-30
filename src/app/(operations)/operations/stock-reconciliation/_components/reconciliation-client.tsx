@@ -25,7 +25,7 @@ import { UserProfile } from '@/services/user.service';
 import { StoreItem } from '@/lib/store-items.data';
 import { ReconciliationLog, salesService } from '@/services/sales.service';
 import { useToast } from '@/hooks/use-toast';
-import { Loader, Send, User, Calculator } from 'lucide-react';
+import { Loader, Send, User, Calculator, Printer } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 
@@ -116,14 +116,18 @@ export default function ReconciliationClient({ assignableStock, salespeople }: R
             setIsSubmitting(false);
         }
     };
+    
+    const handlePrint = () => {
+        window.print();
+    }
 
     const selectedSalespersonName = useMemo(() => {
         return salespeople.find(s => s.uid === selectedSalespersonId)?.displayName || '...';
     }, [selectedSalespersonId, salespeople]);
 
     return (
-        <div className="grid gap-6">
-            <Card>
+        <div className="grid gap-6 print:gap-0">
+            <Card className="print:shadow-none print:border-none">
                 <CardHeader>
                     <CardTitle>Select Salesperson</CardTitle>
                     <CardDescription>Choose the salesperson you are reconciling stock for.</CardDescription>
@@ -148,17 +152,23 @@ export default function ReconciliationClient({ assignableStock, salespeople }: R
             </Card>
 
             {selectedSalespersonId && (
-                <Card>
+                <Card id="reconciliation-card" className="print:shadow-none print:border-none">
                     <CardHeader>
                          <div className="flex justify-between items-start">
                              <div>
                                 <CardTitle>Log Stock Movement for {selectedSalespersonName}</CardTitle>
                                 <CardDescription>Enter the quantities for each product variant. The system will calculate sales.</CardDescription>
                              </div>
-                             <Button onClick={handleSubmit} disabled={isSubmitting || logs.size === 0}>
-                                {isSubmitting ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
-                                Submit Log
-                            </Button>
+                             <div className="flex gap-2 print:hidden">
+                                <Button variant="outline" onClick={handlePrint} disabled={logs.size === 0}>
+                                    <Printer className="mr-2 h-4 w-4"/>
+                                    Print
+                                </Button>
+                                <Button onClick={handleSubmit} disabled={isSubmitting || logs.size === 0}>
+                                    {isSubmitting ? <Loader className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                                    Submit Log
+                                </Button>
+                             </div>
                          </div>
                     </CardHeader>
                     <CardContent>
@@ -210,5 +220,3 @@ export default function ReconciliationClient({ assignableStock, salespeople }: R
         </div>
     )
 }
-
-    

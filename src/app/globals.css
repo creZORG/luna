@@ -76,4 +76,21 @@
   .long-pill {
     @apply rounded-full px-6;
   }
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #reconciliation-card, #reconciliation-card * {
+      visibility: visible;
+    }
+    #reconciliation-card {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
+    .print\:hidden {
+        display: none;
+    }
+  }
 }
